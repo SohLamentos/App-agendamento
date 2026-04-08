@@ -158,35 +158,47 @@ class DataService {
   }
 
   public async initializeFromCloud() {
-    try {
-      const cloudState = await loadAppState('G3');
+  try {
+    const cloudState = await loadAppState('G3');
 
-      if (!cloudState?.data) {
-        return false;
-      }
-
-      const payload = cloudState.data;
-
-      this.groups = payload.groups ?? this.groups;
-      this.groupRules = payload.groupRules ?? this.groupRules;
-      this.cities = payload.cities ?? this.cities;
-      this.users = payload.users ?? this.users;
-      this.technicians = payload.technicians ?? this.technicians;
-      this.trainingClasses = payload.trainingClasses ?? this.trainingClasses;
-      this.schedules = payload.schedules ?? this.schedules;
-      this.schedulesTeste = payload.schedulesTeste ?? this.schedulesTeste;
-      this.events = payload.events ?? this.events;
-      this.schedulingConfig = payload.schedulingConfig ?? this.schedulingConfig;
-      this.testModeActive = payload.testModeActive ?? this.testModeActive;
-      this.scoreAdjustments = payload.scoreAdjustments ?? this.scoreAdjustments;
-
-      this.persist();
-      return true;
-    } catch (error) {
-      console.error('Erro ao carregar do Supabase:', error);
+    if (!cloudState?.data) {
       return false;
     }
+
+    const payload = cloudState.data;
+
+    this.groups = payload.groups ?? this.groups;
+    this.groupRules = payload.groupRules ?? this.groupRules;
+    this.cities = payload.cities ?? this.cities;
+    this.users = payload.users ?? this.users;
+    this.technicians = payload.technicians ?? this.technicians;
+    this.trainingClasses = payload.trainingClasses ?? this.trainingClasses;
+    this.schedules = payload.schedules ?? this.schedules;
+    this.schedulesTeste = payload.schedulesTeste ?? this.schedulesTeste;
+    this.events = payload.events ?? this.events;
+    this.schedulingConfig = payload.schedulingConfig ?? this.schedulingConfig;
+    this.testModeActive = payload.testModeActive ?? this.testModeActive;
+    this.scoreAdjustments = payload.scoreAdjustments ?? this.scoreAdjustments;
+
+    localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
+    localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
+    localStorage.setItem('g_cities_v15', JSON.stringify(this.cities));
+    localStorage.setItem('g_users_v15', JSON.stringify(this.users));
+    localStorage.setItem('certitech_technicians_v15', JSON.stringify(this.technicians));
+    localStorage.setItem('certitech_classes_v15', JSON.stringify(this.trainingClasses));
+    localStorage.setItem('certitech_schedules_v15', JSON.stringify(this.schedules));
+    localStorage.setItem('certitech_schedules_teste_v15', JSON.stringify(this.schedulesTeste));
+    localStorage.setItem('certitech_events_v15', JSON.stringify(this.events));
+    localStorage.setItem('certitech_config_v15', JSON.stringify(this.schedulingConfig));
+    localStorage.setItem('certitech_test_mode_v15', this.testModeActive ? 'true' : 'false');
+    localStorage.setItem('g_score_adjustments_v15', JSON.stringify(this.scoreAdjustments));
+
+    return true;
+  } catch (error) {
+    console.error('Erro ao carregar do Supabase:', error);
+    return false;
   }
+}
 
   public subscribeToCloudUpdates() {
   const channel = supabase
