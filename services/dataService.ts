@@ -188,6 +188,31 @@ class DataService {
     }
   }
 
+  public subscribeToCloudUpdates() {
+  const channel = supabase
+    .channel('app_state_changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'app_state',
+        filter: 'group_id=eq.G3',
+      },
+      async () => {
+        const updated = await this.initializeFromCloud();
+        if (updated) {
+          window.dispatchEvent(new Event('data-updated'));
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+  
   private persist() {
     localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
     localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
