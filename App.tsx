@@ -13,7 +13,7 @@ import Login from './components/Login';
 import AdminManagement from './components/AdminManagement';
 import { dataService } from './services/dataService';
 import { authService } from './services/authService';
-import { UserRole, SchedulingConfig } from './types';
+import { UserRole } from './types';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated());
@@ -36,13 +36,20 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
     const initialize = async () => {
       await dataService.initializeFromCloud();
+      unsubscribe = dataService.subscribeToCloudUpdates();
       setCurrentUser(dataService.getCurrentUser());
       setIsInitializing(false);
     };
 
     initialize();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
