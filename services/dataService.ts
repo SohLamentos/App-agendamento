@@ -98,18 +98,51 @@ class DataService {
   private scoreAdjustments: VirtualScoreAdjustment[];
 
   constructor() {
-    const savedGroups = localStorage.getItem('g_groups_v15');
-    const savedRules = localStorage.getItem('g_rules_v15');
-    const savedCities = localStorage.getItem('g_cities_v15');
-    const savedUsers = localStorage.getItem('g_users_v15');
-    const savedTechs = localStorage.getItem('certitech_technicians_v15');
-    const savedClasses = localStorage.getItem('certitech_classes_v15');
-    const savedSchedules = localStorage.getItem('certitech_schedules_v15');
-    const savedSchedulesTeste = localStorage.getItem('certitech_schedules_teste_v15');
-    const savedEvents = localStorage.getItem('certitech_events_v15');
-    const savedConfig = localStorage.getItem('certitech_config_v15');
-    const savedTestMode = localStorage.getItem('certitech_test_mode_v15');
-    const savedAdjustments = localStorage.getItem('g_score_adjustments_v15');
+  const savedGroups = localStorage.getItem('g_groups_v15');
+  const savedRules = localStorage.getItem('g_rules_v15');
+  const savedCities = localStorage.getItem('g_cities_v15');
+  const savedUsers = localStorage.getItem('g_users_v15');
+  const savedTechs = localStorage.getItem('certitech_technicians_v15');
+  const savedClasses = localStorage.getItem('certitech_classes_v15');
+  const savedSchedules = localStorage.getItem('certitech_schedules_v15');
+  const savedSchedulesTeste = localStorage.getItem('certitech_schedules_teste_v15');
+  const savedEvents = localStorage.getItem('certitech_events_v15');
+  const savedConfig = localStorage.getItem('certitech_config_v15');
+  const savedTestMode = localStorage.getItem('certitech_test_mode_v15');
+  const savedAdjustments = localStorage.getItem('g_score_adjustments_v15');
+
+  // resto do seu código do constructor...
+} // 👈 FECHA AQUI
+
+// 👇 AGORA SIM, FORA DO CONSTRUCTOR
+public async initializeFromCloud() {
+  try {
+    const cloudState = await loadAppState('G3');
+
+    if (!cloudState?.data) return false;
+
+    const payload = cloudState.data;
+
+    this.groups = payload.groups ?? this.groups;
+    this.groupRules = payload.groupRules ?? this.groupRules;
+    this.cities = payload.cities ?? this.cities;
+    this.users = payload.users ?? this.users;
+    this.technicians = payload.technicians ?? this.technicians;
+    this.trainingClasses = payload.trainingClasses ?? this.trainingClasses;
+    this.schedules = payload.schedules ?? this.schedules;
+    this.schedulesTeste = payload.schedulesTeste ?? this.schedulesTeste;
+    this.events = payload.events ?? this.events;
+    this.schedulingConfig = payload.schedulingConfig ?? this.schedulingConfig;
+    this.testModeActive = payload.testModeActive ?? this.testModeActive;
+    this.scoreAdjustments = payload.scoreAdjustments ?? this.scoreAdjustments;
+
+    this.persist();
+    return true;
+  } catch (error) {
+    console.error('Erro ao carregar do Supabase:', error);
+    return false;
+  }
+}
 
     this.groups = savedGroups ? JSON.parse(savedGroups) : [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
     this.groupRules = savedRules ? JSON.parse(savedRules) : [{ groupId: 'G3', presencialPerShift: 3, virtualPerShift: 2, schedulingWindowDays: 20, active: true }];
