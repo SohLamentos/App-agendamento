@@ -112,15 +112,36 @@ class DataService {
   const savedAdjustments = localStorage.getItem('g_score_adjustments_v15');
 
   this.groups = savedGroups ? JSON.parse(savedGroups) : [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
-  this.groupRules = savedRules ? JSON.parse(savedRules) : [];
-  this.cities = savedCities ? JSON.parse(savedCities) : [];
-  this.users = savedUsers ? JSON.parse(savedUsers) : [];
-  this.technicians = savedTechs ? JSON.parse(savedTechs) : [];
-  this.trainingClasses = savedClasses ? JSON.parse(savedClasses) : [];
+
+  this.groupRules = savedRules ? JSON.parse(savedRules) : [{
+    groupId: 'G3',
+    presencialPerShift: 3,
+    virtualPerShift: 2,
+    schedulingWindowDays: 20,
+    active: true
+  }];
+
+  this.cities = savedCities ? JSON.parse(savedCities) : mockCities.map(c => ({
+    id: c.id,
+    groupId: 'G3',
+    name: c.name,
+    uf: c.uf,
+    type: c.defaultType,
+    active: true,
+    responsibleAnalystIds: c.responsibleAnalystIds
+  }));
+
+  this.users = savedUsers ? JSON.parse(savedUsers) : mockUsers;
+  this.technicians = (savedTechs && JSON.parse(savedTechs).length > 0) ? JSON.parse(savedTechs) : mockTechnicians;
+  this.trainingClasses = (savedClasses && JSON.parse(savedClasses).length > 0) ? JSON.parse(savedClasses) : mockClasses;
   this.schedules = savedSchedules ? JSON.parse(savedSchedules) : [];
   this.schedulesTeste = savedSchedulesTeste ? JSON.parse(savedSchedulesTeste) : [];
   this.events = savedEvents ? JSON.parse(savedEvents) : [];
-  this.schedulingConfig = savedConfig ? JSON.parse(savedConfig) : {} as any;
+
+  this.schedulingConfig = savedConfig
+    ? JSON.parse(savedConfig)
+    : { smartPrioritizationEnabled: true, weightCity: 10, weightPending: 5, weightActive: 2 };
+
   this.testModeActive = savedTestMode === 'true';
   this.scoreAdjustments = savedAdjustments ? JSON.parse(savedAdjustments) : [];
 }
