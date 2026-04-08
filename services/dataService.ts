@@ -154,20 +154,29 @@ public async initializeFromCloud() {
 
     const payload = cloudState.data;
 
-    this.groups = payload.groups ?? this.groups;
-    this.groupRules = payload.groupRules ?? this.groupRules;
-    this.cities = payload.cities ?? this.cities;
-    this.users = payload.users ?? this.users;
-    this.technicians = payload.technicians ?? this.technicians;
-    this.trainingClasses = payload.trainingClasses ?? this.trainingClasses;
-    this.schedules = payload.schedules ?? this.schedules;
-    this.schedulesTeste = payload.schedulesTeste ?? this.schedulesTeste;
-    this.events = payload.events ?? this.events;
-    this.schedulingConfig = payload.schedulingConfig ?? this.schedulingConfig;
-    this.testModeActive = payload.testModeActive ?? this.testModeActive;
-    this.scoreAdjustments = payload.scoreAdjustments ?? this.scoreAdjustments;
+    this.groups = savedGroups ? JSON.parse(savedGroups) : [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
+    this.groupRules = savedRules ? JSON.parse(savedRules) : [{ groupId: 'G3', presencialPerShift: 3, virtualPerShift: 2, schedulingWindowDays: 20, active: true }];
+    this.cities = savedCities ? JSON.parse(savedCities) : mockCities.map(c => ({ 
+      id: c.id, 
+      groupId: 'G3', 
+      name: c.name, 
+      uf: c.uf, 
+      type: c.defaultType, 
+      active: true, 
+      responsibleAnalystIds: c.responsibleAnalystIds 
+    }));
+    this.users = savedUsers ? JSON.parse(savedUsers) : mockUsers;
+    this.technicians = (savedTechs && JSON.parse(savedTechs).length > 0) ? JSON.parse(savedTechs) : mockTechnicians;
+    this.trainingClasses = (savedClasses && JSON.parse(savedClasses).length > 0) ? JSON.parse(savedClasses) : mockClasses;
+    this.schedules = savedSchedules ? JSON.parse(savedSchedules) : [];
+    this.schedulesTeste = savedSchedulesTeste ? JSON.parse(savedSchedulesTeste) : [];
+    this.events = savedEvents ? JSON.parse(savedEvents) : [];
+    this.schedulingConfig = savedConfig ? JSON.parse(savedConfig) : { smartPrioritizationEnabled: true, weightCity: 10, weightPending: 5, weightActive: 2 };
+    this.testModeActive = savedTestMode === 'true';
+    this.scoreAdjustments = savedAdjustments ? JSON.parse(savedAdjustments) : [];
 
     this.persist();
+  }
     return true;
   } catch (error) {
     console.error('Erro ao carregar do Supabase:', error);
