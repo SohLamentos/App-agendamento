@@ -125,6 +125,7 @@ export interface CityGroup {
 export interface CertificationCity {
   id: string;
   name: string;
+  uf: string;
   defaultType: ExpertiseType;
   responsibleAnalystIds: string[];
 }

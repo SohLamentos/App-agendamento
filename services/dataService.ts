@@ -97,18 +97,18 @@ class DataService {
   private scoreAdjustments: VirtualScoreAdjustment[];
 
   constructor() {
-    const savedGroups = localStorage.getItem('g_groups_v13');
-    const savedRules = localStorage.getItem('g_rules_v13');
-    const savedCities = localStorage.getItem('g_cities_v13');
-    const savedUsers = localStorage.getItem('g_users_v13');
-    const savedTechs = localStorage.getItem('certitech_technicians_v13');
-    const savedClasses = localStorage.getItem('certitech_classes_v13');
-    const savedSchedules = localStorage.getItem('certitech_schedules_v13');
-    const savedSchedulesTeste = localStorage.getItem('certitech_schedules_teste_v13');
-    const savedEvents = localStorage.getItem('certitech_events_v13');
-    const savedConfig = localStorage.getItem('certitech_config_v13');
-    const savedTestMode = localStorage.getItem('certitech_test_mode_v13');
-    const savedAdjustments = localStorage.getItem('g_score_adjustments_v13');
+    const savedGroups = localStorage.getItem('g_groups_v15');
+    const savedRules = localStorage.getItem('g_rules_v15');
+    const savedCities = localStorage.getItem('g_cities_v15');
+    const savedUsers = localStorage.getItem('g_users_v15');
+    const savedTechs = localStorage.getItem('certitech_technicians_v15');
+    const savedClasses = localStorage.getItem('certitech_classes_v15');
+    const savedSchedules = localStorage.getItem('certitech_schedules_v15');
+    const savedSchedulesTeste = localStorage.getItem('certitech_schedules_teste_v15');
+    const savedEvents = localStorage.getItem('certitech_events_v15');
+    const savedConfig = localStorage.getItem('certitech_config_v15');
+    const savedTestMode = localStorage.getItem('certitech_test_mode_v15');
+    const savedAdjustments = localStorage.getItem('g_score_adjustments_v15');
 
     this.groups = savedGroups ? JSON.parse(savedGroups) : [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
     this.groupRules = savedRules ? JSON.parse(savedRules) : [{ groupId: 'G3', presencialPerShift: 3, virtualPerShift: 2, schedulingWindowDays: 20, active: true }];
@@ -116,14 +116,14 @@ class DataService {
       id: c.id, 
       groupId: 'G3', 
       name: c.name, 
-      uf: 'RS', 
+      uf: c.uf, 
       type: c.defaultType, 
       active: true, 
       responsibleAnalystIds: c.responsibleAnalystIds 
     }));
     this.users = savedUsers ? JSON.parse(savedUsers) : mockUsers;
-    this.technicians = savedTechs ? JSON.parse(savedTechs) : [];
-    this.trainingClasses = savedClasses ? JSON.parse(savedClasses) : [];
+    this.technicians = (savedTechs && JSON.parse(savedTechs).length > 0) ? JSON.parse(savedTechs) : mockTechnicians;
+    this.trainingClasses = (savedClasses && JSON.parse(savedClasses).length > 0) ? JSON.parse(savedClasses) : mockClasses;
     this.schedules = savedSchedules ? JSON.parse(savedSchedules) : [];
     this.schedulesTeste = savedSchedulesTeste ? JSON.parse(savedSchedulesTeste) : [];
     this.events = savedEvents ? JSON.parse(savedEvents) : [];
@@ -135,18 +135,31 @@ class DataService {
   }
 
   private persist() {
-    localStorage.setItem('g_groups_v13', JSON.stringify(this.groups));
-    localStorage.setItem('g_rules_v13', JSON.stringify(this.groupRules));
-    localStorage.setItem('g_cities_v13', JSON.stringify(this.cities));
-    localStorage.setItem('g_users_v13', JSON.stringify(this.users));
-    localStorage.setItem('certitech_technicians_v13', JSON.stringify(this.technicians));
-    localStorage.setItem('certitech_classes_v13', JSON.stringify(this.trainingClasses));
-    localStorage.setItem('certitech_schedules_v13', JSON.stringify(this.schedules));
-    localStorage.setItem('certitech_schedules_teste_v13', JSON.stringify(this.schedulesTeste));
-    localStorage.setItem('certitech_events_v13', JSON.stringify(this.events));
-    localStorage.setItem('certitech_config_v13', JSON.stringify(this.schedulingConfig));
-    localStorage.setItem('certitech_test_mode_v13', this.testModeActive ? 'true' : 'false');
-    localStorage.setItem('g_score_adjustments_v13', JSON.stringify(this.scoreAdjustments));
+    localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
+    localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
+    localStorage.setItem('g_cities_v15', JSON.stringify(this.cities));
+    localStorage.setItem('g_users_v15', JSON.stringify(this.users));
+    localStorage.setItem('certitech_technicians_v15', JSON.stringify(this.technicians));
+    localStorage.setItem('certitech_classes_v15', JSON.stringify(this.trainingClasses));
+    localStorage.setItem('certitech_schedules_v15', JSON.stringify(this.schedules));
+    localStorage.setItem('certitech_schedules_teste_v15', JSON.stringify(this.schedulesTeste));
+    localStorage.setItem('certitech_events_v15', JSON.stringify(this.events));
+    localStorage.setItem('certitech_config_v15', JSON.stringify(this.schedulingConfig));
+    localStorage.setItem('certitech_test_mode_v15', this.testModeActive ? 'true' : 'false');
+    localStorage.setItem('g_score_adjustments_v15', JSON.stringify(this.scoreAdjustments));
+  }
+
+  public resetTestData() {
+    // Botão temporário de validação: limpa as chaves v15 e recarrega para re-seedar os dados
+    const keys = [
+      'g_groups_v15', 'g_rules_v15', 'g_cities_v15', 'g_users_v15',
+      'certitech_technicians_v15', 'certitech_classes_v15',
+      'certitech_schedules_v15', 'certitech_schedules_teste_v15',
+      'certitech_events_v15', 'certitech_config_v15',
+      'certitech_test_mode_v15', 'g_score_adjustments_v15'
+    ];
+    keys.forEach(k => localStorage.removeItem(k));
+    window.location.reload();
   }
 
   public safeNormalize(value: any): string {
@@ -358,40 +371,55 @@ class DataService {
     const addReason = (r: string) => summary.reasons[r] = (summary.reasons[r] || 0) + 1;
     
     const context = this.getContext();
-    const techniciansPool = this.technicians.filter(t => t.groupId === context.groupId && (t.status_principal === "PENDENTE_TRATAMENTO" || t.status_principal === "PENDENTE_CERTIFICAÇÃO"));
+    const groupRule = this.groupRules.find(r => r.groupId === context.groupId) || this.groupRules[0];
+    
+    const techniciansPool = this.technicians.filter(t => 
+      t.groupId === context.groupId && 
+      (t.status_principal === "PENDENTE_TRATAMENTO" || 
+       t.status_principal === "PENDENTE_CERTIFICAÇÃO" || 
+       t.status_principal === "BACKLOG AGUARDANDO" || 
+       t.status_principal === "PENDENTE")
+    );
+
     const analystsPool = this.users.filter(u => u.role === UserRole.ANALYST && u.active && u.groupId === context.groupId);
     
     const todayStr = new Date().toISOString().split('T')[0];
     const activeAdjustments = this.scoreAdjustments.filter(a => a.active && todayStr >= a.startDate && todayStr <= a.endDate && a.groupId === context.groupId);
 
-    const businessDays = this.getBusinessDays(startDateIso, 10);
+    const windowDaysCount = groupRule.schedulingWindowDays || 10;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startReq = new Date(startDateIso + 'T00:00:00');
+    const effectiveStart = startReq < today ? today.toISOString().split('T')[0] : startDateIso;
+    const businessDays = this.getBusinessDays(effectiveStart, windowDaysCount);
 
     for (const tech of techniciansPool) {
       let wasScheduled = false;
       const cityConfig = this.cities.find(c => this.safeNormalize(c.name) === this.safeNormalize(tech.city));
       const requiresPresential = cityConfig?.type === ExpertiseType.PRESENTIAL;
       const targetType = requiresPresential ? ExpertiseType.PRESENTIAL : ExpertiseType.VIRTUAL;
-      const limitPerShift = targetType === ExpertiseType.VIRTUAL ? 2 : 3;
+      
+      const limitPerShift = targetType === ExpertiseType.VIRTUAL 
+        ? (groupRule.virtualPerShift || 2) 
+        : (groupRule.presencialPerShift || 3);
 
       let allowedAnalysts = requiresPresential 
         ? analystsPool.filter(a => cityConfig?.responsibleAnalystIds.includes(a.analystProfileId || ''))
         : analystsPool;
 
-      // Ordenação para Virtual: Priorizar analistas com MENOR score (Carga Presencial + Backlog)
-      if (!requiresPresential) {
-        allowedAnalysts = [...allowedAnalysts].sort((a, b) => {
-          const metricsA = this.getAnalystDemandMetrics(a.id);
-          const metricsB = this.getAnalystDemandMetrics(b.id);
-          
-          const adjA = activeAdjustments.find(adj => adj.analystId === a.id)?.penalty || 0;
-          const adjB = activeAdjustments.find(adj => adj.analystId === b.id)?.penalty || 0;
-          
-          const scoreA = metricsA.demandIndex + adjA;
-          const scoreB = metricsB.demandIndex + adjB;
-          
-          return scoreA - scoreB;
-        });
-      }
+      // Ordenação para balanceamento de carga
+      allowedAnalysts = [...allowedAnalysts].sort((a, b) => {
+        const metricsA = this.getAnalystDemandMetrics(a.id);
+        const metricsB = this.getAnalystDemandMetrics(b.id);
+        
+        const adjA = activeAdjustments.find(adj => adj.analystId === a.id)?.penalty || 0;
+        const adjB = activeAdjustments.find(adj => adj.analystId === b.id)?.penalty || 0;
+        
+        const scoreA = metricsA.demandIndex + adjA;
+        const scoreB = metricsB.demandIndex + adjB;
+        
+        return scoreA - scoreB;
+      });
 
       if (requiresPresential && allowedAnalysts.length === 0) {
         tech.status_principal = "BACKLOG AGUARDANDO";
@@ -446,7 +474,7 @@ class DataService {
       if (!wasScheduled) {
         tech.status_principal = "BACKLOG AGUARDANDO";
         tech.backlog_score_aplicado = true;
-        tech.backlog_motivo = "SEM VAGA NO PRAZO (10 DIAS)";
+        tech.backlog_motivo = `SEM VAGA NA JANELA (${windowDaysCount} DIAS)`;
         addReason(tech.backlog_motivo);
         summary.backlog++;
       }
@@ -688,17 +716,22 @@ class DataService {
       if (existing) {
         existing.name = name;
         existing.city = city;
+        // Tenta encontrar o UF correto baseado na cidade
+        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
+        if (cityMatch) existing.state = cityMatch.uf;
+        
         existing.status_principal = requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO";
         existing.generateCertification = requiresCert;
         updated++;
       } else {
+        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
         const tech: Technician = { 
           id: `tech-${Date.now()}-${Math.random()}`, 
           groupId: ctx.groupId, 
           name: name, 
           cpf: cleanCpf, 
           city: city, 
-          state: 'RS', 
+          state: cityMatch ? cityMatch.uf : 'RS', 
           email: '', phone: '', company: '', externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: '', participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: requiresCert, unique_key: cleanCpf, 
           status_principal: requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO"
         };
@@ -791,13 +824,14 @@ class DataService {
       
       if (inAnotherClass) {
         // NOVO EM OUTRA TURMA (Criamos um novo registro vinculado a esta turma)
+        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
         const tech: Technician = { 
           id: `tech-${Date.now()}-${Math.random()}`, 
           groupId: ctx.groupId, 
           name: name, 
           cpf: cleanCpf, 
           city: city, 
-          state: 'RS', 
+          state: cityMatch ? cityMatch.uf : 'RS', 
           email: '', phone: '', company: '', externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
           status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
           technology: classObj.type
@@ -806,13 +840,14 @@ class DataService {
         newInOtherClass++;
       } else {
         // INSERIDO (Registro totalmente novo no sistema)
+        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
         const tech: Technician = { 
           id: `tech-${Date.now()}-${Math.random()}`, 
           groupId: ctx.groupId, 
           name: name, 
           cpf: cleanCpf, 
           city: city, 
-          state: 'RS', 
+          state: cityMatch ? cityMatch.uf : 'RS', 
           email: '', phone: '', company: '', externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
           status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
           technology: classObj.type
@@ -879,7 +914,56 @@ class DataService {
   public getOperationalReport(f: any) { return { kpis: { requested: 0, realized: 0, noShow: 0, reprovedEad: 0, reprovedVirtual: 0, reprovedPresential: 0, pending: 0 }, rankings: { partners: [], cities: [], states: [] } }; }
   public getQualityReport(f: any) { return { kpis: { noShowPct: 0, reprovedEadPct: 0, reprovedVirtualPct: 0, reprovedPresentialPct: 0 } }; }
   public getCapacityRiskReport() { return { summary: { capacity: 0, demand: 0, balance: 0 }, analysts: [] }; }
-  public getBrazilMapData() { return []; }
+  public getBrazilMapData() {
+    const context = this.getContext();
+    const allTechs = this.technicians.filter(t => t.groupId === context.groupId);
+    const scheduledTechs = allTechs.filter(t => 
+      t.status_principal === 'AGENDADOS' || 
+      t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED
+    );
+
+    const statsByUF: Record<string, { techs: number, certs: number, reproved: number, noShow: number }> = {};
+
+    // Initialize with all UFs to ensure they appear on the map if needed, 
+    // or just process existing ones.
+    allTechs.forEach(t => {
+      // Tenta encontrar o UF correto se não estiver preenchido ou se for o fallback padrão
+      let uf = (t.state || '').toUpperCase();
+      if (!uf || uf === 'RS') {
+        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(t.city));
+        if (cityMatch) uf = cityMatch.uf;
+        else if (!uf) uf = 'RS';
+      }
+      
+      if (!statsByUF[uf]) {
+        statsByUF[uf] = { techs: 0, certs: 0, reproved: 0, noShow: 0 };
+      }
+      
+      if (t.status_principal === 'AGENDADOS' || t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED) {
+        statsByUF[uf].techs++;
+      }
+      
+      if (t.certificationProcessStatus === CertificationProcessStatus.CERTIFIED_APPROVED) {
+        statsByUF[uf].certs++;
+      }
+      
+      if (t.certificationProcessStatus === CertificationProcessStatus.CERTIFIED_REPROVED_1 || t.certificationProcessStatus === CertificationProcessStatus.CERTIFIED_REPROVED_2) {
+        statsByUF[uf].reproved++;
+      }
+      
+      if (t.participationStatus === ParticipationStatus.NO_SHOW) {
+        statsByUF[uf].noShow++;
+      }
+    });
+
+    return Object.entries(statsByUF).map(([uf, stats]) => ({
+      uf,
+      techs: stats.techs,
+      certs: stats.certs,
+      reprovedPct: (stats.certs + stats.reproved) > 0 ? (stats.reproved / (stats.certs + stats.reproved)) * 100 : 0,
+      noShowPct: (stats.techs + stats.certs + stats.reproved + stats.noShow) > 0 ? (stats.noShow / (stats.techs + stats.certs + stats.reproved + stats.noShow)) * 100 : 0
+    }));
+  }
   public getBacklogForecasting() { return { kpis: { totalEligible: 0, capacityP: 0, capacityV: 0, projectedBacklog: 0, vencimento2d: 0, vencimento5d: 0 }, riskByClass: [], analystPressure: [] }; }
 }
 

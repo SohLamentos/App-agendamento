@@ -1,7 +1,7 @@
 
 import { 
   User, UserRole, CertificationCity, AnalystProfile, ExpertiseType, 
-  Technician, EventSchedule
+  Technician, EventSchedule, TrainingClass, TrainingStatus, ParticipationStatus, ApprovalStatus, CertificationProcessStatus
 } from '../types';
 
 const now = new Date().toISOString();
@@ -29,41 +29,41 @@ export const mockUsers: User[] = [
 export const mockCities: CertificationCity[] = [
   // PORTO ALEGRE - RS
   ...['PORTO ALEGRE', 'CANOAS', 'NOVO HAMBURGO', 'GUAIBA', 'CACHOEIRINHA', 'SAO LEOPOLDO', 'VIAMAO'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap1', 'ap3', 'ap7']
+    id: `city-${name}`, name, uf: 'RS', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap1', 'ap3', 'ap7']
   })),
   // FLORIANÓPOLIS - SC
   ...['FLORIANOPOLIS', 'SAO JOSE', 'PALHOCA', 'BIGUACU'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap5', 'ap2']
+    id: `city-${name}`, name, uf: 'SC', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap5', 'ap2']
   })),
   // JOINVILLE - SC
   ...['JOINVILLE', 'BLUMENAU', 'ITAJAI', 'BALNEARIO CAMBORIU', 'GUARAMIRIM', 'POMERODE'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap8']
+    id: `city-${name}`, name, uf: 'SC', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap8']
   })),
   // CURITIBA - PR
   ...['CURITIBA', 'SAO JOSE DOS PINHAIS', 'COLOMBO', 'ALMIRANTE TAMANDARE', 'PINHAIS'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap4']
+    id: `city-${name}`, name, uf: 'PR', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap4']
   })),
   // LONDRINA - PR
   ...['LONDRINA', 'ARAPONGAS', 'ROLANDIA', 'MARINGA', 'IBIPORA', 'CIANORTE', 'CAMBE'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap6']
+    id: `city-${name}`, name, uf: 'PR', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap6']
   })),
   // BRASÍLIA - DF
   ...['BRASILIA', 'TAGUATINGA', 'VALPARAISO DE GOIAS', 'CEILANDIA', 'SOBRADINHO'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap13']
+    id: `city-${name}`, name, uf: 'DF', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap13']
   })),
   // GOIÂNIA - GO
   ...['GOIANIA', 'APARECIDA DE GOIANIA', 'TRINDADE', 'ANAPOLIS', 'GOIANAPOLIS'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap12']
+    id: `city-${name}`, name, uf: 'GO', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap12']
   })),
   // CUIABÁ - MT
   ...['CUIABA', 'CAMPO VERDE', 'VARZEA GRANDE'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap9']
+    id: `city-${name}`, name, uf: 'MT', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap9']
   })),
   // MANAUS - AM
-  { id: 'city-MANAUS', name: 'MANAUS', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap10'] },
+  { id: 'city-MANAUS', name: 'MANAUS', uf: 'AM', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap10'] },
   // BELÉM - PA
   ...['BELEM', 'ANANINDEUA'].map(name => ({
-    id: `city-${name}`, name, defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap11']
+    id: `city-${name}`, name, uf: 'PA', defaultType: ExpertiseType.PRESENTIAL, responsibleAnalystIds: ['ap11']
   })),
 ];
 
@@ -76,6 +76,88 @@ export const mockAnalystProfiles: AnalystProfile[] = mockUsers
     coveredCityIds: mockCities.filter(c => c.responsibleAnalystIds.includes(u.analystProfileId!)).map(c => c.id)
   }));
 
-export const mockClasses: any[] = [];
-export const mockTechnicians: Technician[] = [];
+const generateCPF = (seed: number) => {
+  const s = String(seed).padStart(9, '0');
+  let d1 = 0;
+  for (let i = 0; i < 9; i++) d1 += parseInt(s[i]) * (10 - i);
+  d1 = 11 - (d1 % 11);
+  if (d1 >= 10) d1 = 0;
+  let d2 = d1 * 2;
+  for (let i = 0; i < 9; i++) d2 += parseInt(s[i]) * (11 - i);
+  d2 = 11 - (d2 % 11);
+  if (d2 >= 10) d2 = 0;
+  return `${s.substring(0, 3)}.${s.substring(3, 6)}.${s.substring(6, 9)}-${d1}${d2}`;
+};
+
+const firstNames = ["Lucas", "Gabriel", "Matheus", "Enzo", "Guilherme", "Nicolas", "Rafael", "Gustavo", "Felipe", "Samuel", "João", "Pedro", "Vitor", "Leonardo", "Bruno", "Tiago", "Rodrigo", "Fábio", "Marcelo", "André", "Ricardo", "Fernando", "Daniel", "Alexandre", "Roberto", "Marcos", "Paulo", "Carlos", "José", "Antônio", "Luiz", "Francisco", "Manoel", "Sebastião", "Jorge", "Mário", "Sérgio", "Cláudio", "Ronaldo", "Edson", "Adilson", "Valter", "Nilton", "Milton", "Ailton", "Gilberto", "Humberto", "Osvaldo", "Raimundo"];
+const lastNames = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes", "Costa", "Ribeiro", "Martins", "Carvalho", "Almeida", "Lopes", "Soares", "Fernandes", "Vieira", "Barbosa", "Rocha", "Dias", "Nascimento", "Andrade", "Moreira", "Nunes", "Marques", "Machado", "Mendes", "Freitas", "Cardoso", "Ramos", "Santana", "Teixeira", "Moura", "Cavalcanti", "Borges", "Melo", "Aragão", "Pinto", "Campos", "Coelho", "Bezerra", "Correia", "Tavares", "Garcia", "Fonseca", "Rezende", "Barros", "Guimarães"];
+const cityList = ["PORTO ALEGRE", "CANOAS", "NOVO HAMBURGO", "FLORIANOPOLIS", "JOINVILLE", "CURITIBA", "LONDRINA", "BRASILIA", "GOIANIA", "CUIABA", "MANAUS", "BELEM"];
+
+export const mockClasses: TrainingClass[] = [
+  { id: 'class-test-001', groupId: 'G3', classNumber: 'TURMA-TESTE-001', title: 'GPON — TESTE — TURMA-TESTE-001', subcategory: 'TESTE', type: 'GPON', requiresCert: true, locationId: 'REMOTO', clientCompany: 'CLARO', startDate: now, endDate: now, responsibleAnalystId: 'u3', status: TrainingStatus.IN_PROGRESS, createdAt: now, createdBy: 'SISTEMA' },
+  { id: 'class-test-002', groupId: 'G3', classNumber: 'TURMA-TESTE-002', title: 'HFC — TESTE — TURMA-TESTE-002', subcategory: 'TESTE', type: 'HFC', requiresCert: true, locationId: 'REMOTO', clientCompany: 'CLARO', startDate: now, endDate: now, responsibleAnalystId: 'u4', status: TrainingStatus.IN_PROGRESS, createdAt: now, createdBy: 'SISTEMA' },
+  { id: 'class-test-003', groupId: 'G3', classNumber: 'TURMA-TESTE-003', title: 'GPON — TESTE — TURMA-TESTE-003', subcategory: 'TESTE', type: 'GPON', requiresCert: true, locationId: 'REMOTO', clientCompany: 'CLARO', startDate: now, endDate: now, responsibleAnalystId: 'u5', status: TrainingStatus.IN_PROGRESS, createdAt: now, createdBy: 'SISTEMA' },
+  { id: 'class-test-004', groupId: 'G3', classNumber: 'TURMA-TESTE-004', title: 'OUTROS — TESTE — TURMA-TESTE-004', subcategory: 'TESTE', type: 'OUTROS', requiresCert: true, locationId: 'REMOTO', clientCompany: 'CLARO', startDate: now, endDate: now, responsibleAnalystId: 'u6', status: TrainingStatus.IN_PROGRESS, createdAt: now, createdBy: 'SISTEMA' },
+  { id: 'class-test-005', groupId: 'G3', classNumber: 'TURMA-TESTE-005', title: 'GPON — TESTE — TURMA-TESTE-005', subcategory: 'TESTE', type: 'GPON', requiresCert: true, locationId: 'REMOTO', clientCompany: 'CLARO', startDate: now, endDate: now, responsibleAnalystId: 'u7', status: TrainingStatus.PLANNED, createdAt: now, createdBy: 'SISTEMA' },
+];
+
+const generateTechs = () => {
+  const techs: Technician[] = [];
+  const distributions = [
+    { classId: 'class-test-001', count: 20 },
+    { classId: 'class-test-002', count: 15 },
+    { classId: 'class-test-003', count: 10 },
+    { classId: 'class-test-004', count: 5 },
+  ];
+
+  let globalId = 1;
+  distributions.forEach(dist => {
+    for (let i = 0; i < dist.count; i++) {
+      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      
+      // Escolher cidade aleatória do mockCities para garantir coerência
+      const cityObj = mockCities[Math.floor(Math.random() * mockCities.length)];
+      const cpf = generateCPF(100000000 + globalId);
+      
+      const statusList = [
+        CertificationProcessStatus.QUALIFIED_AWAITING,
+        CertificationProcessStatus.BACKLOG_PENDING,
+        CertificationProcessStatus.NOT_QUALIFIED_EAD,
+        CertificationProcessStatus.QUALIFIED_AWAITING
+      ];
+      const processStatus = statusList[Math.floor(Math.random() * statusList.length)];
+
+      techs.push({
+        id: `tech-test-${globalId}`,
+        groupId: 'G3',
+        name: `${firstName} ${lastName}`,
+        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
+        cpf: cpf,
+        phone: `(11) 9${Math.floor(10000000 + Math.random() * 90000000)}`,
+        city: cityObj.name,
+        state: cityObj.uf,
+        company: 'PARCEIRA TESTE',
+        externalLogin: `LOGIN${globalId}`,
+        solicitor: 'GESTOR TESTE',
+        certificationType: Math.random() > 0.5 ? 'PRESENCIAL' : 'VIRTUAL',
+        trainingClassId: dist.classId,
+        participationStatus: ParticipationStatus.PRESENT,
+        eadExamScore: 70 + Math.floor(Math.random() * 30),
+        finalTrainingScore: 70 + Math.floor(Math.random() * 30),
+        eadApprovalStatus: ApprovalStatus.APPROVED,
+        generalApprovalStatus: ApprovalStatus.APPROVED,
+        certificationProcessStatus: processStatus,
+        certificationReproofCount: 0,
+        generateCertification: true,
+        unique_key: cpf,
+        status_principal: processStatus === CertificationProcessStatus.BACKLOG_PENDING ? 'BACKLOG AGUARDANDO' : 'PENDENTE_CERTIFICAÇÃO'
+      });
+      globalId++;
+    }
+  });
+  return techs;
+};
+
+export const mockTechnicians: Technician[] = generateTechs();
 export const mockEvents: EventSchedule[] = [];

@@ -121,6 +121,21 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         ))}
       </div>
 
+      {/* Botão Temporário de Validação - Reset de Base */}
+      <div className="flex justify-end px-4 -mt-4">
+        <button 
+          onClick={() => {
+            if (window.confirm("Deseja realmente resetar a base de testes? Todos os dados atuais serão perdidos e a massa inicial será recriada.")) {
+              dataService.resetTestData();
+            }
+          }}
+          className="text-[8px] font-black uppercase tracking-widest text-slate-300 hover:text-claro-red transition-colors flex items-center gap-2"
+          title="Botão temporário para validação de dados"
+        >
+          <span className="text-[10px]">🔄</span> Resetar Base de Testes
+        </button>
+      </div>
+
       {/* Painel de Monitoramento de Demanda Presencial */}
       <div className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">

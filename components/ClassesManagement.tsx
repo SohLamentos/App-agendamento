@@ -69,6 +69,10 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   const [schedulingSummary, setSchedulingSummary] = useState<SchedulingSummary | null>(null);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   
+  // Confirmação de Aprovação
+  const [isApproveConfirmOpen, setIsApproveConfirmOpen] = useState(false);
+  const [techToApprove, setTechToApprove] = useState<Technician | null>(null);
+  
   // Feedback
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
@@ -266,13 +270,11 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
       return;
     }
 
-    if (confirm(`Mover técnico para APROVADOS?`)) {
-      const res = dataService.approveScheduledTechnician(tech.id);
-      if (res.success) {
-        setToast({message: 'Técnico movido para APROVADOS.', type: 'success'});
-      } else {
-        setToast({ message: `Falha ao aprovar: ${res.message || 'Erro de sistema'}`, type: 'error' });
-      }
+    const res = dataService.approveScheduledTechnician(tech.id);
+    if (res.success) {
+      setToast({message: 'Técnico movido para APROVADOS.', type: 'success'});
+    } else {
+      setToast({ message: `Falha ao aprovar: ${res.message || 'Erro de sistema'}`, type: 'error' });
     }
   };
 
@@ -568,7 +570,11 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
                 <td className="px-10 py-6 text-right flex items-center justify-end gap-2">
                   {(activeSubTab === 'scheduled' || activeSubTab === 'training_no_cert') && (
                     <button 
-                      onClick={(e) => { e.stopPropagation(); handleApproveTech(tech); }} 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setTechToApprove(tech);
+                        setIsApproveConfirmOpen(true);
+                      }} 
                       className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase hover:bg-emerald-700 transition-all shadow-sm"
                     >
                       Aprovar
@@ -970,6 +976,45 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
                  </div>
               </div>
               <button onClick={() => setIsSummaryModalOpen(false)} className="w-full py-5 border-2 border-slate-100 text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all font-black">ENTENDIDO, CONCLUIR</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Confirmação de Aprovação */}
+      {isApproveConfirmOpen && techToApprove && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
+          <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden border-t-8 border-emerald-600 animate-in zoom-in duration-300">
+            <div className="p-10 text-center space-y-6">
+              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">✅</span>
+              </div>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Confirmar Aprovação</h3>
+              <p className="text-sm font-bold text-slate-600 uppercase italic leading-relaxed">
+                Confirmar aprovação deste técnico?<br/>
+                <span className="text-emerald-600 font-black">{techToApprove.name}</span>
+              </p>
+              <div className="flex gap-4 pt-4">
+                <button 
+                  onClick={() => {
+                    setIsApproveConfirmOpen(false);
+                    setTechToApprove(null);
+                  }} 
+                  className="flex-1 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => {
+                    handleApproveTech(techToApprove);
+                    setIsApproveConfirmOpen(false);
+                    setTechToApprove(null);
+                  }} 
+                  className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-emerald-700 transition-all"
+                >
+                  Confirmar
+                </button>
+              </div>
             </div>
           </div>
         </div>
