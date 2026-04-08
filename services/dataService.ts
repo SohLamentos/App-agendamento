@@ -111,10 +111,20 @@ class DataService {
   const savedTestMode = localStorage.getItem('certitech_test_mode_v15');
   const savedAdjustments = localStorage.getItem('g_score_adjustments_v15');
 
-  // resto do seu código do constructor...
-} // 👈 FECHA AQUI
+  this.groups = savedGroups ? JSON.parse(savedGroups) : [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
+  this.groupRules = savedRules ? JSON.parse(savedRules) : [];
+  this.cities = savedCities ? JSON.parse(savedCities) : [];
+  this.users = savedUsers ? JSON.parse(savedUsers) : [];
+  this.technicians = savedTechs ? JSON.parse(savedTechs) : [];
+  this.trainingClasses = savedClasses ? JSON.parse(savedClasses) : [];
+  this.schedules = savedSchedules ? JSON.parse(savedSchedules) : [];
+  this.schedulesTeste = savedSchedulesTeste ? JSON.parse(savedSchedulesTeste) : [];
+  this.events = savedEvents ? JSON.parse(savedEvents) : [];
+  this.schedulingConfig = savedConfig ? JSON.parse(savedConfig) : {} as any;
+  this.testModeActive = savedTestMode === 'true';
+  this.scoreAdjustments = savedAdjustments ? JSON.parse(savedAdjustments) : [];
+}
 
-// 👇 AGORA SIM, FORA DO CONSTRUCTOR
 public async initializeFromCloud() {
   try {
     const cloudState = await loadAppState('G3');
