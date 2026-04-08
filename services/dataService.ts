@@ -135,20 +135,37 @@ class DataService {
     this.persist();
   }
 
-  private persist() {
-    localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
-    localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
-    localStorage.setItem('g_cities_v15', JSON.stringify(this.cities));
-    localStorage.setItem('g_users_v15', JSON.stringify(this.users));
-    localStorage.setItem('certitech_technicians_v15', JSON.stringify(this.technicians));
-    localStorage.setItem('certitech_classes_v15', JSON.stringify(this.trainingClasses));
-    localStorage.setItem('certitech_schedules_v15', JSON.stringify(this.schedules));
-    localStorage.setItem('certitech_schedules_teste_v15', JSON.stringify(this.schedulesTeste));
-    localStorage.setItem('certitech_events_v15', JSON.stringify(this.events));
-    localStorage.setItem('certitech_config_v15', JSON.stringify(this.schedulingConfig));
-    localStorage.setItem('certitech_test_mode_v15', this.testModeActive ? 'true' : 'false');
-    localStorage.setItem('g_score_adjustments_v15', JSON.stringify(this.scoreAdjustments));
-  }
+ private persist() {
+  localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
+  localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
+  localStorage.setItem('g_cities_v15', JSON.stringify(this.cities));
+  localStorage.setItem('g_users_v15', JSON.stringify(this.users));
+  localStorage.setItem('certitech_technicians_v15', JSON.stringify(this.technicians));
+  localStorage.setItem('certitech_classes_v15', JSON.stringify(this.trainingClasses));
+  localStorage.setItem('certitech_schedules_v15', JSON.stringify(this.schedules));
+  localStorage.setItem('certitech_schedules_teste_v15', JSON.stringify(this.schedulesTeste));
+  localStorage.setItem('certitech_events_v15', JSON.stringify(this.events));
+  localStorage.setItem('certitech_config_v15', JSON.stringify(this.schedulingConfig));
+  localStorage.setItem('certitech_test_mode_v15', this.testModeActive ? 'true' : 'false');
+  localStorage.setItem('g_score_adjustments_v15', JSON.stringify(this.scoreAdjustments));
+
+  void saveAppState('G3', {
+    groups: this.groups,
+    groupRules: this.groupRules,
+    cities: this.cities,
+    users: this.users,
+    technicians: this.technicians,
+    trainingClasses: this.trainingClasses,
+    schedules: this.schedules,
+    schedulesTeste: this.schedulesTeste,
+    events: this.events,
+    schedulingConfig: this.schedulingConfig,
+    testModeActive: this.testModeActive,
+    scoreAdjustments: this.scoreAdjustments,
+  }).catch((error) => {
+    console.error('Erro ao salvar no Supabase:', error);
+  });
+}
 
   public resetTestData() {
     // Botão temporário de validação: limpa as chaves v15 e recarrega para re-seedar os dados
