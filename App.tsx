@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState(dataService.getCurrentUser());
   const [activeTab, setActiveTab] = useState('overview');
   const [, setUpdateTrigger] = useState(0);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const handleRoleSwitch = (role: UserRole) => {
     if (currentUser.role === UserRole.ADMIN) {
@@ -35,17 +36,32 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    // Rotina Automática: Aprovar técnicos D+1 ao carregar o sistema
+    const initialize = async () => {
+      await dataService.initializeFromCloud();
+      setCurrentUser(dataService.getCurrentUser());
+      setIsInitializing(false);
+    };
+
+    initialize();
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
       dataService.processAutoApprovals();
     }
 
     const handleUpdate = () => {
       setUpdateTrigger(prev => prev + 1);
+      setCurrentUser(dataService.getCurrentUser());
     };
+
     window.addEventListener('data-updated', handleUpdate);
     return () => window.removeEventListener('data-updated', handleUpdate);
   }, [isAuthenticated]);
+
+  if (isInitializing) {
+    return <div>Carregando...</div>;
+  }
 
   if (!isAuthenticated) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
@@ -67,10 +83,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout 
-      user={currentUser} 
-      onRoleSwitch={handleRoleSwitch} 
-      activeTab={activeTab} 
+    <Layout
+      user={currentUser}
+      onRoleSwitch={handleRoleSwitch}
+      activeTab={activeTab}
       setActiveTab={setActiveTab}
     >
       {renderContent()}
