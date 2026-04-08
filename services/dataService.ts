@@ -245,18 +245,93 @@ class DataService {
     });
   }
 
-  public resetTestData() {
-    // Botão temporário de validação: limpa as chaves v15 e recarrega para re-seedar os dados
+ public async resetTestData() {
+  const context = this.getContext();
+  const currentUser = this.getCurrentUser();
+
+  try {
+    // 1) recria base padrão do grupo
+    this.groups = [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
+
+    this.groupRules = [{
+      groupId: 'G3',
+      presencialPerShift: 3,
+      virtualPerShift: 2,
+      schedulingWindowDays: 20,
+      active: true
+    }];
+
+    this.cities = mockCities.map(c => ({
+      id: c.id,
+      groupId: 'G3',
+      name: c.name,
+      uf: c.uf,
+      type: c.defaultType,
+      active: true,
+      responsibleAnalystIds: c.responsibleAnalystIds
+    }));
+
+    this.users = mockUsers;
+
+    // 2) limpa totalmente a base operacional
+    this.technicians = [];
+    this.trainingClasses = [];
+    this.schedules = [];
+    this.schedulesTeste = [];
+    this.events = [];
+    this.scoreAdjustments = [];
+
+    // 3) restaura config padrão
+    this.schedulingConfig = {
+      smartPrioritizationEnabled: true,
+      weightCity: 10,
+      weightPending: 5,
+      weightActive: 2
+    };
+
+    this.testModeActive = false;
+
+    // 4) limpa localStorage antigo
     const keys = [
-      'g_groups_v15', 'g_rules_v15', 'g_cities_v15', 'g_users_v15',
-      'certitech_technicians_v15', 'certitech_classes_v15',
-      'certitech_schedules_v15', 'certitech_schedules_teste_v15',
-      'certitech_events_v15', 'certitech_config_v15',
-      'certitech_test_mode_v15', 'g_score_adjustments_v15'
+      'g_groups_v15',
+      'g_rules_v15',
+      'g_cities_v15',
+      'g_users_v15',
+      'certitech_technicians_v15',
+      'certitech_classes_v15',
+      'certitech_schedules_v15',
+      'certitech_schedules_teste_v15',
+      'certitech_events_v15',
+      'certitech_config_v15',
+      'certitech_test_mode_v15',
+      'g_score_adjustments_v15'
     ];
+
     keys.forEach(k => localStorage.removeItem(k));
-    window.location.reload();
+
+    // 5) persiste novamente local + cloud
+    this.persist();
+
+    // 6) auditoria
+    auditService.logTicket({
+      user: currentUser,
+      action: 'RESET_BASE_TESTE',
+      targetType: 'Sistema',
+      targetValue: context.groupId,
+      reason: 'Reset completo da base de teste: técnicos, turmas, agendamentos, eventos, aprovações, reprovações e ajustes removidos.',
+      screen: 'Administração',
+      groupId: context.groupId
+    });
+
+    // 7) atualiza interface
+    window.dispatchEvent(new Event('data-updated'));
+
+    return { success: true, message: 'Base de teste resetada com sucesso.' };
+  } catch (error: any) {
+    console.error('Erro ao resetar base de teste:', error);
+    return { success: false, message: error?.message || 'Erro ao resetar base de teste.' };
   }
+}
 
   public safeNormalize(value: any): string {
     const s = (value === null || value === undefined) ? "" : String(value);
