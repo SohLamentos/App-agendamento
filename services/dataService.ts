@@ -1,5 +1,6 @@
 
 import { saveAppState, loadAppState } from './appStateService';
+import { supabase } from './supabase';
 import { 
   mockUsers, mockCities, mockClasses, mockTechnicians, mockEvents
 } from './mockData';
