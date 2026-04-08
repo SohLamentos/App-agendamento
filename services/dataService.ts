@@ -98,140 +98,126 @@ class DataService {
   private scoreAdjustments: VirtualScoreAdjustment[];
 
   constructor() {
-  const savedGroups = localStorage.getItem('g_groups_v15');
-  const savedRules = localStorage.getItem('g_rules_v15');
-  const savedCities = localStorage.getItem('g_cities_v15');
-  const savedUsers = localStorage.getItem('g_users_v15');
-  const savedTechs = localStorage.getItem('certitech_technicians_v15');
-  const savedClasses = localStorage.getItem('certitech_classes_v15');
-  const savedSchedules = localStorage.getItem('certitech_schedules_v15');
-  const savedSchedulesTeste = localStorage.getItem('certitech_schedules_teste_v15');
-  const savedEvents = localStorage.getItem('certitech_events_v15');
-  const savedConfig = localStorage.getItem('certitech_config_v15');
-  const savedTestMode = localStorage.getItem('certitech_test_mode_v15');
-  const savedAdjustments = localStorage.getItem('g_score_adjustments_v15');
+    const savedGroups = localStorage.getItem('g_groups_v15');
+    const savedRules = localStorage.getItem('g_rules_v15');
+    const savedCities = localStorage.getItem('g_cities_v15');
+    const savedUsers = localStorage.getItem('g_users_v15');
+    const savedTechs = localStorage.getItem('certitech_technicians_v15');
+    const savedClasses = localStorage.getItem('certitech_classes_v15');
+    const savedSchedules = localStorage.getItem('certitech_schedules_v15');
+    const savedSchedulesTeste = localStorage.getItem('certitech_schedules_teste_v15');
+    const savedEvents = localStorage.getItem('certitech_events_v15');
+    const savedConfig = localStorage.getItem('certitech_config_v15');
+    const savedTestMode = localStorage.getItem('certitech_test_mode_v15');
+    const savedAdjustments = localStorage.getItem('g_score_adjustments_v15');
 
-  this.groups = savedGroups ? JSON.parse(savedGroups) : [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
+    this.groups = savedGroups
+      ? JSON.parse(savedGroups)
+      : [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
 
-  this.groupRules = savedRules ? JSON.parse(savedRules) : [{
-    groupId: 'G3',
-    presencialPerShift: 3,
-    virtualPerShift: 2,
-    schedulingWindowDays: 20,
-    active: true
-  }];
+    this.groupRules = savedRules
+      ? JSON.parse(savedRules)
+      : [{
+          groupId: 'G3',
+          presencialPerShift: 3,
+          virtualPerShift: 2,
+          schedulingWindowDays: 20,
+          active: true
+        }];
 
-  this.cities = savedCities ? JSON.parse(savedCities) : mockCities.map(c => ({
-    id: c.id,
-    groupId: 'G3',
-    name: c.name,
-    uf: c.uf,
-    type: c.defaultType,
-    active: true,
-    responsibleAnalystIds: c.responsibleAnalystIds
-  }));
+    this.cities = savedCities
+      ? JSON.parse(savedCities)
+      : mockCities.map(c => ({
+          id: c.id,
+          groupId: 'G3',
+          name: c.name,
+          uf: c.uf,
+          type: c.defaultType,
+          active: true,
+          responsibleAnalystIds: c.responsibleAnalystIds
+        }));
 
-  this.users = savedUsers ? JSON.parse(savedUsers) : mockUsers;
-  this.technicians = (savedTechs && JSON.parse(savedTechs).length > 0) ? JSON.parse(savedTechs) : mockTechnicians;
-  this.trainingClasses = (savedClasses && JSON.parse(savedClasses).length > 0) ? JSON.parse(savedClasses) : mockClasses;
-  this.schedules = savedSchedules ? JSON.parse(savedSchedules) : [];
-  this.schedulesTeste = savedSchedulesTeste ? JSON.parse(savedSchedulesTeste) : [];
-  this.events = savedEvents ? JSON.parse(savedEvents) : [];
-
-  this.schedulingConfig = savedConfig
-    ? JSON.parse(savedConfig)
-    : { smartPrioritizationEnabled: true, weightCity: 10, weightPending: 5, weightActive: 2 };
-
-  this.testModeActive = savedTestMode === 'true';
-  this.scoreAdjustments = savedAdjustments ? JSON.parse(savedAdjustments) : [];
-}
-
-public async initializeFromCloud() {
-  try {
-    const cloudState = await loadAppState('G3');
-
-    if (!cloudState?.data) {
-      return false;
-    }
-
-    const payload = cloudState.data;
-
-    this.groups = payload.groups ?? this.groups;
-    this.groupRules = payload.groupRules ?? this.groupRules;
-    this.cities = payload.cities ?? this.cities;
-    this.users = payload.users ?? this.users;
-    this.technicians = payload.technicians ?? this.technicians;
-    this.trainingClasses = payload.trainingClasses ?? this.trainingClasses;
-    this.schedules = payload.schedules ?? this.schedules;
-    this.schedulesTeste = payload.schedulesTeste ?? this.schedulesTeste;
-    this.events = payload.events ?? this.events;
-    this.schedulingConfig = payload.schedulingConfig ?? this.schedulingConfig;
-    this.testModeActive = payload.testModeActive ?? this.testModeActive;
-    this.scoreAdjustments = payload.scoreAdjustments ?? this.scoreAdjustments;
-
-    this.persist();
-    return true;
-  } catch (error) {
-    console.error('Erro ao carregar do Supabase:', error);
-    return false;
-  }
-}
-
-    this.groups = savedGroups ? JSON.parse(savedGroups) : [{ id: 'G3', name: 'NACIONAL BASE', active: true }];
-    this.groupRules = savedRules ? JSON.parse(savedRules) : [{ groupId: 'G3', presencialPerShift: 3, virtualPerShift: 2, schedulingWindowDays: 20, active: true }];
-    this.cities = savedCities ? JSON.parse(savedCities) : mockCities.map(c => ({ 
-      id: c.id, 
-      groupId: 'G3', 
-      name: c.name, 
-      uf: c.uf, 
-      type: c.defaultType, 
-      active: true, 
-      responsibleAnalystIds: c.responsibleAnalystIds 
-    }));
     this.users = savedUsers ? JSON.parse(savedUsers) : mockUsers;
-    this.technicians = (savedTechs && JSON.parse(savedTechs).length > 0) ? JSON.parse(savedTechs) : mockTechnicians;
-    this.trainingClasses = (savedClasses && JSON.parse(savedClasses).length > 0) ? JSON.parse(savedClasses) : mockClasses;
+    this.technicians =
+      savedTechs && JSON.parse(savedTechs).length > 0
+        ? JSON.parse(savedTechs)
+        : mockTechnicians;
+    this.trainingClasses =
+      savedClasses && JSON.parse(savedClasses).length > 0
+        ? JSON.parse(savedClasses)
+        : mockClasses;
     this.schedules = savedSchedules ? JSON.parse(savedSchedules) : [];
     this.schedulesTeste = savedSchedulesTeste ? JSON.parse(savedSchedulesTeste) : [];
     this.events = savedEvents ? JSON.parse(savedEvents) : [];
-    this.schedulingConfig = savedConfig ? JSON.parse(savedConfig) : { smartPrioritizationEnabled: true, weightCity: 10, weightPending: 5, weightActive: 2 };
+    this.schedulingConfig = savedConfig
+      ? JSON.parse(savedConfig)
+      : { smartPrioritizationEnabled: true, weightCity: 10, weightPending: 5, weightActive: 2 };
     this.testModeActive = savedTestMode === 'true';
     this.scoreAdjustments = savedAdjustments ? JSON.parse(savedAdjustments) : [];
-
-    this.persist();
   }
 
- private persist() {
-  localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
-  localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
-  localStorage.setItem('g_cities_v15', JSON.stringify(this.cities));
-  localStorage.setItem('g_users_v15', JSON.stringify(this.users));
-  localStorage.setItem('certitech_technicians_v15', JSON.stringify(this.technicians));
-  localStorage.setItem('certitech_classes_v15', JSON.stringify(this.trainingClasses));
-  localStorage.setItem('certitech_schedules_v15', JSON.stringify(this.schedules));
-  localStorage.setItem('certitech_schedules_teste_v15', JSON.stringify(this.schedulesTeste));
-  localStorage.setItem('certitech_events_v15', JSON.stringify(this.events));
-  localStorage.setItem('certitech_config_v15', JSON.stringify(this.schedulingConfig));
-  localStorage.setItem('certitech_test_mode_v15', this.testModeActive ? 'true' : 'false');
-  localStorage.setItem('g_score_adjustments_v15', JSON.stringify(this.scoreAdjustments));
+  public async initializeFromCloud() {
+    try {
+      const cloudState = await loadAppState('G3');
 
-  void saveAppState('G3', {
-    groups: this.groups,
-    groupRules: this.groupRules,
-    cities: this.cities,
-    users: this.users,
-    technicians: this.technicians,
-    trainingClasses: this.trainingClasses,
-    schedules: this.schedules,
-    schedulesTeste: this.schedulesTeste,
-    events: this.events,
-    schedulingConfig: this.schedulingConfig,
-    testModeActive: this.testModeActive,
-    scoreAdjustments: this.scoreAdjustments,
-  }).catch((error) => {
-    console.error('Erro ao salvar no Supabase:', error);
-  });
-}
+      if (!cloudState?.data) {
+        return false;
+      }
+
+      const payload = cloudState.data;
+
+      this.groups = payload.groups ?? this.groups;
+      this.groupRules = payload.groupRules ?? this.groupRules;
+      this.cities = payload.cities ?? this.cities;
+      this.users = payload.users ?? this.users;
+      this.technicians = payload.technicians ?? this.technicians;
+      this.trainingClasses = payload.trainingClasses ?? this.trainingClasses;
+      this.schedules = payload.schedules ?? this.schedules;
+      this.schedulesTeste = payload.schedulesTeste ?? this.schedulesTeste;
+      this.events = payload.events ?? this.events;
+      this.schedulingConfig = payload.schedulingConfig ?? this.schedulingConfig;
+      this.testModeActive = payload.testModeActive ?? this.testModeActive;
+      this.scoreAdjustments = payload.scoreAdjustments ?? this.scoreAdjustments;
+
+      this.persist();
+      return true;
+    } catch (error) {
+      console.error('Erro ao carregar do Supabase:', error);
+      return false;
+    }
+  }
+
+  private persist() {
+    localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
+    localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
+    localStorage.setItem('g_cities_v15', JSON.stringify(this.cities));
+    localStorage.setItem('g_users_v15', JSON.stringify(this.users));
+    localStorage.setItem('certitech_technicians_v15', JSON.stringify(this.technicians));
+    localStorage.setItem('certitech_classes_v15', JSON.stringify(this.trainingClasses));
+    localStorage.setItem('certitech_schedules_v15', JSON.stringify(this.schedules));
+    localStorage.setItem('certitech_schedules_teste_v15', JSON.stringify(this.schedulesTeste));
+    localStorage.setItem('certitech_events_v15', JSON.stringify(this.events));
+    localStorage.setItem('certitech_config_v15', JSON.stringify(this.schedulingConfig));
+    localStorage.setItem('certitech_test_mode_v15', this.testModeActive ? 'true' : 'false');
+    localStorage.setItem('g_score_adjustments_v15', JSON.stringify(this.scoreAdjustments));
+
+    saveAppState('G3', {
+      groups: this.groups,
+      groupRules: this.groupRules,
+      cities: this.cities,
+      users: this.users,
+      technicians: this.technicians,
+      trainingClasses: this.trainingClasses,
+      schedules: this.schedules,
+      schedulesTeste: this.schedulesTeste,
+      events: this.events,
+      schedulingConfig: this.schedulingConfig,
+      testModeActive: this.testModeActive,
+      scoreAdjustments: this.scoreAdjustments,
+    }).catch((error) => {
+      console.error('Erro ao salvar no Supabase:', error);
+    });
+  }
 
   public resetTestData() {
     // Botão temporário de validação: limpa as chaves v15 e recarrega para re-seedar os dados
