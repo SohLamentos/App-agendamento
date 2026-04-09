@@ -71,6 +71,7 @@ const [improvisoReason, setImprovisoReason] = useState('');
       const timer = setTimeout(() => setToast(null), 3000);
       return () => clearTimeout(timer);
     }
+    
   }, [toast]);
 
   // Função auxiliar para garantir o cálculo da Segunda-Feira (ISO)
@@ -243,8 +244,6 @@ const setStatus = (title: string | null, shift: Shift = Shift.FULL_DAY, color?: 
       e.shift === Shift.FULL_DAY
   );
 
-  let splitFullDayBlock = false;
-
   if (title === 'IMPREVISTO' && !isImprovisoModal) {
     checkImprovisoShift(Shift.FULL_DAY);
     setImprovisoReason('');
@@ -284,16 +283,12 @@ const setStatus = (title: string | null, shift: Shift = Shift.FULL_DAY, color?: 
       shift: oppositeShift,
       color: existingFullDayBlock.color,
     });
-
-    splitFullDayBlock = true;
+  } else if (shift === Shift.FULL_DAY) {
+    dataService.removeEvent(selection.userId, selection.dateIso);
   }
 
   if (title === 'IMPREVISTO' && isImprovisoModal) {
     dataService.applyImprovisoCancellation(selection.userId, selection.dateIso, shift);
-  }
-
-  if (shift === Shift.FULL_DAY || splitFullDayBlock) {
-    dataService.removeEvent(selection.userId, selection.dateIso);
   }
 
   if (title) {
