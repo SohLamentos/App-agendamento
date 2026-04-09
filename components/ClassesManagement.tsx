@@ -79,7 +79,7 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   const analysts = useMemo(() => allUsers.filter(u => u.role === UserRole.ANALYST && u.active), [allUsers]);
 
   const refreshData = () => {
-    const handleRemoveTrainingClass = () => {
+   const handleRemoveTrainingClass = () => {
   if (!selectedClassId || selectedClassId === 'GLOBAL_BACKLOG') {
     setToast({ message: 'Selecione uma turma válida para remover.', type: 'error' });
     return;
