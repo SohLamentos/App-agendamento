@@ -88,11 +88,14 @@ const refreshData = () => {
 };
 
 //FILTRO
-  const handleExportScheduledTechnicians = () => {
+ const handleExportScheduledTechnicians = () => {
   try {
-    const scheduledTechs = filteredTechs.filter(
-      tech => activeSubTab === 'scheduled' && tech.scheduledCertificationId
-    );
+    if (activeSubTab !== 'scheduled') {
+      setToast({ message: 'Abra a aba AGENDADOS para exportar.', type: 'error' });
+      return;
+    }
+
+    const scheduledTechs = filteredTechs.filter(tech => tech.scheduledCertificationId);
 
     if (scheduledTechs.length === 0) {
       setToast({ message: 'Não há técnicos agendados para exportar.', type: 'error' });
@@ -100,57 +103,75 @@ const refreshData = () => {
     }
 
     const rows: any[][] = [];
-    const groupedByAnalyst: Record<string, any[]> = {};
+    const groupedByAnalystAndDate: Record<string, any[]> = {};
 
     scheduledTechs.forEach((tech) => {
       const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
-      if (!sch) return;
+      if (!sch || !sch.datetime) return;
 
       const analyst = allUsers.find(u => u.id === sch.analystId);
       const analystName = analyst?.fullName || analyst?.name || 'SEM ANALISTA';
+
+      const isoDate = sch.datetime.split('T')[0];
+      const [year, month, day] = isoDate.split('-');
+      const formattedDate = `${day}/${month}/${year}`;
+
+      // usa o horário bruto salvo, sem converter fuso
+      const rawTime = sch.datetime.includes('T')
+        ? sch.datetime.split('T')[1].substring(0, 5)
+        : 'N/D';
 
       const company = tech.company || 'N/D';
       const city = `${tech.city || ''}${tech.state ? ' / ' + tech.state : ''}`;
       const type = sch.type === ExpertiseType.PRESENTIAL ? 'PRESENCIAL' : 'VIRTUAL';
 
-      const dateObj = sch.datetime ? new Date(sch.datetime) : null;
-      const timeLabel = dateObj
-        ? dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-        : 'N/D';
+      const groupKey = `${analystName}__${isoDate}`;
 
-      if (!groupedByAnalyst[analystName]) {
-        groupedByAnalyst[analystName] = [];
+      if (!groupedByAnalystAndDate[groupKey]) {
+        groupedByAnalystAndDate[groupKey] = [];
       }
 
-      groupedByAnalyst[analystName].push({
+      groupedByAnalystAndDate[groupKey].push({
         analystName,
+        isoDate,
+        formattedDate,
         technician: tech.name || 'N/D',
         company,
         city,
         type,
-        timeLabel,
-        datetime: sch.datetime || ''
+        rawTime,
+        datetime: sch.datetime
       });
     });
 
-    Object.keys(groupedByAnalyst)
-      .sort((a, b) => a.localeCompare(b))
-      .forEach((analystName) => {
-        const items = groupedByAnalyst[analystName].sort((a, b) =>
+    Object.keys(groupedByAnalystAndDate)
+      .sort((a, b) => {
+        const [analystA, dateA] = a.split('__');
+        const [analystB, dateB] = b.split('__');
+
+        if (analystA !== analystB) {
+          return analystA.localeCompare(analystB);
+        }
+
+        return dateA.localeCompare(dateB);
+      })
+      .forEach((groupKey) => {
+        const items = groupedByAnalystAndDate[groupKey].sort((a, b) =>
           String(a.datetime).localeCompare(String(b.datetime))
         );
 
-        rows.push(['ANALISTA', 'NÚMERO', 'TECNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'HORÁRIO']);
+        rows.push(['ANALISTA', 'DATA', 'NÚMERO', 'TECNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'HORÁRIO']);
 
         items.forEach((item, index) => {
           rows.push([
-            analystName,
+            item.analystName,
+            item.formattedDate,
             index + 1,
             item.technician,
             item.company,
             item.city,
             item.type,
-            item.timeLabel
+            item.rawTime
           ]);
         });
 
@@ -160,13 +181,14 @@ const refreshData = () => {
     const ws = XLSX.utils.aoa_to_sheet(rows);
 
     ws['!cols'] = [
-      { wch: 24 },
-      { wch: 10 },
-      { wch: 35 },
-      { wch: 18 },
-      { wch: 22 },
-      { wch: 14 },
-      { wch: 10 }
+      { wch: 24 }, // ANALISTA
+      { wch: 12 }, // DATA
+      { wch: 10 }, // NÚMERO
+      { wch: 35 }, // TECNICO
+      { wch: 18 }, // EMPRESA
+      { wch: 24 }, // CIDADE
+      { wch: 14 }, // TIPO
+      { wch: 10 }  // HORÁRIO
     ];
 
     const wb = XLSX.utils.book_new();
