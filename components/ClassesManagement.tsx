@@ -427,6 +427,61 @@ useEffect(() => {
     return [];
   }, [withdrawType]);
 
+const getScheduleSlotLabel = (tech: Technician) => {
+  if (!tech.scheduledCertificationId) return null;
+
+  const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
+  if (!sch?.datetime || !sch?.analystId || !sch?.shift) return null;
+
+  const sameSlotSchedules = schedules
+    .filter(s => {
+      if (!s.datetime || !s.analystId || !s.shift) return false;
+
+      const sameDay = s.datetime.split('T')[0] === sch.datetime.split('T')[0];
+      const sameAnalyst = s.analystId === sch.analystId;
+      const sameShift = s.shift === sch.shift;
+
+      return sameDay && sameAnalyst && sameShift;
+    })
+    .sort((a, b) => {
+      const dateDiff = new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+  const slotIndex = sameSlotSchedules.findIndex(s => s.id === sch.id);
+  if (slotIndex < 0) return null;
+
+  const shiftBaseLabel =
+    sch.shift === Shift.MORNING
+      ? 'MANHÃ'
+      : sch.shift === Shift.AFTERNOON
+      ? 'TARDE'
+      : 'INTEGRAL';
+
+  return `${shiftBaseLabel} ${slotIndex + 1}`;
+};
+
+const getScheduleModeLabel = (sch: any) => {
+  const raw = String(sch?.type || '').toUpperCase();
+
+  if (raw.includes('PRES')) return 'PRESENCIAL';
+  if (raw.includes('VIRT')) return 'VIRTUAL';
+
+  return 'N/D';
+};
+
+const getPartnerLabel = (tech: Technician) => {
+  return (
+    (tech as any).companyPartner ||
+    (tech as any).empresaParceiro ||
+    (tech as any).partner ||
+    (tech as any).company ||
+    (tech as any).empresa ||
+    'N/D'
+  );
+};
+  
   return (
     <div className="space-y-8 animate-in fade-in duration-500 relative">
       <input 
@@ -587,21 +642,44 @@ useEffect(() => {
                   
                   {/* EXIBIÇÃO DE DETALHES DO AGENDAMENTO (DATA, PERÍODO, TECNOLOGIA) */}
                   {activeSubTab === 'scheduled' && tech.scheduledCertificationId && (
-                    (() => {
-                      const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
-                      if (!sch) return null;
-                      const formattedDate = sch.datetime ? new Date(sch.datetime).toLocaleDateString('pt-BR') : 'N/D';
-                      const shiftLabel = sch.shift === Shift.MORNING ? 'MANHÃ' : sch.shift === Shift.AFTERNOON ? 'TARDE' : sch.shift === Shift.FULL_DAY ? 'INTEGRAL' : 'N/D';
-                      const techType = sch.technology || 'N/D';
-                      return (
-                        <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-                          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[8px] font-black border border-slate-200 tracking-tighter">📅 {formattedDate}</span>
-                          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[8px] font-black border border-slate-200 tracking-tighter">⏰ {shiftLabel}</span>
-                          <span className="bg-claro-red/10 text-claro-red px-2 py-0.5 rounded text-[8px] font-black border border-claro-red/10 tracking-tighter">🏷️ {techType}</span>
-                        </div>
-                      );
-                    })()
-                  )}
+  (() => {
+    const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
+    if (!sch) return null;
+
+    const formattedDate = sch.datetime
+      ? new Date(sch.datetime).toLocaleDateString('pt-BR')
+      : 'N/D';
+
+    const slotLabel = getScheduleSlotLabel(tech);
+    const techType = sch.technology || 'N/D';
+    const modeLabel = getScheduleModeLabel(sch);
+    const partnerLabel = getPartnerLabel(tech);
+
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[8px] font-black border border-slate-200 tracking-tighter">
+          📅 {formattedDate}
+        </span>
+
+        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[8px] font-black border border-slate-200 tracking-tighter">
+          ⏰ {slotLabel || 'N/D'}
+        </span>
+
+        <span className="bg-claro-red/10 text-claro-red px-2 py-0.5 rounded text-[8px] font-black border border-claro-red/10 tracking-tighter">
+          🏷️ {techType}
+        </span>
+
+        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[8px] font-black border border-blue-100 tracking-tighter">
+          📍 {modeLabel}
+        </span>
+
+        <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[8px] font-black border border-amber-100 tracking-tighter">
+          🏢 {partnerLabel}
+        </span>
+      </div>
+    );
+  })()
+)}
 
                   {activeSubTab === 'technicians' && (
                     <p className="text-[9px] text-amber-600 font-black mt-0.5">PENDENTE_CERTIFICAÇÃO</p>
