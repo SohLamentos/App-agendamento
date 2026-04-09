@@ -11,6 +11,8 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   const [activeSubTab, setActiveSubTab] = useState<string>('technicians');
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [isUpdateCompaniesMode, setIsUpdateCompaniesMode] = useState(false);
   
   // Filtros Agendados
   const [filterAnalystId, setFilterAnalystId] = useState<string>('');
@@ -259,6 +261,37 @@ useEffect(() => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (isUpdateCompaniesMode) {
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    try {
+      const data = new Uint8Array(event.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const firstSheet = workbook.Sheets[firstSheetName];
+      const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+
+      const result = dataService.updateCompaniesFromSpreadsheet(rawData);
+
+      setToast({
+        message: `Parceiras atualizadas: ${result.updated}. Não localizados: ${result.notFound}.`,
+        type: 'success'
+      });
+
+      refreshData();
+    } catch (err: any) {
+      setToast({ message: 'Erro ao atualizar parceiras: ' + err.message, type: 'error' });
+    } finally {
+      setIsUpdateCompaniesMode(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+  return;
+}
+
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
@@ -414,11 +447,21 @@ useEffect(() => {
   };
 
   const openFilePickerTecnicos = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-      fileInputRef.current.click();
-    }
-  };
+  if (fileInputRef.current) {
+    setIsUpdateCompaniesMode(false);
+    fileInputRef.current.value = '';
+    fileInputRef.current.click();
+  }
+};
+
+const openFilePickerUpdateCompanies = () => {
+  setIsUpdateCompaniesMode(true);
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = '';
+    fileInputRef.current.click();
+  }
+};
 
   const subReasons = useMemo(() => {
     if (withdrawType === 'REPROVADOS') return ['NOSHOW', 'SEM EAD', 'REPROVADO EAD', 'REPROVADO VIRTUAL', 'REPROVADO CERTIFICAÇÃO'];
@@ -607,6 +650,13 @@ return (
               Gerar Agendamento
             </button>
           </div>
+
+          <button 
+  onClick={openFilePickerUpdateCompanies}
+  className="bg-amber-500 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-amber-600 shadow-lg transition-all"
+>
+  Atualizar Parceiras
+</button>
 
           <div className={`flex items-center gap-3 ${['pending', 'failed', 'analyst_cancelled', 'ineligible', 'training_no_cert'].includes(activeSubTab) ? 'flex' : 'hidden'}`}>
              <button 
