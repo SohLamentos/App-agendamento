@@ -87,6 +87,100 @@ const refreshData = () => {
   setSelectedTechIds(new Set());
 };
 
+//FILTRO
+  const handleExportScheduledTechnicians = () => {
+  try {
+    const scheduledTechs = filteredTechs.filter(
+      tech => activeSubTab === 'scheduled' && tech.scheduledCertificationId
+    );
+
+    if (scheduledTechs.length === 0) {
+      setToast({ message: 'Não há técnicos agendados para exportar.', type: 'error' });
+      return;
+    }
+
+    const rows: any[][] = [];
+    const groupedByAnalyst: Record<string, any[]> = {};
+
+    scheduledTechs.forEach((tech) => {
+      const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
+      if (!sch) return;
+
+      const analyst = allUsers.find(u => u.id === sch.analystId);
+      const analystName = analyst?.fullName || analyst?.name || 'SEM ANALISTA';
+
+      const company = tech.company || 'N/D';
+      const city = `${tech.city || ''}${tech.state ? ' / ' + tech.state : ''}`;
+      const type = sch.type === ExpertiseType.PRESENTIAL ? 'PRESENCIAL' : 'VIRTUAL';
+
+      const dateObj = sch.datetime ? new Date(sch.datetime) : null;
+      const timeLabel = dateObj
+        ? dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : 'N/D';
+
+      if (!groupedByAnalyst[analystName]) {
+        groupedByAnalyst[analystName] = [];
+      }
+
+      groupedByAnalyst[analystName].push({
+        analystName,
+        technician: tech.name || 'N/D',
+        company,
+        city,
+        type,
+        timeLabel,
+        datetime: sch.datetime || ''
+      });
+    });
+
+    Object.keys(groupedByAnalyst)
+      .sort((a, b) => a.localeCompare(b))
+      .forEach((analystName) => {
+        const items = groupedByAnalyst[analystName].sort((a, b) =>
+          String(a.datetime).localeCompare(String(b.datetime))
+        );
+
+        rows.push(['ANALISTA', 'NÚMERO', 'TECNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'HORÁRIO']);
+
+        items.forEach((item, index) => {
+          rows.push([
+            analystName,
+            index + 1,
+            item.technician,
+            item.company,
+            item.city,
+            item.type,
+            item.timeLabel
+          ]);
+        });
+
+        rows.push([]);
+      });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    ws['!cols'] = [
+      { wch: 24 },
+      { wch: 10 },
+      { wch: 35 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 14 },
+      { wch: 10 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Agendados');
+
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `agendados_${today}.xlsx`);
+
+    setToast({ message: 'Arquivo de agendados exportado com sucesso.', type: 'success' });
+  } catch (error: any) {
+    setToast({ message: `Erro ao exportar agendados: ${error.message}`, type: 'error' });
+  }
+};
+
 const handleRemoveTrainingClass = () => {
   if (!selectedClassId || selectedClassId === 'GLOBAL_BACKLOG') {
     setToast({ message: 'Selecione uma turma válida para remover.', type: 'error' });
@@ -585,6 +679,12 @@ return (
     >
       Remover Turma
     </button>
+            <button
+  onClick={handleExportScheduledTechnicians}
+  className="mt-5 bg-slate-900 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-black shadow-lg transition-all"
+>
+  Exportar Agendados
+</button>
 
             <button 
               onClick={() => dataService.downloadTemplate()} 
