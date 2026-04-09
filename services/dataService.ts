@@ -970,14 +970,43 @@ class DataService {
   existing.city = city;
   existing.company = companyPartner;
 
-  // Tenta encontrar o UF correto baseado na cidade
   const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
   if (cityMatch) existing.state = cityMatch.uf;
-  
+
   existing.status_principal = requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO";
   existing.generateCertification = requiresCert;
   updated++;
+} else {
+  const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
+  const tech: Technician = {
+    id: `tech-${Date.now()}-${Math.random()}`,
+    groupId: ctx.groupId,
+    name: name,
+    cpf: cleanCpf,
+    city: city,
+    state: cityMatch ? cityMatch.uf : 'RS',
+    email: '',
+    phone: '',
+    company: companyPartner,
+    externalLogin: '',
+    solicitor: '',
+    certificationType: 'VIRTUAL',
+    trainingClassId: '',
+    participationStatus: ParticipationStatus.ENROLLED,
+    eadExamScore: 0,
+    finalTrainingScore: 0,
+    eadApprovalStatus: ApprovalStatus.PENDING,
+    generalApprovalStatus: ApprovalStatus.PENDING,
+    certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
+    certificationReproofCount: 0,
+    generateCertification: requiresCert,
+    unique_key: cleanCpf,
+    status_principal: requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO"
+  };
+  this.technicians.push(tech);
+  inserted++;
 }
+
       } else {
         const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
         const tech: Technician = { 
@@ -1072,11 +1101,22 @@ class DataService {
       
       const inThisClass = this.technicians.find(t => t.cpf === cleanCpf && t.trainingClassId === classObj.id && t.groupId === ctx.groupId);
       
-      if (inThisClass) {
-        // Regra: Se CPF já existir na MESMA turma -> classificar como "Duplicado na Turma"
-        duplicatedInClass++;
-        return;
-      }
+    if (inThisClass) {
+  inThisClass.name = name;
+  inThisClass.city = city;
+  inThisClass.company = companyPartner;
+
+  const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
+  if (cityMatch) inThisClass.state = cityMatch.uf;
+
+  inThisClass.generateCertification = classObj.requiresCert;
+  inThisClass.status_principal = classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO";
+  inThisClass.technology = classObj.type;
+
+  updated++;
+  return;
+}
+      
 
       // Se CPF existir em outra turma: permitir novo registro vinculado a esta turma
       const inAnotherClass = this.technicians.find(t => t.cpf === cleanCpf && t.groupId === ctx.groupId);
