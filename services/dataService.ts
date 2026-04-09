@@ -963,9 +963,9 @@ class DataService {
       
       if (!cleanCpf) return;
 
-      const existing = this.technicians.find(t => t.cpf === cleanCpf && t.groupId === ctx.groupId);
-      
-      if (existing) {
+const existing = this.technicians.find(t => t.cpf === cleanCpf && t.groupId === ctx.groupId);
+
+if (existing) {
   existing.name = name;
   existing.city = city;
   existing.company = companyPartner;
@@ -1006,22 +1006,7 @@ class DataService {
   this.technicians.push(tech);
   inserted++;
 }
-
-      } else {
-        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
-        const tech: Technician = { 
-          id: `tech-${Date.now()}-${Math.random()}`, 
-          groupId: ctx.groupId, 
-          name: name, 
-          cpf: cleanCpf, 
-          city: city, 
-          state: cityMatch ? cityMatch.uf : 'RS', 
-          email: '', phone: '', company: companyPartner, externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: '', participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: requiresCert, unique_key: cleanCpf, 
-          status_principal: requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO"
-        };
-        this.technicians.push(tech);
-        inserted++;
-      }
+      
     });
     this.persist();
     window.dispatchEvent(new Event('data-updated'));
