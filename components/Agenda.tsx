@@ -307,12 +307,22 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] bg-amber-500 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">Visualizando Ambiente de Teste</div>
         )}
         <table className="w-full border-collapse table-fixed min-w-[1400px]">
-          <thead className="sticky top-0 z-30">
-            <tr className="bg-slate-900 text-white shadow-xl">
-              <th className="w-72 p-4 text-left font-black text-[11px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">Equipe Analistas</th>
-              {weekDates.map((d, idx) => <th key={idx} className="p-4 text-center font-black text-[11px] border-r border-white/10 uppercase tracking-widest bg-slate-900">{d.formatted}</th>)}
-            </tr>
-          </thead>
+          <thead>
+  <tr className="bg-slate-900 text-white shadow-xl">
+    <th className="w-72 p-4 text-left font-black text-[11px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
+      Equipe Analistas
+    </th>
+
+    {weekDates.map((d, idx) => (
+      <th
+        key={idx}
+        className="p-4 text-center font-black text-[11px] border-r border-white/10 uppercase tracking-widest bg-slate-900 sticky top-0 z-30"
+      >
+        {d.formatted}
+      </th>
+    ))}
+  </tr>
+</thead>
           <tbody>
             {analysts.map((analyst, aIdx) => (
               <React.Fragment key={analyst.id}>
