@@ -612,12 +612,7 @@ return (
             </button>
           </div>
 
-          <button 
-  onClick={openFilePickerUpdateCompanies}
-  className="bg-amber-500 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-amber-600 shadow-lg transition-all"
->
-  Atualizar Parceiras
-</button>
+        
 
           <div className={`flex items-center gap-3 ${['pending', 'failed', 'analyst_cancelled', 'ineligible', 'training_no_cert'].includes(activeSubTab) ? 'flex' : 'hidden'}`}>
              <button 
