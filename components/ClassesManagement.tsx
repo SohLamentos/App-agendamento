@@ -641,27 +641,48 @@ return (
             </select>
           </div>
 
-          <div className={`flex flex-wrap items-center gap-6 ${activeSubTab === 'scheduled' ? 'flex' : 'hidden'}`}>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Analista:</span>
-              <select 
-                className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 w-48 shadow-inner" 
-                value={filterAnalystId} 
-                onChange={e => setFilterAnalystId(e.target.value)}
-              >
-                <option value="">TODOS</option>
-                {analysts.map(a => <option key={a.id} value={a.id}>{a.fullName}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Intervalo (DE/ATÉ):</span>
-              <div className="flex gap-2">
-                <input type="date" className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 shadow-inner" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} />
-                <input type="date" className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 shadow-inner" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} />
-              </div>
-            </div>
-          </div>
-        </div>
+          className="bg-claro-red text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-claro-redHover shadow-lg transition-all"
+  <div className="flex flex-col">
+    <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Analista:</span>
+    <select 
+      className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 w-48 shadow-inner" 
+      value={filterAnalystId} 
+      onChange={e => setFilterAnalystId(e.target.value)}
+    >
+      <option value="">TODOS</option>
+      {analysts.map(a => <option key={a.id} value={a.id}>{a.fullName}</option>)}
+    </select>
+  </div>
+
+  <div className="flex flex-col">
+    <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Intervalo (DE/ATÉ):</span>
+    <div className="flex gap-2">
+      <input
+        type="date"
+        className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 shadow-inner"
+        value={filterDateStart}
+        onChange={e => setFilterDateStart(e.target.value)}
+      />
+      <input
+        type="date"
+        className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 shadow-inner"
+        value={filterDateEnd}
+        onChange={e => setFilterDateEnd(e.target.value)}
+      />
+    </div>
+  </div>
+
+  <div className="flex items-end">
+    <button
+      onClick={handleExportScheduledTechnicians}
+      className="bg-slate-900 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-black shadow-lg transition-all"
+    >
+      Exportar Agendados
+    </button>
+  </div>
+</div>
+
+      
 
         <div className="flex flex-wrap items-center gap-3">
           <div className={`flex flex-wrap items-center gap-3 ${activeSubTab === 'technicians' ? 'flex' : 'hidden'}`}>
@@ -679,13 +700,7 @@ return (
     >
       Remover Turma
     </button>
-            <button
-  onClick={handleExportScheduledTechnicians}
-  className="mt-5 bg-slate-900 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-black shadow-lg transition-all"
->
-  Exportar Agendados
-</button>
-
+           
             <button 
               onClick={() => dataService.downloadTemplate()} 
               className="bg-white text-slate-900 border-2 border-slate-100 text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:border-slate-300 shadow-sm transition-all"
