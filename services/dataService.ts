@@ -945,12 +945,14 @@ class DataService {
     const cpfIdx = headers.indexOf("CPF");
     const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
     const cityIdx = headers.indexOf("CIDADE");
+    const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
 
     raw.slice(1).forEach((row, index) => {
       if (!row || row.length === 0) return;
       
       const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
       const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
+      const companyPartner = companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
       
       const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(cpfIdx !== -1 ? row[cpfIdx] : null);
       
@@ -982,7 +984,7 @@ class DataService {
           cpf: cleanCpf, 
           city: city, 
           state: cityMatch ? cityMatch.uf : 'RS', 
-          email: '', phone: '', company: '', externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: '', participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: requiresCert, unique_key: cleanCpf, 
+          email: '', phone: '', company: companyPartner, externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: '', participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: requiresCert, unique_key: cleanCpf, 
           status_principal: requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO"
         };
         this.technicians.push(tech);
@@ -1045,12 +1047,16 @@ class DataService {
     const cpfIdx = headers.indexOf("CPF");
     const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
     const cityIdx = headers.indexOf("CIDADE");
+    const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
     
     raw.slice(1).forEach((row, index) => {
       if (!row || row.length === 0) return;
 
       const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
       const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
+      const companyPartner = companyIdx !== -1 
+  ? String(row[companyIdx] || "").trim().toUpperCase() 
+  : "";
       
       const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(cpfIdx !== -1 ? row[cpfIdx] : null);
       
@@ -1082,7 +1088,7 @@ class DataService {
           cpf: cleanCpf, 
           city: city, 
           state: cityMatch ? cityMatch.uf : 'RS', 
-          email: '', phone: '', company: '', externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
+          email: '', phone: '', company: companyPartner, externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
           status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
           technology: classObj.type
         };
@@ -1098,7 +1104,7 @@ class DataService {
           cpf: cleanCpf, 
           city: city, 
           state: cityMatch ? cityMatch.uf : 'RS', 
-          email: '', phone: '', company: '', externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
+          email: '', phone: '', company: companyPartner, externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
           status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
           technology: classObj.type
         };
