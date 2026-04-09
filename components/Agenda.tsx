@@ -233,61 +233,106 @@ return renderCard(displayTitle, color);
     setImprovisoShift(shift);
   };
 
-  const setStatus = (title: string | null, shift: Shift = Shift.FULL_DAY, color?: string) => {
-    if (!selection) return;
+const setStatus = (title: string | null, shift: Shift = Shift.FULL_DAY, color?: string) => {
+  if (!selection) return;
 
-    if (title === 'IMPREVISTO' && !isImprovisoModal) {
-  checkImprovisoShift(Shift.FULL_DAY);
-  setImprovisoReason('');
-  setIsImprovisoModal(true);
-  return;
-}
+  const existingFullDayBlock = events.find(
+    e =>
+      e.involvedUserIds.includes(selection.userId) &&
+      e.startDatetime.startsWith(selection.dateIso) &&
+      e.shift === Shift.FULL_DAY
+  );
 
-    if (title === 'OUTROS' && !isOutrosModalOpen) {
-      setOutrosReason('');
-      setOutrosColor(OUTROS_PALETTE[6].color);
-      setIsOutrosModalOpen(true);
-      return;
-    }
+  let splitFullDayBlock = false;
 
-    if (title === 'IMPREVISTO' && isImprovisoModal) {
-       dataService.applyImprovisoCancellation(selection.userId, selection.dateIso, shift);
-    }
+  if (title === 'IMPREVISTO' && !isImprovisoModal) {
+    checkImprovisoShift(Shift.FULL_DAY);
+    setImprovisoReason('');
+    setIsImprovisoModal(true);
+    return;
+  }
 
-    if (shift === Shift.FULL_DAY) {
-      dataService.removeEvent(selection.userId, selection.dateIso);
-    }
+  if (title === 'OUTROS' && !isOutrosModalOpen) {
+    setOutrosReason('');
+    setOutrosColor(OUTROS_PALETTE[6].color);
+    setIsOutrosModalOpen(true);
+    return;
+  }
 
-    if (title) {
-      const analyst = analysts.find(a => a.id === selection.userId);
-      const finalTitle =
-  title === 'OUTROS'
-    ? (outrosReason.trim() ? `OUTROS - ${outrosReason.trim()}` : 'OUTROS')
-    : title === 'IMPREVISTO'
-      ? (improvisoReason.trim() ? `IMPREVISTO - ${improvisoReason.trim()}` : 'IMPREVISTO')
-      : title.toUpperCase();
+  if (
+    title === 'IMPREVISTO' &&
+    existingFullDayBlock &&
+    shift !== Shift.FULL_DAY &&
+    (
+      existingFullDayBlock.title.toUpperCase().includes('TREINAMENTO') ||
+      existingFullDayBlock.title.toUpperCase().includes('OUTROS')
+    )
+  ) {
+    dataService.removeEvent(selection.userId, selection.dateIso);
 
-      dataService.addEvent({ 
-        id: `evt-${Date.now()}`,
-        groupId: analyst?.groupId || user.groupId || 'G3',
-        title: finalTitle, 
-        type: 'Other', 
-        startDatetime: `${selection.dateIso}T00:00:00Z`, 
-        endDatetime: `${selection.dateIso}T23:59:59Z`, 
-        involvedUserIds: [selection.userId], 
-        shift,
-        color: title === 'OUTROS' ? color : undefined
+    const oppositeShift =
+      shift === Shift.MORNING ? Shift.AFTERNOON : Shift.MORNING;
+
+    dataService.addEvent({
+      id: `evt-split-${Date.now()}`,
+      groupId: existingFullDayBlock.groupId,
+      title: existingFullDayBlock.title,
+      type: existingFullDayBlock.type,
+      startDatetime: existingFullDayBlock.startDatetime,
+      endDatetime: existingFullDayBlock.endDatetime,
+      involvedUserIds: existingFullDayBlock.involvedUserIds,
+      shift: oppositeShift,
+      color: existingFullDayBlock.color,
+    });
+
+    splitFullDayBlock = true;
+  }
+
+  if (title === 'IMPREVISTO' && isImprovisoModal) {
+    dataService.applyImprovisoCancellation(selection.userId, selection.dateIso, shift);
+  }
+
+  if (shift === Shift.FULL_DAY || splitFullDayBlock) {
+    dataService.removeEvent(selection.userId, selection.dateIso);
+  }
+
+  if (title) {
+    const analyst = analysts.find(a => a.id === selection.userId);
+
+    const finalTitle =
+      title === 'OUTROS'
+        ? (outrosReason.trim() ? `OUTROS - ${outrosReason.trim()}` : 'OUTROS')
+        : title === 'IMPREVISTO'
+          ? (improvisoReason.trim() ? `IMPREVISTO - ${improvisoReason.trim()}` : 'IMPREVISTO')
+          : title.toUpperCase();
+
+    dataService.addEvent({
+      id: `evt-${Date.now()}`,
+      groupId: analyst?.groupId || user.groupId || 'G3',
+      title: finalTitle,
+      type: 'Other',
+      startDatetime: `${selection.dateIso}T00:00:00Z`,
+      endDatetime: `${selection.dateIso}T23:59:59Z`,
+      involvedUserIds: [selection.userId],
+      shift,
+      color: title === 'OUTROS' ? color : undefined
+    });
+
+    if (title === 'IMPREVISTO') {
+      setToast({
+        message: `Imprevisto lançado e ${impactCount} técnicos cancelados.`,
+        type: 'success'
       });
-      if (title === 'IMPREVISTO') setToast({message: `Imprevisto lançado e ${impactCount} técnicos cancelados.`, type: 'success'});
-    } else if (title === null) {
-      dataService.removeEvent(selection.userId, selection.dateIso);
     }
+  } else if (title === null) {
+    dataService.removeEvent(selection.userId, selection.dateIso);
+  }
 
-    setSelection(null);
-setIsImprovisoModal(false);
-setImprovisoReason('');
-setIsOutrosModalOpen(false);
-  };
+  setSelection(null);
+  setIsImprovisoModal(false);
+  setImprovisoReason('');
+  setIsOutrosModalOpen(false);
+};
 
   return (
     <div className="flex flex-col space-y-6 h-full relative">
