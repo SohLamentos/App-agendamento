@@ -79,6 +79,42 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   const analysts = useMemo(() => allUsers.filter(u => u.role === UserRole.ANALYST && u.active), [allUsers]);
 
   const refreshData = () => {
+    const handleRemoveTrainingClass = () => {
+  if (!selectedClassId || selectedClassId === 'GLOBAL_BACKLOG') {
+    setToast({ message: 'Selecione uma turma válida para remover.', type: 'error' });
+    return;
+  }
+
+  const selectedClass = trainingClasses.find(c => c.id === selectedClassId);
+
+  if (!selectedClass) {
+    setToast({ message: 'Turma não encontrada.', type: 'error' });
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Deseja remover a turma "${selectedClass.title}" e TODOS os técnicos vinculados a ela?`
+  );
+
+  if (!confirmed) return;
+
+  const result = dataService.removeTrainingClassAndTechnicians(selectedClassId);
+
+  if (result.success) {
+    refreshData();
+    setSelectedClassId(null);
+
+    setToast({
+      message: `Turma removida com sucesso. ${result.removedTechniciansCount} técnico(s) removido(s).`,
+      type: 'success'
+    });
+  } else {
+    setToast({
+      message: result.message || 'Erro ao remover turma.',
+      type: 'error'
+    });
+  }
+};
     setTechnicians(dataService.getTechnicians());
     setTrainingClasses(dataService.getTrainingClasses());
     setSchedules(dataService.getSchedules());
@@ -474,6 +510,15 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
             >
               Inserir Turma
             </button>
+            {/* BOTÃO REMOVER */}
+    <button 
+      onClick={handleRemoveTrainingClass}
+      disabled={!selectedClassId || selectedClassId === 'GLOBAL_BACKLOG'}
+      className="bg-rose-600 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-rose-700 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Remover Turma
+    </button>
+
             <button 
               onClick={() => dataService.downloadTemplate()} 
               className="bg-white text-slate-900 border-2 border-slate-100 text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:border-slate-300 shadow-sm transition-all"
