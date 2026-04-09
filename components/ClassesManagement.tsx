@@ -111,6 +111,8 @@ const refreshData = () => {
 
       const analyst = allUsers.find(u => u.id === sch.analystId);
       const analystName = analyst?.fullName || analyst?.name || 'SEM ANALISTA';
+        const trainingClass = trainingClasses.find(c => c.id === tech.trainingClassId);
+  const classTitle = trainingClass?.title || 'SEM TURMA';
 
       const isoDate = sch.datetime.split('T')[0];
       const [year, month, day] = isoDate.split('-');
@@ -130,16 +132,17 @@ const refreshData = () => {
       }
 
       groupedByAnalystAndDate[groupKey].push({
-        analystName,
-        isoDate,
-        formattedDate,
-        technician: tech.name || 'N/D',
-        company,
-        city,
-        type,
-        rawTime,
-        datetime: sch.datetime
-      });
+  analystName,
+  isoDate,
+  formattedDate,
+  classTitle,
+  technician: tech.name || 'N/D',
+  company,
+  city,
+  type,
+  rawTime,
+  datetime: sch.datetime
+});
     });
 
     Object.keys(groupedByAnalystAndDate)
@@ -158,19 +161,20 @@ const refreshData = () => {
           String(a.datetime).localeCompare(String(b.datetime))
         );
 
-        rows.push(['ANALISTA', 'DATA', 'NÚMERO', 'TECNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'HORÁRIO']);
+        rows.push(['ANALISTA', 'DATA', 'NÚMERO', 'TURMA', 'TECNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'HORÁRIO']);
 
         items.forEach((item, index) => {
           rows.push([
-            item.analystName,
-            item.formattedDate,
-            index + 1,
-            item.technician,
-            item.company,
-            item.city,
-            item.type,
-            item.rawTime
-          ]);
+  item.analystName,
+  item.formattedDate,
+  index + 1,
+  item.classTitle,
+  item.technician,
+  item.company,
+  item.city,
+  item.type,
+  item.rawTime
+]);
         });
 
         rows.push([]);
@@ -179,15 +183,16 @@ const refreshData = () => {
     const ws = XLSX.utils.aoa_to_sheet(rows);
 
     ws['!cols'] = [
-      { wch: 24 }, // ANALISTA
-      { wch: 12 }, // DATA
-      { wch: 10 }, // NÚMERO
-      { wch: 35 }, // TECNICO
-      { wch: 18 }, // EMPRESA
-      { wch: 24 }, // CIDADE
-      { wch: 14 }, // TIPO
-      { wch: 10 }  // HORÁRIO
-    ];
+  { wch: 24 }, // ANALISTA
+  { wch: 12 }, // DATA
+  { wch: 10 }, // NÚMERO
+  { wch: 38 }, // TURMA
+  { wch: 35 }, // TECNICO
+  { wch: 18 }, // EMPRESA
+  { wch: 24 }, // CIDADE
+  { wch: 14 }, // TIPO
+  { wch: 10 }  // HORÁRIO
+];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Agendados');
