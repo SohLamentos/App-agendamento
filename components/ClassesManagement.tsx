@@ -481,8 +481,16 @@ const getPartnerLabel = (tech: Technician) => {
     'N/D'
   );
 };
+
+const getAnalystName = (sch: any) => {
+  if (!sch?.analystId) return 'N/D';
+
+  const analyst = allUsers.find(u => u.id === sch.analystId);
+
+  return analyst?.fullName || analyst?.name || 'N/D';
+};
   
-  return (
+return (
     <div className="space-y-8 animate-in fade-in duration-500 relative">
       <input 
         type="file" 
@@ -650,10 +658,11 @@ const getPartnerLabel = (tech: Technician) => {
       ? new Date(sch.datetime).toLocaleDateString('pt-BR')
       : 'N/D';
 
-    const slotLabel = getScheduleSlotLabel(tech);
-    const techType = sch.technology || 'N/D';
-    const modeLabel = getScheduleModeLabel(sch);
-    const partnerLabel = getPartnerLabel(tech);
+   const slotLabel = getScheduleSlotLabel(tech);
+const techType = sch.technology || 'N/D';
+const modeLabel = getScheduleModeLabel(sch);
+const partnerLabel = getPartnerLabel(tech);
+const analystName = getAnalystName(sch);
 
     return (
       <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
@@ -676,6 +685,11 @@ const getPartnerLabel = (tech: Technician) => {
         <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[8px] font-black border border-amber-100 tracking-tighter">
           🏢 {partnerLabel}
         </span>
+        
+        <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-[8px] font-black border border-purple-100 tracking-tighter">
+  👤 {analystName}
+</span>
+        
       </div>
     );
   })()
