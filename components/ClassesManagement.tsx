@@ -73,13 +73,20 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   const [isApproveConfirmOpen, setIsApproveConfirmOpen] = useState(false);
   const [techToApprove, setTechToApprove] = useState<Technician | null>(null);
   
-  // Feedback
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+// Feedback
+const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-  const analysts = useMemo(() => allUsers.filter(u => u.role === UserRole.ANALYST && u.active), [allUsers]);
+const analysts = useMemo(() => allUsers.filter(u => u.role === UserRole.ANALYST && u.active), [allUsers]);
 
-  const refreshData = () => {
-   const handleRemoveTrainingClass = () => {
+const refreshData = () => {
+  setTechnicians(dataService.getTechnicians());
+  setTrainingClasses(dataService.getTrainingClasses());
+  setSchedules(dataService.getSchedules());
+  setAllUsers(dataService.getUsers());
+  setSelectedTechIds(new Set());
+};
+
+const handleRemoveTrainingClass = () => {
   if (!selectedClassId || selectedClassId === 'GLOBAL_BACKLOG') {
     setToast({ message: 'Selecione uma turma válida para remover.', type: 'error' });
     return;
@@ -103,7 +110,6 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   if (result.success) {
     refreshData();
     setSelectedClassId(null);
-
     setToast({
       message: `Turma removida com sucesso. ${result.removedTechniciansCount} técnico(s) removido(s).`,
       type: 'success'
@@ -115,24 +121,18 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
     });
   }
 };
-    setTechnicians(dataService.getTechnicians());
-    setTrainingClasses(dataService.getTrainingClasses());
-    setSchedules(dataService.getSchedules());
-    setAllUsers(dataService.getUsers());
-    setSelectedTechIds(new Set());
-  };
 
-  useEffect(() => {
-    window.addEventListener('data-updated', refreshData);
-    return () => window.removeEventListener('data-updated', refreshData);
-  }, []);
+useEffect(() => {
+  window.addEventListener('data-updated', refreshData);
+  return () => window.removeEventListener('data-updated', refreshData);
+}, []);
 
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
+useEffect(() => {
+  if (toast) {
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }
+}, [toast]);
 
   // Inteligência do Dropdown de Turmas (LISTAR APENAS TURMAS COM TÉCNICOS NA FILA ATUAL)
   const availableClassesForFilter = useMemo(() => {
