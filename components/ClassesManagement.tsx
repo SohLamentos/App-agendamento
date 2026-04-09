@@ -117,9 +117,7 @@ const refreshData = () => {
       const formattedDate = `${day}/${month}/${year}`;
 
       // usa o horário bruto salvo, sem converter fuso
-      const rawTime = sch.datetime.includes('T')
-        ? sch.datetime.split('T')[1].substring(0, 5)
-        : 'N/D';
+      const rawTime = getScheduledExportTime(tech);
 
       const company = tech.company || 'N/D';
       const city = `${tech.city || ''}${tech.state ? ' / ' + tech.state : ''}`;
@@ -608,6 +606,61 @@ const getAnalystName = (sch: any) => {
   const analyst = allUsers.find(u => u.id === sch.analystId);
 
   return analyst?.fullName || analyst?.name || 'N/D';
+};
+
+const getScheduledExportTime = (tech: Technician) => {
+  if (!tech.scheduledCertificationId) return 'N/D';
+
+  const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
+  if (!sch?.datetime || !sch?.analystId || !sch?.shift) return 'N/D';
+
+  const sameSlotSchedules = schedules
+    .filter(s => {
+      if (!s.datetime || !s.analystId || !s.shift) return false;
+
+      const sameDay = s.datetime.split('T')[0] === sch.datetime.split('T')[0];
+      const sameAnalyst = s.analystId === sch.analystId;
+      const sameShift = s.shift === sch.shift;
+
+      return sameDay && sameAnalyst && sameShift;
+    })
+    .sort((a, b) => {
+      const dateDiff = new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+  const slotIndex = sameSlotSchedules.findIndex(s => s.id === sch.id);
+  if (slotIndex < 0) return 'N/D';
+
+  const position = slotIndex + 1;
+  const isPresential = sch.type === ExpertiseType.PRESENTIAL;
+
+  if (isPresential) {
+    if (sch.shift === Shift.MORNING) {
+      if (position === 1) return '09:00';
+      if (position === 2) return '10:00';
+      if (position === 3) return '11:00';
+    }
+
+    if (sch.shift === Shift.AFTERNOON) {
+      if (position === 1) return '14:00';
+      if (position === 2) return '15:00';
+      if (position === 3) return '16:00';
+    }
+  } else {
+    if (sch.shift === Shift.MORNING) {
+      if (position === 1) return '09:30';
+      if (position === 2) return '10:30';
+    }
+
+    if (sch.shift === Shift.AFTERNOON) {
+      if (position === 1) return '14:30';
+      if (position === 2) return '15:30';
+    }
+  }
+
+  return 'N/D';
 };
   
 return (
