@@ -39,8 +39,9 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
   const [selection, setSelection] = useState<Selection | null>(null);
   
   const [isImprovisoModal, setIsImprovisoModal] = useState(false);
-  const [improvisoShift, setImprovisoShift] = useState<Shift>(Shift.MORNING);
-  const [impactCount, setImpactCount] = useState(0);
+const [improvisoShift, setImprovisoShift] = useState<Shift>(Shift.MORNING);
+const [impactCount, setImpactCount] = useState(0);
+const [improvisoReason, setImprovisoReason] = useState('');
 
   const [isOutrosModalOpen, setIsOutrosModalOpen] = useState(false);
   const [outrosReason, setOutrosReason] = useState('');
@@ -152,8 +153,14 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
       }
       else if (title.includes('TREINAMENTO')) color = COLORS.TREINAMENTO;
 
-      const displayTitle = title.includes('OUTROS - ') ? title.replace('OUTROS - ', '') : title;
-      return renderCard(displayTitle, color);
+      const displayTitle =
+  title.includes('OUTROS - ')
+    ? title.replace('OUTROS - ', '')
+    : title.includes('IMPREVISTO - ')
+      ? title.replace('IMPREVISTO - ', '')
+      : title;
+
+return renderCard(displayTitle, color);
     }
 
     const morningBlock = dayBlocks.find(b => b.shift === Shift.MORNING);
@@ -165,11 +172,33 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
     return (
       <div className="flex flex-col h-full w-full overflow-hidden">
         <div className="flex-1 flex overflow-hidden border-b border-white/20">
-          {morningBlock ? renderCard(morningBlock.title.replace('OUTROS - ', ''), morningBlock.color || (morningBlock.title.includes('FÉRIAS') ? COLORS.FERIAS : morningBlock.title.includes('FOLGA') ? COLORS.FOLGA : morningBlock.title.includes('OUTROS') ? COLORS.OUTROS : COLORS.BLOQUEIO)) : 
+          {morningBlock ? renderCard(
+  morningBlock.title
+    .replace('OUTROS - ', '')
+    .replace('IMPREVISTO - ', ''),
+  morningBlock.color || (
+    morningBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
+    morningBlock.title.includes('FOLGA') ? COLORS.FOLGA :
+    morningBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
+    morningBlock.title.includes('OUTROS') ? COLORS.OUTROS :
+    COLORS.BLOQUEIO
+  )
+) : 
            morningSchs.length > 0 ? renderCard(formatScheduleTitle(morningSchs)!, morningSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL) : null}
         </div>
         <div className="flex-1 flex overflow-hidden">
-          {afternoonBlock ? renderCard(afternoonBlock.title.replace('OUTROS - ', ''), afternoonBlock.color || (afternoonBlock.title.includes('FÉRIAS') ? COLORS.FERIAS : afternoonBlock.title.includes('FOLGA') ? COLORS.FOLGA : afternoonBlock.title.includes('OUTROS') ? COLORS.OUTROS : COLORS.BLOQUEIO)) : 
+          {afternoonBlock ? renderCard(
+  afternoonBlock.title
+    .replace('OUTROS - ', '')
+    .replace('IMPREVISTO - ', ''),
+  afternoonBlock.color || (
+    afternoonBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
+    afternoonBlock.title.includes('FOLGA') ? COLORS.FOLGA :
+    afternoonBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
+    afternoonBlock.title.includes('OUTROS') ? COLORS.OUTROS :
+    COLORS.BLOQUEIO
+  )
+) : 
            afternoonSchs.length > 0 ? renderCard(formatScheduleTitle(afternoonSchs)!, afternoonSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL) : null}
         </div>
       </div>
@@ -208,10 +237,11 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
     if (!selection) return;
 
     if (title === 'IMPREVISTO' && !isImprovisoModal) {
-      checkImprovisoShift(Shift.FULL_DAY);
-      setIsImprovisoModal(true);
-      return;
-    }
+  checkImprovisoShift(Shift.FULL_DAY);
+  setImprovisoReason('');
+  setIsImprovisoModal(true);
+  return;
+}
 
     if (title === 'OUTROS' && !isOutrosModalOpen) {
       setOutrosReason('');
@@ -230,9 +260,12 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
 
     if (title) {
       const analyst = analysts.find(a => a.id === selection.userId);
-      const finalTitle = title === 'OUTROS' 
-        ? (outrosReason.trim() ? `OUTROS - ${outrosReason.trim()}` : 'OUTROS')
-        : title.toUpperCase();
+      const finalTitle =
+  title === 'OUTROS'
+    ? (outrosReason.trim() ? `OUTROS - ${outrosReason.trim()}` : 'OUTROS')
+    : title === 'IMPREVISTO'
+      ? (improvisoReason.trim() ? `IMPREVISTO - ${improvisoReason.trim()}` : 'IMPREVISTO')
+      : title.toUpperCase();
 
       dataService.addEvent({ 
         id: `evt-${Date.now()}`,
@@ -251,8 +284,9 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
     }
 
     setSelection(null);
-    setIsImprovisoModal(false);
-    setIsOutrosModalOpen(false);
+setIsImprovisoModal(false);
+setImprovisoReason('');
+setIsOutrosModalOpen(false);
   };
 
   return (
@@ -397,7 +431,22 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
                   <button onClick={() => checkImprovisoShift(Shift.AFTERNOON)} className={`w-full p-4 rounded-2xl border-2 font-black text-[11px] uppercase transition-all ${improvisoShift === Shift.AFTERNOON ? 'border-[#6A1B9A] bg-[#6A1B9A]/10 text-[#6A1B9A]' : 'border-slate-100 text-slate-400'}`}>Tarde</button>
                   <button onClick={() => checkImprovisoShift(Shift.FULL_DAY)} className={`w-full p-4 rounded-2xl border-2 font-black text-[11px] uppercase transition-all ${improvisoShift === Shift.FULL_DAY ? 'border-[#6A1B9A] bg-[#6A1B9A]/10 text-[#6A1B9A]' : 'border-slate-100 text-slate-400'}`}>Dia Inteiro</button>
                </div>
-               
+
+<div className="space-y-1 pt-2">
+  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+    Descreva o imprevisto
+  </label>
+  <input
+    type="text"
+    maxLength={150}
+    autoFocus
+    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3 text-sm font-bold outline-none focus:border-[#6A1B9A] transition-all"
+    placeholder="EX: ADM, REUNIÃO, APOIO EXTERNO..."
+    value={improvisoReason}
+    onChange={(e) => setImprovisoReason(e.target.value)}
+  />
+</div>
+              
                {impactCount > 0 && (
                  <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 animate-in shake duration-500">
                     <p className="text-[10px] font-black text-rose-600 uppercase leading-tight tracking-tighter">
@@ -407,7 +456,15 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
                )}
             </div>
             <div className="flex gap-4 p-8 pt-0">
-              <button onClick={() => setIsImprovisoModal(false)} className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Voltar</button>
+              <button
+  onClick={() => {
+    setIsImprovisoModal(false);
+    setImprovisoReason('');
+  }}
+  className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest"
+>
+  Voltar
+</button>
               <button onClick={() => setStatus('IMPREVISTO', improvisoShift)} className="flex-1 py-4 bg-[#6A1B9A] text-white text-xs font-black uppercase rounded-2xl shadow-xl tracking-widest">Confirmar</button>
             </div>
           </div>
