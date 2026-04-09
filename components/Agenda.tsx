@@ -302,8 +302,8 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
         </div>
       </div>
 
-      <div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-auto flex-1 relative no-scrollbar transition-colors ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>
-        {isTestMode && (
+<div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-y-auto overflow-x-auto flex-1 relative no-scrollbar transition-colors max-h-[calc(100vh-220px)] ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>
+      {isTestMode && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] bg-amber-500 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">Visualizando Ambiente de Teste</div>
         )}
         <table className="w-full border-collapse table-fixed min-w-[1400px]">
