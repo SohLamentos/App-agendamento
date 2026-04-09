@@ -931,7 +931,65 @@ class DataService {
 
     return { cpf: padded };
   }
+public updateCompaniesFromSpreadsheet(raw: any[][]) {
+  const ctx = this.getContext();
+  let updated = 0;
+  let notFound = 0;
+  const errors: ImportError[] = [];
 
+  const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
+  const cpfIdx = headers.indexOf("CPF");
+  const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
+
+  raw.slice(1).forEach((row, index) => {
+    if (!row || row.length === 0) return;
+
+    const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(
+      cpfIdx !== -1 ? row[cpfIdx] : null
+    );
+
+    if (cpfError) {
+      errors.push({
+        line: index + 2,
+        field: "CPF",
+        reason: cpfError,
+        value: cpfIdx !== -1 ? row[cpfIdx] : null
+      });
+      return;
+    }
+
+    if (!cleanCpf) return;
+
+    const companyPartner =
+      companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
+
+    const existingTechs = this.technicians.filter(
+      t => t.cpf === cleanCpf && t.groupId === ctx.groupId
+    );
+
+    if (existingTechs.length === 0) {
+      notFound++;
+      return;
+    }
+
+    existingTechs.forEach(t => {
+      t.company = companyPartner;
+    });
+
+    updated += existingTechs.length;
+  });
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+
+  return {
+    success: true,
+    updated,
+    notFound,
+    errors
+  };
+}
+  
   public importTechniciansSimple(raw: any[][], requiresCert: boolean): ImportResult {
     const ctx = this.getContext();
     let inserted = 0;
