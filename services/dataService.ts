@@ -418,13 +418,21 @@ class DataService {
     );
 
     // Remove agendamentos
-    this.schedules = this.schedules.filter(
-      s =>
-        !technicianIdsToRemove.has(s.technicianId) &&
-        s.trainingClassId !== trainingClassId
-    );
+    if (this.testModeActive) {
+      this.schedulesTeste = this.schedulesTeste.filter(
+        s =>
+          !technicianIdsToRemove.has(s.technicianId) &&
+          !(s.trainingClassId === trainingClassId && s.groupId === context.groupId)
+      );
+    } else {
+      this.schedules = this.schedules.filter(
+        s =>
+          !technicianIdsToRemove.has(s.technicianId) &&
+          !(s.trainingClassId === trainingClassId && s.groupId === context.groupId)
+      );
+    }
 
-    // Salva no storage (importante no seu projeto)
+    // Salva no storage
     this.persist();
 
     return {
