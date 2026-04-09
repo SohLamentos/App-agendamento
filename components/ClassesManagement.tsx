@@ -682,7 +682,7 @@ return (
     </button>
   </div>
 </div>
-      
+      </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className={`flex flex-wrap items-center gap-3 ${activeSubTab === 'technicians' ? 'flex' : 'hidden'}`}>
