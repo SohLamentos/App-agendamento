@@ -966,15 +966,18 @@ class DataService {
       const existing = this.technicians.find(t => t.cpf === cleanCpf && t.groupId === ctx.groupId);
       
       if (existing) {
-        existing.name = name;
-        existing.city = city;
-        // Tenta encontrar o UF correto baseado na cidade
-        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
-        if (cityMatch) existing.state = cityMatch.uf;
-        
-        existing.status_principal = requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO";
-        existing.generateCertification = requiresCert;
-        updated++;
+  existing.name = name;
+  existing.city = city;
+  existing.company = companyPartner;
+
+  // Tenta encontrar o UF correto baseado na cidade
+  const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
+  if (cityMatch) existing.state = cityMatch.uf;
+  
+  existing.status_principal = requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO";
+  existing.generateCertification = requiresCert;
+  updated++;
+}
       } else {
         const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
         const tech: Technician = { 
