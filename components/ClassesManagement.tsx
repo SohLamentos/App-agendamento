@@ -641,7 +641,8 @@ return (
             </select>
           </div>
 
-          className="bg-claro-red text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-claro-redHover shadow-lg transition-all"
+  
+<div className={`flex items-end gap-6 ${activeSubTab === 'scheduled' ? 'flex' : 'hidden'}`}>
   <div className="flex flex-col">
     <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Analista:</span>
     <select 
@@ -675,13 +676,12 @@ return (
   <div className="flex items-end">
     <button
       onClick={handleExportScheduledTechnicians}
-      className="bg-slate-900 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-black shadow-lg transition-all"
+      className="bg-claro-red text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-claro-redHover shadow-lg transition-all"
     >
       Exportar Agendados
     </button>
   </div>
 </div>
-
       
 
         <div className="flex flex-wrap items-center gap-3">
