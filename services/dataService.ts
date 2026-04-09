@@ -382,6 +382,65 @@ class DataService {
   }
   getTechnicians() { return this.technicians.filter(t => t.groupId === this.getContext().groupId); }
   getTrainingClasses() { return this.trainingClasses.filter(c => c.groupId === this.getContext().groupId); }
+  removeTrainingClassAndTechnicians(trainingClassId: string) {
+  try {
+    const context = this.getContext();
+
+    const technicians = this.getTechnicians();
+    const trainingClasses = this.getTrainingClasses();
+    const schedules = this.getSchedules();
+
+    const trainingClassToRemove = trainingClasses.find(
+      c => c.id === trainingClassId
+    );
+
+    if (!trainingClassToRemove) {
+      throw new Error('Turma não encontrada.');
+    }
+
+    // Técnicos da turma
+    const techniciansToRemove = technicians.filter(
+      t => t.trainingClassId === trainingClassId
+    );
+
+    const technicianIdsToRemove = new Set(
+      techniciansToRemove.map(t => t.id)
+    );
+
+    // Remove turma
+    this.trainingClasses = this.trainingClasses.filter(
+      c => !(c.id === trainingClassId && c.groupId === context.groupId)
+    );
+
+    // Remove técnicos
+    this.technicians = this.technicians.filter(
+      t => !(t.trainingClassId === trainingClassId && t.groupId === context.groupId)
+    );
+
+    // Remove agendamentos
+    this.schedules = this.schedules.filter(
+      s =>
+        !technicianIdsToRemove.has(s.technicianId) &&
+        s.trainingClassId !== trainingClassId
+    );
+
+    // Salva no storage (importante no seu projeto)
+    this.persist();
+
+    return {
+      success: true,
+      removedTechniciansCount: techniciansToRemove.length
+    };
+
+  } catch (error) {
+    console.error('Erro ao remover turma:', error);
+
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Erro ao remover turma'
+    };
+  }
+}
   getGroups() { return this.groups; }
   getGroupRules() { return this.groupRules; }
   getScoreAdjustments() { return this.scoreAdjustments.filter(a => a.groupId === this.getContext().groupId); }
