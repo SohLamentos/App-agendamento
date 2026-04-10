@@ -465,19 +465,21 @@ let relatedSchedules = sameAnalystSchedules.filter((s: any) => {
 });
 
 if (!relatedSchedules.length) {
-  relatedSchedules = sameAnalystSchedules.filter((s: any) => {
-    const scheduleShift = String(s?.shift ?? '').toUpperCase();
+  const sortedSchedules = [...sameAnalystSchedules].sort((a: any, b: any) => {
+    const dateDiff =
+      new Date(a?.datetime ?? '').getTime() - new Date(b?.datetime ?? '').getTime();
 
-    if (shift === 'MORNING') {
-      return scheduleShift.includes('MORNING') || scheduleShift.includes('MANHA');
-    }
-
-    if (shift === 'AFTERNOON') {
-      return scheduleShift.includes('AFTERNOON') || scheduleShift.includes('TARDE');
-    }
-
-    return false;
+    if (dateDiff !== 0) return dateDiff;
+    return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
   });
+
+  const maxPerShift = modality.toUpperCase().includes('PRES') ? 3 : 2;
+
+  if (shift === 'MORNING') {
+    relatedSchedules = sortedSchedules.slice(0, maxPerShift);
+  } else {
+    relatedSchedules = sortedSchedules.slice(maxPerShift, maxPerShift * 2);
+  }
 }
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
