@@ -735,8 +735,8 @@ return (
           <tbody>
             {analysts.map((analyst, aIdx) => (
               <React.Fragment key={analyst.id}>
-                <tr className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-20 transition-colors`}>
-                  <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-20">
+                <tr className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-16 transition-colors`}>
+                  <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-16">
                     <div className="flex items-center p-4 h-full">
                       <span className={`w-1.5 h-8 mr-4 rounded-full ${aIdx % 2 === 0 ? 'bg-claro-red' : 'bg-slate-900'}`}></span>
                       <p className="font-black text-[11px] uppercase truncate">{analyst.normalizedLogin}</p>
@@ -746,7 +746,7 @@ return (
                     <td 
                       key={idx} 
                       onClick={(e) => setSelection({ userId: analyst.id, dateIso: date.iso, rect: e.currentTarget.getBoundingClientRect() })} 
-                      className="p-0 border-r border-slate-200/50 cursor-pointer overflow-hidden relative group h-20"
+                      className="p-0 border-r border-slate-200/50 cursor-pointer overflow-hidden relative group h-16"
                     >
                       <div className="absolute inset-0 group-hover:bg-black/5 transition-colors pointer-events-none z-10"></div>
                       <div className="h-full w-full relative">
