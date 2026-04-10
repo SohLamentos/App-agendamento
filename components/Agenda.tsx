@@ -507,25 +507,6 @@ const items = relatedSchedules.map((schedule: any, index: number) => {
     pickedTech: tech
   });
 
-  const technicianName =
-    tech?.name ||
-    tech?.fullName ||
-    'N/D';
-
-  const technicianCity =
-    tech?.city ||
-    'N/D';
-
-  const technicianState =
-    tech?.state ||
-    '';
-
-  return {
-    time: getVisualScheduleTime(modality, shift, index + 1),
-    technician: technicianName,
-    city: `${technicianCity}${technicianState ? ' / ' + technicianState : ''}`,
-  };
-});
 
   console.log('TOOLTIP morning test', {
     index,
