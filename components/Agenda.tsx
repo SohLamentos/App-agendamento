@@ -446,7 +446,7 @@ const buildAgendaTooltipData = (
     return String(s?.analystId ?? '') === String(analystId ?? '');
   });
 
-  const relatedSchedules = sameAnalystSchedules.filter((s: any) => {
+ const relatedSchedules = sameAnalystSchedules.filter((s: any) => {
   const scheduleShift = String(s?.shift ?? '').toUpperCase();
   const targetShift = String(shift ?? '').toUpperCase();
 
@@ -463,68 +463,38 @@ const buildAgendaTooltipData = (
   return false;
 });
 
-  const orderedTechs = technicians
+const orderedTechs = technicians
   .filter((t: any) => {
     const techName = String(t?.name ?? '').trim();
-    if (!techName) return false;
-
-    const techDate = String(
-      t?.scheduledDate ??
-      t?.certificationDate ??
-      t?.dataAgendada ??
-      ''
-    ).split('T')[0];
-
-    const techShift = String(
-      t?.shift ??
-      t?.scheduledShift ??
-      t?.certificationShift ??
-      ''
-    ).toUpperCase();
-
-    const techTechnology = String(
-      t?.technology ??
-      t?.certificationTechnology ??
-      ''
-    ).toUpperCase();
-
-    const sameDate = !techDate || techDate === dateIso;
-
-    const sameShift =
-      !techShift ||
-      techShift === String(shift).toUpperCase() ||
-      (String(shift).toUpperCase() === 'MORNING' &&
-        (techShift.includes('MORNING') || techShift.includes('MANHA'))) ||
-      (String(shift).toUpperCase() === 'AFTERNOON' &&
-        (techShift.includes('AFTERNOON') || techShift.includes('TARDE')));
-
-    const sameTechnology =
-      !techTechnology ||
-      !technology ||
-      techTechnology === String(technology).toUpperCase();
-
-    return sameDate && sameShift && sameTechnology;
+    return !!techName;
   })
   .sort((a: any, b: any) => {
     return String(a?.name ?? '').localeCompare(String(b?.name ?? ''));
   });
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
-  
- const tech = orderedTechs[index] || technicians[index];
+  const tech = orderedTechs[index] || technicians[index] || null;
 
-const technicianName =
-  tech?.name ||
-  tech?.fullName ||
-  'N/D';
+  console.log('TOOLTIP morning test', {
+    index,
+    shift,
+    orderedTechsLength: orderedTechs.length,
+    techniciansLength: technicians.length,
+    pickedTech: tech
+  });
 
-const technicianCity =
-  tech?.city ||
-  'N/D';
+  const technicianName =
+    tech?.name ||
+    tech?.fullName ||
+    'N/D';
 
-const technicianState =
-  tech?.state ||
-  '';
+  const technicianCity =
+    tech?.city ||
+    'N/D';
+
+  const technicianState =
+    tech?.state ||
+    '';
 
   return {
     time: getVisualScheduleTime(modality, shift, index + 1),
