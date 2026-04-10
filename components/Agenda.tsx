@@ -745,36 +745,39 @@ const closeAgendaTooltip = () => {
         </div>
       )}
 
-      {isRangeModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden border-t-8 border-claro-red animate-in zoom-in duration-300">
-            <div className="bg-claro-red p-10 text-white">
-              <h3 className="text-xl font-black uppercase tracking-tighter">Bloqueio em Lote</h3>
-              <p className="text-[10px] font-bold text-white/70 uppercase mt-1 tracking-widest">Escala de Indisponibilidade</p>
-            </div>
-            <div className="p-10 space-y-6">
-              <select className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-xs font-black uppercase outline-none focus:border-claro-red" value={rangeAnalystId} onChange={e => setRangeAnalystId(e.target.value)}>
-                <option value="">SELECIONAR ANALISTA...</option>
-                {analysts.map(a => <option key={a.id} value={a.id}>{a.normalizedLogin}</option>)}
-              </select>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase ml-1">Início</label>
-                  <input type="date" className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-xs font-black" value={rangeStart} onChange={e => setRangeStart(e.target.value)} />
-                </div>
-                <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase ml-1">Término</label>
-                  <input type="date" className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-xs font-black" value={rangeEnd} onChange={e => setRangeEnd(e.target.value)} />
-                </div>
+            {isRangeModalOpen && (
+        ...
+      )}
+
+      {hoverTooltip?.visible && (
+        <div
+          className="fixed z-[9999] pointer-events-none bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[280px] max-w-[360px] border border-white/10"
+          style={{
+            left: hoverTooltip.x,
+            top: hoverTooltip.y
+          }}
+        >
+          <div className="space-y-3">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                Modalidade
               </div>
-              <select className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-xs font-black uppercase outline-none focus:border-claro-red" value={rangeTitle} onChange={e => setRangeTitle(e.target.value)}>
-                <option value="FÉRIAS">FÉRIAS</option>
-                <option value="FOLGA">FOLGA</option>
-                <option value="TREINAMENTO">TREINAMENTO</option>
-                <option value="REUNIÃO">REUNIÃO TÉCNICA</option>
-              </select>
+              <div className="text-xs font-black uppercase">
+                {hoverTooltip.modality}
+              </div>
             </div>
-            <div className="flex gap-4 p-10 pt-0">
-              <button onClick={() => setIsRangeModalOpen(false)} className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cancelar</button>
-              <button onClick={() => { dataService.addEventRange(rangeAnalystId, rangeStart, rangeEnd, rangeTitle, 'Other'); setIsRangeModalOpen(false); setToast({message: 'Lote gravado com sucesso!', type: 'success'}); }} disabled={!rangeAnalystId || !rangeStart || !rangeEnd} className="flex-1 py-4 bg-claro-red text-white text-xs font-black uppercase rounded-2xl shadow-xl disabled:opacity-30 tracking-widest">Gravar Lote</button>
+
+            <div className="border-t border-white/10 pt-3 space-y-2">
+              {hoverTooltip.items.map((item, index) => (
+                <div key={index} className="bg-white/5 rounded-xl px-3 py-2">
+                  <div className="text-[11px] font-black uppercase tracking-wide">
+                    {item.time} — {item.technician}
+                  </div>
+                  <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide mt-1">
+                    {item.city}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
