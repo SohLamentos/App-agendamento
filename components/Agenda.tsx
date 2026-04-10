@@ -139,14 +139,25 @@ const [improvisoReason, setImprovisoReason] = useState('');
     const dayBlocks = events.filter(e => e.involvedUserIds.includes(userId) && e.startDatetime.startsWith(dateIso));
     const daySchs = schedules.filter(s => s.analystId === userId && s.datetime.startsWith(dateIso) && s.status !== ScheduleStatus.CANCELLED);
 
-    const renderCard = (title: string, color: string) => (
-      <div 
-        className="w-full h-full flex items-center justify-center font-black text-[12px] uppercase text-white text-center leading-tight px-1 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] animate-in fade-in duration-300" 
-        style={{ backgroundColor: color }}
-      >
-        <span className="truncate">{title}</span>
-      </div>
-    );
+   const renderCard = (
+  title: string,
+  color: string,
+  mouseHandlers?: {
+    onMouseEnter?: (e: React.MouseEvent<HTMLDivElement>) => void;
+    onMouseMove?: (e: React.MouseEvent<HTMLDivElement>) => void;
+    onMouseLeave?: () => void;
+  }
+) => (
+  <div
+    className="w-full h-full flex items-center justify-center font-black text-[12px] uppercase text-white text-center leading-tight px-1 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] animate-in fade-in duration-300"
+    style={{ backgroundColor: color }}
+    onMouseEnter={mouseHandlers?.onMouseEnter}
+    onMouseMove={mouseHandlers?.onMouseMove}
+    onMouseLeave={mouseHandlers?.onMouseLeave}
+  >
+    <span className="truncate">{title}</span>
+  </div>
+);
 
     const formatScheduleTitle = (schs: CertificationSchedule[]) => {
       if (schs.length === 0) return null;
@@ -259,6 +270,7 @@ return renderCard(displayTitle, color);
     </div>
   </div>
 );
+};
       
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
