@@ -37,6 +37,20 @@ const Agenda: React.FC<AgendaProps> = ({ user }) => {
   const [schedules, setSchedules] = useState(dataService.getSchedules());
   const [isTestMode, setIsTestMode] = useState(dataService.isTestMode());
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [technicians, setTechnicians] = useState(dataService.getTechnicians());
+
+const [hoverTooltip, setHoverTooltip] = useState<{
+  visible: boolean;
+  x: number;
+  y: number;
+  title: string;
+  modality: string;
+  items: Array<{
+    time: string;
+    technician: string;
+    city: string;
+  }>;
+} | null>(null);
   
   const [isImprovisoModal, setIsImprovisoModal] = useState(false);
 const [improvisoShift, setImprovisoShift] = useState<Shift>(Shift.MORNING);
@@ -57,11 +71,13 @@ const [improvisoReason, setImprovisoReason] = useState('');
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
+
     const handleUpdate = () => {
-      setEvents(dataService.getEvents());
-      setSchedules(dataService.getSchedules());
-      setIsTestMode(dataService.isTestMode());
-    };
+  setEvents(dataService.getEvents());
+  setSchedules(dataService.getSchedules());
+  setTechnicians(dataService.getTechnicians());
+  setIsTestMode(dataService.isTestMode());
+};
     window.addEventListener('data-updated', handleUpdate);
     return () => window.removeEventListener('data-updated', handleUpdate);
   }, []);
@@ -185,8 +201,27 @@ return renderCard(displayTitle, color);
     COLORS.BLOQUEIO
   )
 ) : 
-           morningSchs.length > 0 ? renderCard(formatScheduleTitle(morningSchs)!, morningSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL) : null}
-        </div>
+
+            morningSchs.length > 0
+  ? renderCard(
+      formatScheduleTitle(morningSchs)!,
+      morningSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
+      {
+        onMouseEnter: (e) =>
+          openAgendaTooltip(e, {
+            analystId: userId,
+            dateIso,
+            shift: 'MORNING',
+            technology: morningSchs[0].technology || 'GPON',
+            modality:
+              morningSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
+          }),
+        onMouseMove: moveAgendaTooltip,
+        onMouseLeave: closeAgendaTooltip,
+      }
+    )
+  : null
+            </div>
         <div className="flex-1 flex overflow-hidden">
           {afternoonBlock ? renderCard(
   afternoonBlock.title
@@ -200,8 +235,26 @@ return renderCard(displayTitle, color);
     COLORS.BLOQUEIO
   )
 ) : 
-           afternoonSchs.length > 0 ? renderCard(formatScheduleTitle(afternoonSchs)!, afternoonSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL) : null}
-        </div>
+afternoonSchs.length > 0
+  ? renderCard(
+      formatScheduleTitle(afternoonSchs)!,
+      afternoonSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
+      {
+        onMouseEnter: (e) =>
+          openAgendaTooltip(e, {
+            analystId: userId,
+            dateIso,
+            shift: 'AFTERNOON',
+            technology: afternoonSchs[0].technology || 'GPON',
+            modality:
+              afternoonSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
+          }),
+        onMouseMove: moveAgendaTooltip,
+        onMouseLeave: closeAgendaTooltip,
+      }
+    )
+  : null
+            </div>
       </div>
     );
   };
@@ -329,6 +382,129 @@ const setStatus = (title: string | null, shift: Shift = Shift.FULL_DAY, color?: 
   setIsOutrosModalOpen(false);
 };
 
+  const getVisualScheduleTime = (
+  modality: string,
+  shift: 'MORNING' | 'AFTERNOON',
+  position: number
+) => {
+  const isPresential = modality.toUpperCase().includes('PRES');
+
+  if (isPresential) {
+    if (shift === 'MORNING') {
+      if (position === 1) return '09:00';
+      if (position === 2) return '10:00';
+      if (position === 3) return '11:00';
+    }
+
+    if (shift === 'AFTERNOON') {
+      if (position === 1) return '14:00';
+      if (position === 2) return '15:00';
+      if (position === 3) return '16:00';
+    }
+  } else {
+    if (shift === 'MORNING') {
+      if (position === 1) return '09:30';
+      if (position === 2) return '10:30';
+    }
+
+    if (shift === 'AFTERNOON') {
+      if (position === 1) return '14:30';
+      if (position === 2) return '15:30';
+    }
+  }
+
+  return 'N/D';
+};
+
+const buildAgendaTooltipData = (
+  analystId: string,
+  dateIso: string,
+  shift: 'MORNING' | 'AFTERNOON',
+  technology: string,
+  modality: string
+) => {
+  const relatedSchedules = schedules
+    .filter((s: any) => {
+      if (!s?.datetime || !s?.analystId) return false;
+
+      const sameDay = s.datetime.split('T')[0] === dateIso;
+      const sameAnalyst = s.analystId === analystId;
+      const sameShift = s.shift === shift;
+      const sameTech =
+        (s.technology || '').toUpperCase() === (technology || '').toUpperCase();
+      const sameModality =
+        (s.type || '').toUpperCase() === (modality || '').toUpperCase();
+
+      return sameDay && sameAnalyst && sameShift && sameTech && sameModality;
+    })
+    .sort((a: any, b: any) => {
+      const dateDiff =
+        new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
+
+      if (dateDiff !== 0) return dateDiff;
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+  const items = relatedSchedules.map((schedule: any, index: number) => {
+    const tech = technicians.find(
+      (t: any) => t.scheduledCertificationId === schedule.id
+    );
+
+    return {
+      time: getVisualScheduleTime(modality, shift, index + 1),
+      technician: tech?.name || 'N/D',
+      city: `${tech?.city || 'N/D'}${tech?.state ? ' / ' + tech.state : ''}`,
+    };
+  });
+
+  return items;
+};
+
+const openAgendaTooltip = (
+  e: React.MouseEvent,
+  params: {
+    analystId: string;
+    dateIso: string;
+    shift: 'MORNING' | 'AFTERNOON';
+    technology: string;
+    modality: string;
+  }
+) => {
+  const items = buildAgendaTooltipData(
+    params.analystId,
+    params.dateIso,
+    params.shift,
+    params.technology,
+    params.modality
+  );
+
+  if (!items.length) return;
+
+  setHoverTooltip({
+    visible: true,
+    x: e.clientX + 16,
+    y: e.clientY + 16,
+    title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
+    modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
+    items
+  });
+};
+
+const moveAgendaTooltip = (e: React.MouseEvent) => {
+  setHoverTooltip((prev) => {
+    if (!prev) return prev;
+
+    return {
+      ...prev,
+      x: e.clientX + 16,
+      y: e.clientY + 16
+    };
+  });
+};
+
+const closeAgendaTooltip = () => {
+  setHoverTooltip(null);
+};
   return (
     <div className="flex flex-col space-y-6 h-full relative">
        {toast && (
