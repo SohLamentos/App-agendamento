@@ -473,21 +473,53 @@ const buildAgendaTooltipData = (
       ''
     );
 
-    const tech = technicians.find((t: any) => {
-      const tId = String(t?.id ?? '');
-      const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
-      const certificationScheduleId = String(t?.certificationScheduleId ?? '');
-      const currentScheduleId = String(t?.scheduleId ?? '');
-      const currentTechId = String(t?.technicianId ?? '');
+    const matchedTech = technicians.find((t: any) => {
+  const tId = String(t?.id ?? '');
+  const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
+  const certificationScheduleId = String(t?.certificationScheduleId ?? '');
+  const currentScheduleId = String(t?.scheduleId ?? '');
+  const currentTechId = String(t?.technicianId ?? '');
 
-      return (
-        (scheduleId && scheduledCertificationId === scheduleId) ||
-        (scheduleId && certificationScheduleId === scheduleId) ||
-        (scheduleId && currentScheduleId === scheduleId) ||
-        (technicianId && tId === technicianId) ||
-        (technicianId && currentTechId === technicianId)
-      );
-    });
+  return (
+    (scheduleId && scheduledCertificationId === scheduleId) ||
+    (scheduleId && certificationScheduleId === scheduleId) ||
+    (scheduleId && currentScheduleId === scheduleId) ||
+    (technicianId && tId === technicianId) ||
+    (technicianId && currentTechId === technicianId)
+  );
+});
+
+const fallbackTechs = technicians.filter((t: any) => {
+  const techName = String(t?.name ?? '').trim().toUpperCase();
+  if (!techName) return false;
+
+  const techAnalystId = String(t?.analystId ?? t?.assignedAnalystId ?? '');
+  const techDate = String(
+    t?.scheduledDate ??
+    t?.certificationDate ??
+    t?.dataAgendada ??
+    ''
+  ).split('T')[0];
+
+  const techShift = String(
+    t?.shift ??
+    t?.scheduledShift ??
+    t?.certificationShift ??
+    ''
+  ).toUpperCase();
+
+  const sameDate = !techDate || techDate === dateIso;
+  const sameAnalyst = !techAnalystId || techAnalystId === String(analystId);
+  const sameShift =
+    !techShift ||
+    techShift === String(shift).toUpperCase() ||
+    (String(shift).toUpperCase() === 'MORNING' && techShift.includes('MORNING')) ||
+    (String(shift).toUpperCase() === 'AFTERNOON' && techShift.includes('AFTERNOON'));
+
+  return sameDate && sameAnalyst && sameShift;
+});
+
+const tech = matchedTech || fallbackTechs[index];
 
     const technicianName =
       tech?.name ||
