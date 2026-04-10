@@ -458,6 +458,10 @@ const buildAgendaTooltipData = (
       if (dateDiff !== 0) return dateDiff;
       return String(a.id).localeCompare(String(b.id));
     });
+  
+  console.log('TOOLTIP relatedSchedules', relatedSchedules);
+console.log('TOOLTIP first schedule', relatedSchedules[0]);
+console.log('TOOLTIP first technicians', technicians.slice(0, 5));
 
   const items = relatedSchedules.map((schedule: any, index: number) => {
   const scheduleId = String(schedule?.id ?? '');
