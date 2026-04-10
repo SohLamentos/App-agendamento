@@ -492,7 +492,23 @@ const openAgendaTooltip = (
     params.modality
   );
 
-  if (!items.length) return;
+  if (!items.length) {
+  setHoverTooltip({
+    visible: true,
+    x: e.clientX + 16,
+    y: e.clientY + 16,
+    title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
+    modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
+    items: [
+      {
+        time: 'N/D',
+        technician: 'SEM DADOS',
+        city: 'VERIFICAR VÍNCULO',
+      },
+    ],
+  });
+  return;
+}
 
   setHoverTooltip({
     visible: true,
