@@ -540,33 +540,19 @@ const items = relatedSchedules.map((schedule: any, index: number) => {
   orderedTechs[index] ||
   technicians[index];
 
-  const technicianName =
+ const tech = orderedTechs[index] || technicians[index];
+
+const technicianName =
   tech?.name ||
   tech?.fullName ||
-  schedule?.technicianName ||
-  schedule?.techName ||
-  schedule?.name ||
-  schedule?.technician?.name ||
-  orderedTechs[index]?.name ||
-  orderedTechs[index]?.fullName ||
-  technicians[index]?.name ||
-  technicians[index]?.fullName ||
   'N/D';
 
 const technicianCity =
   tech?.city ||
-  schedule?.city ||
-  schedule?.technician?.city ||
-  orderedTechs[index]?.city ||
-  technicians[index]?.city ||
   'N/D';
 
 const technicianState =
   tech?.state ||
-  schedule?.state ||
-  schedule?.technician?.state ||
-  orderedTechs[index]?.state ||
-  technicians[index]?.state ||
   '';
 
   return {
