@@ -446,13 +446,22 @@ const buildAgendaTooltipData = (
     return String(s?.analystId ?? '') === String(analystId ?? '');
   });
 
-  console.log('TOOLTIP analystId param', analystId);
-  console.log('TOOLTIP dateIso param', dateIso);
-  console.log('TOOLTIP shift param', shift);
-  console.log('TOOLTIP sameDaySchedules', sameDaySchedules);
-  console.log('TOOLTIP sameAnalystSchedules', sameAnalystSchedules);
+  const relatedSchedules = sameAnalystSchedules.filter((s: any) => {
+  const scheduleShift = String(s?.shift ?? '').toUpperCase();
+  const targetShift = String(shift ?? '').toUpperCase();
 
-  const relatedSchedules = sameAnalystSchedules;
+  if (scheduleShift === targetShift) return true;
+
+  if (targetShift === 'MORNING') {
+    return scheduleShift.includes('MORNING') || scheduleShift.includes('MANHA');
+  }
+
+  if (targetShift === 'AFTERNOON') {
+    return scheduleShift.includes('AFTERNOON') || scheduleShift.includes('TARDE');
+  }
+
+  return false;
+});
 
   const items = relatedSchedules.map((schedule: any, index: number) => {
     const scheduleId = String(schedule?.id ?? '');
