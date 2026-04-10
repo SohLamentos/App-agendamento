@@ -461,8 +461,8 @@ const buildAgendaTooltipData = (
     });
   
   console.log('TOOLTIP relatedSchedules', relatedSchedules);
-console.log('TOOLTIP first schedule', relatedSchedules[0]);
-console.log('TOOLTIP first technicians', technicians.slice(0, 5));
+console.log('TOOLTIP first schedule JSON', JSON.stringify(relatedSchedules[0], null, 2));
+console.log('TOOLTIP first technician JSON', JSON.stringify(technicians[0], null, 2));
 
   const items = relatedSchedules.map((schedule: any, index: number) => {
   const scheduleId = String(schedule?.id ?? '');
