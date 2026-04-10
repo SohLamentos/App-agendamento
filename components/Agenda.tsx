@@ -437,16 +437,17 @@ const buildAgendaTooltipData = (
   technology: string,
   modality: string
 ) => {
-  const sameDaySchedules = schedules.filter((s: any) => {
-    if (!s?.datetime) return false;
-    return s.datetime.split('T')[0] === dateIso;
-  });
 
-  const sameAnalystSchedules = sameDaySchedules.filter((s: any) => {
-    return String(s?.analystId ?? '') === String(analystId ?? '');
-  });
+const sameDaySchedules = schedules.filter((s: any) => {
+  if (!s?.datetime) return false;
+  return s.datetime.split('T')[0] === dateIso;
+});
 
- const relatedSchedules = sameAnalystSchedules.filter((s: any) => {
+const sameAnalystSchedules = sameDaySchedules.filter((s: any) => {
+  return String(s?.analystId ?? '') === String(analystId ?? '');
+});
+
+let relatedSchedules = sameAnalystSchedules.filter((s: any) => {
   const scheduleShift = String(s?.shift ?? '').toUpperCase();
   const targetShift = String(shift ?? '').toUpperCase();
 
@@ -463,65 +464,56 @@ const buildAgendaTooltipData = (
   return false;
 });
 
-const orderedTechs = technicians
-  .filter((t: any) => {
-    const techName = String(t?.name ?? '').trim();
-    return !!techName;
-  })
-  .sort((a: any, b: any) => {
-    return String(a?.name ?? '').localeCompare(String(b?.name ?? ''));
-  });
+if (!relatedSchedules.length) {
+  relatedSchedules = sameAnalystSchedules;
+}
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
-  
   const scheduleId = String(schedule?.id ?? '');
-const technicianId = String(
-  schedule?.technicianId ??
-  schedule?.techId ??
-  schedule?.userId ??
-  schedule?.technician?.id ??
-  ''
-);
-
-const scheduleCpf = String(
-  schedule?.cpf ??
-  schedule?.technicianCpf ??
-  schedule?.user?.cpf ??
-  schedule?.technician?.cpf ??
-  ''
-).replace(/\D/g, '');
-
-const scheduleUniqueKey = String(
-  schedule?.unique_key ??
-  schedule?.uniqueKey ??
-  schedule?.technicianUniqueKey ??
-  schedule?.technician?.unique_key ??
-  schedule?.technician?.uniqueKey ??
-  ''
-);
-
-const matchedTech = technicians.find((t: any) => {
-  const tId = String(t?.id ?? '');
-  const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
-  const certificationScheduleId = String(t?.certificationScheduleId ?? '');
-  const currentScheduleId = String(t?.scheduleId ?? '');
-  const currentTechId = String(t?.technicianId ?? '');
-  const techCpf = String(t?.cpf ?? '').replace(/\D/g, '');
-  const techUniqueKey = String(t?.unique_key ?? t?.uniqueKey ?? '');
-
-  return (
-    (scheduleId && scheduledCertificationId === scheduleId) ||
-    (scheduleId && certificationScheduleId === scheduleId) ||
-    (scheduleId && currentScheduleId === scheduleId) ||
-    (technicianId && tId === technicianId) ||
-    (technicianId && currentTechId === technicianId) ||
-    (scheduleCpf && techCpf === scheduleCpf) ||
-    (scheduleUniqueKey && techUniqueKey === scheduleUniqueKey)
+  const technicianId = String(
+    schedule?.technicianId ??
+    schedule?.techId ??
+    schedule?.userId ??
+    schedule?.technician?.id ??
+    ''
   );
-});
 
-  console.log('TOOLTIP schedule JSON', JSON.stringify(schedule, null, 2));
-  console.log('TOOLTIP matchedTech JSON', JSON.stringify(matchedTech, null, 2));
+  const scheduleCpf = String(
+    schedule?.cpf ??
+    schedule?.technicianCpf ??
+    schedule?.user?.cpf ??
+    schedule?.technician?.cpf ??
+    ''
+  ).replace(/\D/g, '');
+
+  const scheduleUniqueKey = String(
+    schedule?.unique_key ??
+    schedule?.uniqueKey ??
+    schedule?.technicianUniqueKey ??
+    schedule?.technician?.unique_key ??
+    schedule?.technician?.uniqueKey ??
+    ''
+  );
+
+  const matchedTech = technicians.find((t: any) => {
+    const tId = String(t?.id ?? '');
+    const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
+    const certificationScheduleId = String(t?.certificationScheduleId ?? '');
+    const currentScheduleId = String(t?.scheduleId ?? '');
+    const currentTechId = String(t?.technicianId ?? '');
+    const techCpf = String(t?.cpf ?? '').replace(/\D/g, '');
+    const techUniqueKey = String(t?.unique_key ?? t?.uniqueKey ?? '');
+
+    return (
+      (scheduleId && scheduledCertificationId === scheduleId) ||
+      (scheduleId && certificationScheduleId === scheduleId) ||
+      (scheduleId && currentScheduleId === scheduleId) ||
+      (technicianId && tId === technicianId) ||
+      (technicianId && currentTechId === technicianId) ||
+      (scheduleCpf && techCpf === scheduleCpf) ||
+      (scheduleUniqueKey && techUniqueKey === scheduleUniqueKey)
+    );
+  });
 
   const technicianName =
     matchedTech?.name ||
@@ -529,18 +521,21 @@ const matchedTech = technicians.find((t: any) => {
     schedule?.technicianName ||
     schedule?.techName ||
     schedule?.name ||
+    schedule?.user?.name ||
     schedule?.technician?.name ||
     'N/D';
 
   const technicianCity =
     matchedTech?.city ||
     schedule?.city ||
+    schedule?.user?.city ||
     schedule?.technician?.city ||
     'N/D';
 
   const technicianState =
     matchedTech?.state ||
     schedule?.state ||
+    schedule?.user?.state ||
     schedule?.technician?.state ||
     '';
 
@@ -551,7 +546,8 @@ const matchedTech = technicians.find((t: any) => {
   };
 });
 
-  return items;
+return items;
+  
 };
 
 const openAgendaTooltip = (
