@@ -745,8 +745,10 @@ const closeAgendaTooltip = () => {
         </div>
       )}
 
-            {isRangeModalOpen && (
-        ...
+                 {isRangeModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+          ...
+        </div>
       )}
 
       {hoverTooltip?.visible && (
