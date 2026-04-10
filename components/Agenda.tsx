@@ -187,77 +187,79 @@ return renderCard(displayTitle, color);
     const afternoonSchs = daySchs.filter(s => s.shift === Shift.AFTERNOON);
 
     return (
-      <div className="flex flex-col h-full w-full overflow-hidden">
-        <div className="flex-1 flex overflow-hidden border-b border-white/20">
-          {morningBlock ? renderCard(
-  morningBlock.title
-    .replace('OUTROS - ', '')
-    .replace('IMPREVISTO - ', ''),
-  morningBlock.color || (
-    morningBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
-    morningBlock.title.includes('FOLGA') ? COLORS.FOLGA :
-    morningBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
-    morningBlock.title.includes('OUTROS') ? COLORS.OUTROS :
-    COLORS.BLOQUEIO
-  )
-) : 
+  <div className="flex flex-col h-full w-full overflow-hidden">
+    <div className="flex-1 flex overflow-hidden border-b border-white/20">
+      {morningBlock
+        ? renderCard(
+            morningBlock.title
+              .replace('OUTROS - ', '')
+              .replace('IMPREVISTO - ', ''),
+            morningBlock.color || (
+              morningBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
+              morningBlock.title.includes('FOLGA') ? COLORS.FOLGA :
+              morningBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
+              morningBlock.title.includes('OUTROS') ? COLORS.OUTROS :
+              COLORS.BLOQUEIO
+            )
+          )
+        : morningSchs.length > 0
+          ? renderCard(
+              formatScheduleTitle(morningSchs)!,
+              morningSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
+              {
+                onMouseEnter: (e) =>
+                  openAgendaTooltip(e, {
+                    analystId: userId,
+                    dateIso,
+                    shift: 'MORNING',
+                    technology: morningSchs[0].technology || 'GPON',
+                    modality:
+                      morningSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
+                  }),
+                onMouseMove: moveAgendaTooltip,
+                onMouseLeave: closeAgendaTooltip,
+              }
+            )
+          : null}
+    </div>
 
-            morningSchs.length > 0
-  ? renderCard(
-      formatScheduleTitle(morningSchs)!,
-      morningSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
-      {
-        onMouseEnter: (e) =>
-          openAgendaTooltip(e, {
-            analystId: userId,
-            dateIso,
-            shift: 'MORNING',
-            technology: morningSchs[0].technology || 'GPON',
-            modality:
-              morningSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
-          }),
-        onMouseMove: moveAgendaTooltip,
-        onMouseLeave: closeAgendaTooltip,
-      }
-    )
-  : null
-            </div>
-        <div className="flex-1 flex overflow-hidden">
-          {afternoonBlock ? renderCard(
-  afternoonBlock.title
-    .replace('OUTROS - ', '')
-    .replace('IMPREVISTO - ', ''),
-  afternoonBlock.color || (
-    afternoonBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
-    afternoonBlock.title.includes('FOLGA') ? COLORS.FOLGA :
-    afternoonBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
-    afternoonBlock.title.includes('OUTROS') ? COLORS.OUTROS :
-    COLORS.BLOQUEIO
-  )
-) : 
-afternoonSchs.length > 0
-  ? renderCard(
-      formatScheduleTitle(afternoonSchs)!,
-      afternoonSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
-      {
-        onMouseEnter: (e) =>
-          openAgendaTooltip(e, {
-            analystId: userId,
-            dateIso,
-            shift: 'AFTERNOON',
-            technology: afternoonSchs[0].technology || 'GPON',
-            modality:
-              afternoonSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
-          }),
-        onMouseMove: moveAgendaTooltip,
-        onMouseLeave: closeAgendaTooltip,
-      }
-    )
-  : null
-            </div>
-      </div>
-    );
-  };
+    <div className="flex-1 flex overflow-hidden">
+      {afternoonBlock
+        ? renderCard(
+            afternoonBlock.title
+              .replace('OUTROS - ', '')
+              .replace('IMPREVISTO - ', ''),
+            afternoonBlock.color || (
+              afternoonBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
+              afternoonBlock.title.includes('FOLGA') ? COLORS.FOLGA :
+              afternoonBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
+              afternoonBlock.title.includes('OUTROS') ? COLORS.OUTROS :
+              COLORS.BLOQUEIO
+            )
+          )
+        : afternoonSchs.length > 0
+          ? renderCard(
+              formatScheduleTitle(afternoonSchs)!,
+              afternoonSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
+              {
+                onMouseEnter: (e) =>
+                  openAgendaTooltip(e, {
+                    analystId: userId,
+                    dateIso,
+                    shift: 'AFTERNOON',
+                    technology: afternoonSchs[0].technology || 'GPON',
+                    modality:
+                      afternoonSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
+                  }),
+                onMouseMove: moveAgendaTooltip,
+                onMouseLeave: closeAgendaTooltip,
+              }
+            )
+          : null}
+    </div>
+  </div>
+);
+      
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
