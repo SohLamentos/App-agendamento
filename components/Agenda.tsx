@@ -473,60 +473,53 @@ const orderedTechs = technicians
   });
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
-  const shiftNormalized = String(shift ?? '').toUpperCase();
+  const scheduleId = String(schedule?.id ?? '');
+  const technicianId = String(
+    schedule?.technicianId ??
+    schedule?.techId ??
+    schedule?.userId ??
+    schedule?.technician?.id ??
+    ''
+  );
 
-  const shiftTechs = orderedTechs.filter((t: any) => {
-    const techShift = String(
-      t?.shift ??
-      t?.scheduledShift ??
-      t?.certificationShift ??
-      ''
-    ).toUpperCase();
+  const matchedTech = technicians.find((t: any) => {
+    const tId = String(t?.id ?? '');
+    const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
+    const certificationScheduleId = String(t?.certificationScheduleId ?? '');
+    const currentScheduleId = String(t?.scheduleId ?? '');
+    const currentTechId = String(t?.technicianId ?? '');
 
-    if (!techShift) return true;
-
-    if (shiftNormalized === 'MORNING') {
-      return techShift.includes('MORNING') || techShift.includes('MANHA');
-    }
-
-    if (shiftNormalized === 'AFTERNOON') {
-      return techShift.includes('AFTERNOON') || techShift.includes('TARDE');
-    }
-
-    return false;
+    return (
+      (scheduleId && scheduledCertificationId === scheduleId) ||
+      (scheduleId && certificationScheduleId === scheduleId) ||
+      (scheduleId && currentScheduleId === scheduleId) ||
+      (technicianId && tId === technicianId) ||
+      (technicianId && currentTechId === technicianId)
+    );
   });
 
-  const tech = shiftTechs[index] || orderedTechs[index] || technicians[index] || null;
-
-  console.log('TOOLTIP morning test', {
-    index,
-    shift,
-    orderedTechsLength: orderedTechs.length,
-    shiftTechsLength: shiftTechs.length,
-    techniciansLength: technicians.length,
-    pickedTech: tech
-  });
-
-
-  console.log('TOOLTIP morning test', {
-    index,
-    shift,
-    orderedTechsLength: orderedTechs.length,
-    techniciansLength: technicians.length,
-    pickedTech: tech
-  });
+  console.log('TOOLTIP schedule JSON', JSON.stringify(schedule, null, 2));
+  console.log('TOOLTIP matchedTech JSON', JSON.stringify(matchedTech, null, 2));
 
   const technicianName =
-    tech?.name ||
-    tech?.fullName ||
+    matchedTech?.name ||
+    matchedTech?.fullName ||
+    schedule?.technicianName ||
+    schedule?.techName ||
+    schedule?.name ||
+    schedule?.technician?.name ||
     'N/D';
 
   const technicianCity =
-    tech?.city ||
+    matchedTech?.city ||
+    schedule?.city ||
+    schedule?.technician?.city ||
     'N/D';
 
   const technicianState =
-    tech?.state ||
+    matchedTech?.state ||
+    schedule?.state ||
+    schedule?.technician?.state ||
     '';
 
   return {
@@ -535,9 +528,6 @@ const items = relatedSchedules.map((schedule: any, index: number) => {
     city: `${technicianCity}${technicianState ? ' / ' + technicianState : ''}`,
   };
 });
-
-  return items;
-};
 
 const openAgendaTooltip = (
   e: React.MouseEvent,
