@@ -449,7 +449,7 @@ const buildAgendaTooltipData = (
       const sameModality =
         (s.type || '').toUpperCase() === (modality || '').toUpperCase();
 
-      return sameDay && sameAnalyst && sameShift && sameTech && sameModality;
+      return sameDay && sameAnalyst && sameShift;
     })
     .sort((a: any, b: any) => {
       const dateDiff =
