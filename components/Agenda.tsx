@@ -514,15 +514,6 @@ const openAgendaTooltip = (
     return;
   }
 
-  setHoverTooltip({
-    visible: true,
-    x: e.clientX + 16,
-    y: e.clientY + 16,
-    title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
-    modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
-    items
-  });
-};
 
   setHoverTooltip({
     visible: true,
