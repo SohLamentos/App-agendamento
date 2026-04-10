@@ -473,7 +473,59 @@ const orderedTechs = technicians
   });
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
-  const tech = orderedTechs[index] || technicians[index] || null;
+  const shiftNormalized = String(shift ?? '').toUpperCase();
+
+  const shiftTechs = orderedTechs.filter((t: any) => {
+    const techShift = String(
+      t?.shift ??
+      t?.scheduledShift ??
+      t?.certificationShift ??
+      ''
+    ).toUpperCase();
+
+    if (!techShift) return true;
+
+    if (shiftNormalized === 'MORNING') {
+      return techShift.includes('MORNING') || techShift.includes('MANHA');
+    }
+
+    if (shiftNormalized === 'AFTERNOON') {
+      return techShift.includes('AFTERNOON') || techShift.includes('TARDE');
+    }
+
+    return false;
+  });
+
+  const tech = shiftTechs[index] || orderedTechs[index] || technicians[index] || null;
+
+  console.log('TOOLTIP morning test', {
+    index,
+    shift,
+    orderedTechsLength: orderedTechs.length,
+    shiftTechsLength: shiftTechs.length,
+    techniciansLength: technicians.length,
+    pickedTech: tech
+  });
+
+  const technicianName =
+    tech?.name ||
+    tech?.fullName ||
+    'N/D';
+
+  const technicianCity =
+    tech?.city ||
+    'N/D';
+
+  const technicianState =
+    tech?.state ||
+    '';
+
+  return {
+    time: getVisualScheduleTime(modality, shift, index + 1),
+    technician: technicianName,
+    city: `${technicianCity}${technicianState ? ' / ' + technicianState : ''}`,
+  };
+});
 
   console.log('TOOLTIP morning test', {
     index,
