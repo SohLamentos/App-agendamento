@@ -781,7 +781,7 @@ const closeAgendaTooltip = () => {
         </div>
       )}
 
-      {hoverTooltip?.visible && (
+            {hoverTooltip?.visible && (
         <div
           className="fixed z-[9999] pointer-events-none bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[280px] max-w-[360px] border border-white/10"
           style={{
@@ -816,6 +816,5 @@ const closeAgendaTooltip = () => {
       )}
     </div>
   );
-};
 
 export default Agenda;
