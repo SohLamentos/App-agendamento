@@ -132,7 +132,7 @@ const [improvisoReason, setImprovisoReason] = useState('');
     BLOQUEIO: '#FB8C00',
     IMPREVISTO: '#6A1B9A',
     OUTROS: '#455A64',
-    TREINAMENTO: '#000000'
+    FERIADO: '#000000'
   };
 
   const getCellContent = (userId: string, dateIso: string) => {
@@ -179,7 +179,7 @@ const [improvisoReason, setImprovisoReason] = useState('');
       else if (title.includes('OUTROS')) {
         color = fullDayBlock.color || COLORS.OUTROS;
       }
-      else if (title.includes('TREINAMENTO')) color = COLORS.TREINAMENTO;
+      else if (title.includes('FERIADO')) color = COLORS.FERIADO;
 
       const displayTitle =
   title.includes('OUTROS - ')
@@ -330,7 +330,7 @@ const setStatus = (title: string | null, shift: Shift = Shift.FULL_DAY, color?: 
     existingFullDayBlock &&
     shift !== Shift.FULL_DAY &&
     (
-      existingFullDayBlock.title.toUpperCase().includes('TREINAMENTO') ||
+      existingFullDayBlock.title.toUpperCase().includes('FERIADO') ||
       existingFullDayBlock.title.toUpperCase().includes('OUTROS')
     )
   ) {
@@ -723,7 +723,7 @@ return (
               <button onClick={() => setStatus('FÉRIAS')} className="w-full text-left px-8 py-4 text-[11px] font-black text-claro-red hover:bg-claro-red hover:text-white uppercase transition-all tracking-wider">Lançar Férias</button>
               <button onClick={() => setStatus('FOLGA')} className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-600 hover:bg-slate-600 hover:text-white uppercase transition-all tracking-wider">Lançar Folga</button>
               <button onClick={() => setStatus('IMPREVISTO')} className="w-full text-left px-8 py-4 text-[11px] font-black text-[#6A1B9A] hover:bg-[#6A1B9A] hover:text-white uppercase transition-all tracking-wider">Lançar Improviso</button>
-              <button onClick={() => setStatus('TREINAMENTO')} className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-900 hover:bg-slate-100 uppercase transition-all tracking-wider">Treinamento</button>
+              <button onClick={() => setStatus('FERIADO')} className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-900 hover:bg-slate-100 uppercase transition-all tracking-wider">Treinamento</button>
               <button onClick={() => setStatus('OUTROS')} className="w-full text-left px-8 py-4 text-[11px] font-black text-[#455A64] hover:bg-[#455A64] hover:text-white uppercase transition-all tracking-wider">Outros (Motivo)</button>
               <button onClick={() => setStatus(null)} className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-400 hover:bg-slate-50 uppercase transition-all tracking-wider mt-2 border-t border-slate-100 italic">Limpar Célula</button>
             </div>
