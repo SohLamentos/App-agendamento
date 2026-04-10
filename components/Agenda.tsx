@@ -529,6 +529,9 @@ const items = relatedSchedules.map((schedule: any, index: number) => {
   };
 });
 
+  return items;
+};
+
 const openAgendaTooltip = (
   e: React.MouseEvent,
   params: {
