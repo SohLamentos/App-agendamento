@@ -460,16 +460,20 @@ const buildAgendaTooltipData = (
     });
 
   const items = relatedSchedules.map((schedule: any, index: number) => {
-    const tech = technicians.find(
-      (t: any) => t.scheduledCertificationId === schedule.id
-    );
+  const tech = technicians.find((t: any) =>
+    t?.scheduledCertificationId === schedule?.id ||
+    t?.scheduledCertificationId === String(schedule?.id) ||
+    String(t?.scheduledCertificationId || '') === String(schedule?.id || '') ||
+    t?.certificationScheduleId === schedule?.id ||
+    String(t?.certificationScheduleId || '') === String(schedule?.id || '')
+  );
 
-    return {
-      time: getVisualScheduleTime(modality, shift, index + 1),
-      technician: tech?.name || 'N/D',
-      city: `${tech?.city || 'N/D'}${tech?.state ? ' / ' + tech.state : ''}`,
-    };
-  });
+  return {
+    time: getVisualScheduleTime(modality, shift, index + 1),
+    technician: tech?.name || 'N/D',
+    city: `${tech?.city || 'N/D'}${tech?.state ? ' / ' + tech.state : ''}`,
+  };
+});
 
   return items;
 };
@@ -493,22 +497,32 @@ const openAgendaTooltip = (
   );
 
   if (!items.length) {
+    setHoverTooltip({
+      visible: true,
+      x: e.clientX + 16,
+      y: e.clientY + 16,
+      title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
+      modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
+      items: [
+        {
+          time: 'N/D',
+          technician: 'SEM DADOS',
+          city: 'VERIFICAR VÍNCULO',
+        },
+      ],
+    });
+    return;
+  }
+
   setHoverTooltip({
     visible: true,
     x: e.clientX + 16,
     y: e.clientY + 16,
     title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
     modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
-    items: [
-      {
-        time: 'N/D',
-        technician: 'SEM DADOS',
-        city: 'VERIFICAR VÍNCULO',
-      },
-    ],
+    items
   });
-  return;
-}
+};
 
   setHoverTooltip({
     visible: true,
