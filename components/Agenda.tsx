@@ -549,7 +549,8 @@ const moveAgendaTooltip = (e: React.MouseEvent) => {
 const closeAgendaTooltip = () => {
   setHoverTooltip(null);
 };
-  return (
+
+return (
     <div className="flex flex-col space-y-6 h-full relative">
        {toast && (
         <div className={`fixed top-10 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-right-10 duration-300 ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
