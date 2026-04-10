@@ -550,11 +550,29 @@ const openAgendaTooltip = (
     params.modality
   );
 
+  const tooltipWidth = 340;
+  const tooltipHeight = 220;
+  const offset = 16;
+
+  let x = e.clientX + offset;
+  let y = e.clientY + offset;
+
+  if (x + tooltipWidth > window.innerWidth - 20) {
+    x = e.clientX - tooltipWidth - offset;
+  }
+
+  if (y + tooltipHeight > window.innerHeight - 20) {
+    y = e.clientY - tooltipHeight - offset;
+  }
+
+  if (x < 12) x = 12;
+  if (y < 12) y = 12;
+
   if (!items.length) {
     setHoverTooltip({
       visible: true,
-      x: e.clientX + 16,
-      y: e.clientY + 16,
+      x,
+      y,
       title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
       modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
       items: [
@@ -568,25 +586,42 @@ const openAgendaTooltip = (
     return;
   }
 
-
   setHoverTooltip({
-    visible: true,
-    x: e.clientX + 16,
-    y: e.clientY + 16,
-    title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
-    modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
-    items
-  });
+  visible: true,
+  x,
+  y,
+  title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
+  modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
+  items
+});
 };
 
 const moveAgendaTooltip = (e: React.MouseEvent) => {
+  const tooltipWidth = 340;
+  const tooltipHeight = 220;
+  const offset = 16;
+
+  let x = e.clientX + offset;
+  let y = e.clientY + offset;
+
+  if (x + tooltipWidth > window.innerWidth - 20) {
+    x = e.clientX - tooltipWidth - offset;
+  }
+
+  if (y + tooltipHeight > window.innerHeight - 20) {
+    y = e.clientY - tooltipHeight - offset;
+  }
+
+  if (x < 12) x = 12;
+  if (y < 12) y = 12;
+
   setHoverTooltip((prev) => {
     if (!prev) return prev;
 
     return {
       ...prev,
-      x: e.clientX + 16,
-      y: e.clientY + 16
+      x,
+      y
     };
   });
 };
@@ -594,6 +629,8 @@ const moveAgendaTooltip = (e: React.MouseEvent) => {
 const closeAgendaTooltip = () => {
   setHoverTooltip(null);
 };
+
+return (
 
 return (
     <div className="flex flex-col space-y-6 h-full relative">
