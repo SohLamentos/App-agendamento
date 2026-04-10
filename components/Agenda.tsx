@@ -535,28 +535,39 @@ const items = relatedSchedules.map((schedule: any, index: number) => {
     );
   });
 
-  const tech = matchedTech || orderedTechs[index];
+  const tech =
+  matchedTech ||
+  orderedTechs[index] ||
+  technicians[index];
 
   const technicianName =
-    tech?.name ||
-    tech?.fullName ||
-    schedule?.technicianName ||
-    schedule?.techName ||
-    schedule?.name ||
-    schedule?.technician?.name ||
-    'N/D';
+  tech?.name ||
+  tech?.fullName ||
+  schedule?.technicianName ||
+  schedule?.techName ||
+  schedule?.name ||
+  schedule?.technician?.name ||
+  orderedTechs[index]?.name ||
+  orderedTechs[index]?.fullName ||
+  technicians[index]?.name ||
+  technicians[index]?.fullName ||
+  'N/D';
 
-  const technicianCity =
-    tech?.city ||
-    schedule?.city ||
-    schedule?.technician?.city ||
-    'N/D';
+const technicianCity =
+  tech?.city ||
+  schedule?.city ||
+  schedule?.technician?.city ||
+  orderedTechs[index]?.city ||
+  technicians[index]?.city ||
+  'N/D';
 
-  const technicianState =
-    tech?.state ||
-    schedule?.state ||
-    schedule?.technician?.state ||
-    '';
+const technicianState =
+  tech?.state ||
+  schedule?.state ||
+  schedule?.technician?.state ||
+  orderedTechs[index]?.state ||
+  technicians[index]?.state ||
+  '';
 
   return {
     time: getVisualScheduleTime(modality, shift, index + 1),
