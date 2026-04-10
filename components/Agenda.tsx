@@ -463,91 +463,107 @@ const buildAgendaTooltipData = (
   return false;
 });
 
-  const items = relatedSchedules.map((schedule: any, index: number) => {
-    const scheduleId = String(schedule?.id ?? '');
-    const technicianId = String(
-      schedule?.technicianId ??
-      schedule?.techId ??
-      schedule?.userId ??
-      schedule?.technician?.id ??
+  const orderedTechs = technicians
+  .filter((t: any) => {
+    const techName = String(t?.name ?? '').trim();
+    if (!techName) return false;
+
+    const techDate = String(
+      t?.scheduledDate ??
+      t?.certificationDate ??
+      t?.dataAgendada ??
       ''
-    );
+    ).split('T')[0];
 
-    const matchedTech = technicians.find((t: any) => {
-  const tId = String(t?.id ?? '');
-  const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
-  const certificationScheduleId = String(t?.certificationScheduleId ?? '');
-  const currentScheduleId = String(t?.scheduleId ?? '');
-  const currentTechId = String(t?.technicianId ?? '');
+    const techShift = String(
+      t?.shift ??
+      t?.scheduledShift ??
+      t?.certificationShift ??
+      ''
+    ).toUpperCase();
 
-  return (
-    (scheduleId && scheduledCertificationId === scheduleId) ||
-    (scheduleId && certificationScheduleId === scheduleId) ||
-    (scheduleId && currentScheduleId === scheduleId) ||
-    (technicianId && tId === technicianId) ||
-    (technicianId && currentTechId === technicianId)
-  );
-});
+    const techTechnology = String(
+      t?.technology ??
+      t?.certificationTechnology ??
+      ''
+    ).toUpperCase();
 
-const fallbackTechs = technicians.filter((t: any) => {
-  const techName = String(t?.name ?? '').trim().toUpperCase();
-  if (!techName) return false;
+    const sameDate = !techDate || techDate === dateIso;
 
-  const techAnalystId = String(t?.analystId ?? t?.assignedAnalystId ?? '');
-  const techDate = String(
-    t?.scheduledDate ??
-    t?.certificationDate ??
-    t?.dataAgendada ??
-    ''
-  ).split('T')[0];
+    const sameShift =
+      !techShift ||
+      techShift === String(shift).toUpperCase() ||
+      (String(shift).toUpperCase() === 'MORNING' &&
+        (techShift.includes('MORNING') || techShift.includes('MANHA'))) ||
+      (String(shift).toUpperCase() === 'AFTERNOON' &&
+        (techShift.includes('AFTERNOON') || techShift.includes('TARDE')));
 
-  const techShift = String(
-    t?.shift ??
-    t?.scheduledShift ??
-    t?.certificationShift ??
-    ''
-  ).toUpperCase();
+    const sameTechnology =
+      !techTechnology ||
+      !technology ||
+      techTechnology === String(technology).toUpperCase();
 
-  const sameDate = !techDate || techDate === dateIso;
-  const sameAnalyst = !techAnalystId || techAnalystId === String(analystId);
-  const sameShift =
-    !techShift ||
-    techShift === String(shift).toUpperCase() ||
-    (String(shift).toUpperCase() === 'MORNING' && techShift.includes('MORNING')) ||
-    (String(shift).toUpperCase() === 'AFTERNOON' && techShift.includes('AFTERNOON'));
-
-  return sameDate && sameAnalyst && sameShift;
-});
-
-const tech = matchedTech || fallbackTechs[index];
-
-    const technicianName =
-      tech?.name ||
-      tech?.fullName ||
-      schedule?.technicianName ||
-      schedule?.techName ||
-      schedule?.name ||
-      schedule?.technician?.name ||
-      'N/D';
-
-    const technicianCity =
-      tech?.city ||
-      schedule?.city ||
-      schedule?.technician?.city ||
-      'N/D';
-
-    const technicianState =
-      tech?.state ||
-      schedule?.state ||
-      schedule?.technician?.state ||
-      '';
-
-    return {
-      time: getVisualScheduleTime(modality, shift, index + 1),
-      technician: technicianName,
-      city: `${technicianCity}${technicianState ? ' / ' + technicianState : ''}`,
-    };
+    return sameDate && sameShift && sameTechnology;
+  })
+  .sort((a: any, b: any) => {
+    return String(a?.name ?? '').localeCompare(String(b?.name ?? ''));
   });
+
+const items = relatedSchedules.map((schedule: any, index: number) => {
+  const scheduleId = String(schedule?.id ?? '');
+  const technicianId = String(
+    schedule?.technicianId ??
+    schedule?.techId ??
+    schedule?.userId ??
+    schedule?.technician?.id ??
+    ''
+  );
+
+  const matchedTech = technicians.find((t: any) => {
+    const tId = String(t?.id ?? '');
+    const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
+    const certificationScheduleId = String(t?.certificationScheduleId ?? '');
+    const currentScheduleId = String(t?.scheduleId ?? '');
+    const currentTechId = String(t?.technicianId ?? '');
+
+    return (
+      (scheduleId && scheduledCertificationId === scheduleId) ||
+      (scheduleId && certificationScheduleId === scheduleId) ||
+      (scheduleId && currentScheduleId === scheduleId) ||
+      (technicianId && tId === technicianId) ||
+      (technicianId && currentTechId === technicianId)
+    );
+  });
+
+  const tech = matchedTech || orderedTechs[index];
+
+  const technicianName =
+    tech?.name ||
+    tech?.fullName ||
+    schedule?.technicianName ||
+    schedule?.techName ||
+    schedule?.name ||
+    schedule?.technician?.name ||
+    'N/D';
+
+  const technicianCity =
+    tech?.city ||
+    schedule?.city ||
+    schedule?.technician?.city ||
+    'N/D';
+
+  const technicianState =
+    tech?.state ||
+    schedule?.state ||
+    schedule?.technician?.state ||
+    '';
+
+  return {
+    time: getVisualScheduleTime(modality, shift, index + 1),
+    technician: technicianName,
+    city: `${technicianCity}${technicianState ? ' / ' + technicianState : ''}`,
+  };
+});
 
   return items;
 };
