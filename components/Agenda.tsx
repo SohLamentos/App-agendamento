@@ -510,36 +510,7 @@ const buildAgendaTooltipData = (
   });
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
-  const scheduleId = String(schedule?.id ?? '');
-  const technicianId = String(
-    schedule?.technicianId ??
-    schedule?.techId ??
-    schedule?.userId ??
-    schedule?.technician?.id ??
-    ''
-  );
-
-  const matchedTech = technicians.find((t: any) => {
-    const tId = String(t?.id ?? '');
-    const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
-    const certificationScheduleId = String(t?.certificationScheduleId ?? '');
-    const currentScheduleId = String(t?.scheduleId ?? '');
-    const currentTechId = String(t?.technicianId ?? '');
-
-    return (
-      (scheduleId && scheduledCertificationId === scheduleId) ||
-      (scheduleId && certificationScheduleId === scheduleId) ||
-      (scheduleId && currentScheduleId === scheduleId) ||
-      (technicianId && tId === technicianId) ||
-      (technicianId && currentTechId === technicianId)
-    );
-  });
-
-  const tech =
-  matchedTech ||
-  orderedTechs[index] ||
-  technicians[index];
-
+  
  const tech = orderedTechs[index] || technicians[index];
 
 const technicianName =
