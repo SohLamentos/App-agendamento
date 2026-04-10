@@ -458,6 +458,7 @@ const sameModality =
   (s.type || '').toUpperCase().includes((modality || '').toUpperCase());
 
 return sameDay && sameAnalyst && sameShift && sameTech && sameModality;
+      
     })
     .sort((a: any, b: any) => {
       const dateDiff =
