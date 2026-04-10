@@ -473,30 +473,52 @@ const orderedTechs = technicians
   });
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
+  
   const scheduleId = String(schedule?.id ?? '');
-  const technicianId = String(
-    schedule?.technicianId ??
-    schedule?.techId ??
-    schedule?.userId ??
-    schedule?.technician?.id ??
-    ''
+const technicianId = String(
+  schedule?.technicianId ??
+  schedule?.techId ??
+  schedule?.userId ??
+  schedule?.technician?.id ??
+  ''
+);
+
+const scheduleCpf = String(
+  schedule?.cpf ??
+  schedule?.technicianCpf ??
+  schedule?.user?.cpf ??
+  schedule?.technician?.cpf ??
+  ''
+).replace(/\D/g, '');
+
+const scheduleUniqueKey = String(
+  schedule?.unique_key ??
+  schedule?.uniqueKey ??
+  schedule?.technicianUniqueKey ??
+  schedule?.technician?.unique_key ??
+  schedule?.technician?.uniqueKey ??
+  ''
+);
+
+const matchedTech = technicians.find((t: any) => {
+  const tId = String(t?.id ?? '');
+  const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
+  const certificationScheduleId = String(t?.certificationScheduleId ?? '');
+  const currentScheduleId = String(t?.scheduleId ?? '');
+  const currentTechId = String(t?.technicianId ?? '');
+  const techCpf = String(t?.cpf ?? '').replace(/\D/g, '');
+  const techUniqueKey = String(t?.unique_key ?? t?.uniqueKey ?? '');
+
+  return (
+    (scheduleId && scheduledCertificationId === scheduleId) ||
+    (scheduleId && certificationScheduleId === scheduleId) ||
+    (scheduleId && currentScheduleId === scheduleId) ||
+    (technicianId && tId === technicianId) ||
+    (technicianId && currentTechId === technicianId) ||
+    (scheduleCpf && techCpf === scheduleCpf) ||
+    (scheduleUniqueKey && techUniqueKey === scheduleUniqueKey)
   );
-
-  const matchedTech = technicians.find((t: any) => {
-    const tId = String(t?.id ?? '');
-    const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
-    const certificationScheduleId = String(t?.certificationScheduleId ?? '');
-    const currentScheduleId = String(t?.scheduleId ?? '');
-    const currentTechId = String(t?.technicianId ?? '');
-
-    return (
-      (scheduleId && scheduledCertificationId === scheduleId) ||
-      (scheduleId && certificationScheduleId === scheduleId) ||
-      (scheduleId && currentScheduleId === scheduleId) ||
-      (technicianId && tId === technicianId) ||
-      (technicianId && currentTechId === technicianId)
-    );
-  });
+});
 
   console.log('TOOLTIP schedule JSON', JSON.stringify(schedule, null, 2));
   console.log('TOOLTIP matchedTech JSON', JSON.stringify(matchedTech, null, 2));
