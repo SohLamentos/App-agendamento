@@ -611,10 +611,11 @@ useEffect(() => {
 
         // Criar turma e importar técnicos
         const classObj = dataService.createTrainingClass({
-          ...formClass,
-          subcategory: subcategoryValue
-        });
-        const res = dataService.importTechniciansForClass(classObj, rawData);
+  ...formClass,
+  subcategory: subcategoryValue
+});
+
+const res = dataService.updateCompaniesFromSpreadsheet(rawData);
         
         setLastClassCreated(classObj);
         setImportResult(res);
