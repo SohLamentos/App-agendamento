@@ -995,8 +995,7 @@ raw.slice(1).forEach((row, index) => {
   updated++;
   return;
 }
-  }
-
+  
   const inAnotherClass = this.technicians.find(
     t => t.cpf === cleanCpf && t.groupId === ctx.groupId
   );
