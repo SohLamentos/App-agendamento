@@ -955,37 +955,31 @@ public updateCompaniesFromSpreadsheet(raw: any[][]) {
   let notFound = 0;
   const errors: ImportError[] = [];
 
-    const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
-const cpfIdx = headers.indexOf("CPF");
-const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
-const cityIdx = headers.indexOf("CIDADE");
-const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
+  const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
 
-// prioridade 1: localizar pelo nome do cabeçalho
-let solicitanteIdx = headers.indexOf("SOLICITANTE");
+const cpfIdx = this.getHeaderIndex(headers, ["CPF"]);
+const nameIdx = this.getHeaderIndex(headers, ["NOME", "NOME COMPLETO"]);
+const cityIdx = this.getHeaderIndex(headers, ["CIDADE"]);
 
-// prioridade 2: se não achar, usar a coluna J do modelo de importação
-if (solicitanteIdx === -1) {
-  solicitanteIdx = 9; // coluna J
-}
-  
+const companyIdx = this.getHeaderIndex(headers, [
   "EMPRESA/PARCEIRO",
   "EMPRESA / PARCEIRO",
   "EMPRESA",
   "PARCEIRO",
   "EMPRESA PARCEIRO"
 ]);
-];
-const solicitanteIdx = this.getHeaderIndex(headers, [
+
+let solicitanteIdx = this.getHeaderIndex(headers, [
   "SOLICITANTE",
   "SOLICITANTE/NOME",
   "SOLICITANTE / NOME",
   "NOME DO SOLICITANTE",
-  "SOLICITANTE NOME",
-  "GESTOR",
-  "SOLICITOR",
-  "REQUESTER"
+  "SOLICITANTE NOME"
 ]);
+
+if (solicitanteIdx === -1) {
+  solicitanteIdx = 9; // coluna J
+}  
 
 raw.slice(1).forEach((row, index) => {
   if (!row || row.length === 0) return;
