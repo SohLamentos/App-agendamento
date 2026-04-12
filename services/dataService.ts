@@ -1002,34 +1002,10 @@ private getRowStringValue(row: any[], index: number): string {
 
     const tech = this.technicians.find(t => t.cpf === cleanCpf);
 
-    if (!tech) {
-      notFound++;
-      return;
-    }
-
-    (tech as any).solicitante = solicitante;
-    (tech as any).solicitor = solicitante;
-
-    updated++;
-  });
-
-  this.persist();
-  window.dispatchEvent(new Event('data-updated'));
-
-  return { updated, notFound, errors };
-}
 
 if (!cleanCpf) return;
 
-  const inThisClass = this.technicians.find(
-    t => t.cpf === cleanCpf && t.trainingClassId === classObj.id && t.groupId === ctx.groupId
-  );
-
-   if (inThisClass) {
-  inThisClass.name = name;
-  inThisClass.city = city;
-  inThisClass.company = companyPartner;
-
+  
   const solicitanteFinal =
     solicitante && solicitante.trim() !== ""
       ? solicitante.trim()
