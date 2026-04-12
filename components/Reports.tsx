@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   Cell, PieChart, Pie, Legend
@@ -50,29 +51,95 @@ const Reports: React.FC<ReportsProps> = ({ user, type }) => {
     return () => window.removeEventListener('data-updated', load);
   }, [startDate, endDate]);
 
-  const handleExportCSV = () => {
-    const filename = type === 'capacity' ? 'G3_Ociosidade_30H_Analista' : 'G3_Performance';
-    const headers = type === 'capacity' 
-      ? ["Analista", "Total Horas (6h/dia)", "Produtivas", "Treinamento", "Cert. Própria", "Folgas", "Vazias", "Ociosidade (%)"]
-      : ["Analista", "Certs Concluidas", "Eficiência"];
-      
-    const rows = reportData.map(r => type === 'capacity' 
-      ? [r.name, r.totalHours, r.productiveHours.toFixed(1), r.trainingHours, r.internalCertHours, r.offHours, r.emptyHours.toFixed(1), r.idlePercent.toFixed(1)]
-      : [r.name, r.productiveHours, "100%"]);
+  import * as XLSX from 'xlsx';
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(",") + "\n"
-      + rows.map(e => e.join(",")).join("\n");
+const handleExportCSV = () => {
+  const schedules = dataService.getSchedules?.() || [];
+  const technicians = dataService.getTechnicians?.() || [];
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${filename}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const getHora = (shift: string) => {
+    if (!shift) return '';
+    const s = shift.toUpperCase();
+    if (s.includes('MORNING') || s.includes('MANHA')) return '08:30';
+    if (s.includes('AFTERNOON') || s.includes('TARDE')) return '13:30';
+    return '';
   };
 
+  const baseData = schedules.map((s: any) => {
+    const tech = technicians.find((t: any) =>
+      String(t.id) === String(s.technicianId)
+    );
+
+    return {
+      Analista: s.analystName || s.analystId,
+      Data: s.datetime?.split('T')[0],
+      Hora: getHora(s.shift),
+      Turno: s.shift,
+      Modalidade: s.type,
+      Tecnologia: s.technology,
+      Técnico: tech?.name || 'N/D',
+      Cidade: tech?.city || '',
+    };
+  });
+
+  // ===============================
+  // ABA 1 — POR ANALISTA
+  // ===============================
+  const sheet1 = XLSX.utils.json_to_sheet(baseData);
+
+  // ===============================
+  // ABA 2 — POR DATA
+  // ===============================
+  const sortedByDate = [...baseData].sort(
+    (a, b) => new Date(a.Data).getTime() - new Date(b.Data).getTime()
+  );
+
+  const sheet2 = XLSX.utils.json_to_sheet(sortedByDate);
+
+  // ===============================
+  // ABA 3 — VISÃO OPERACIONAL
+  // ===============================
+  const operacional = sortedByDate.map((r) => ({
+    Data: r.Data,
+    Hora: r.Hora,
+    Analista: r.Analista,
+    Técnico: r.Técnico,
+    Cidade: r.Cidade,
+    Tipo: `${r.Modalidade} - ${r.Tecnologia}`,
+  }));
+
+  const sheet3 = XLSX.utils.json_to_sheet(operacional);
+
+  // ===============================
+  // FORMATAÇÃO (largura colunas)
+  // ===============================
+  const setColWidth = (ws: any) => {
+    ws['!cols'] = [
+      { wch: 12 },
+      { wch: 8 },
+      { wch: 15 },
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 25 },
+    ];
+  };
+
+  setColWidth(sheet1);
+  setColWidth(sheet2);
+  setColWidth(sheet3);
+
+  // ===============================
+  // CRIA WORKBOOK
+  // ===============================
+  const wb = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(wb, sheet1, 'Por Analista');
+  XLSX.utils.book_append_sheet(wb, sheet2, 'Por Data');
+  XLSX.utils.book_append_sheet(wb, sheet3, 'Operacional');
+
+  XLSX.writeFile(wb, 'Agenda_Certificacoes.xlsx');
+};
+    
   const renderCapacityView = () => {
     const totals = reportData.reduce((acc, curr) => ({
       productive: acc.productive + curr.productiveHours,
