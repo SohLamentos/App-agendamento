@@ -971,9 +971,8 @@ private getRowStringValue(row: any[], index: number): string {
     "SOLICITANTE NOME"
   ]);
 
-  // fallback: coluna J do modelo oficial
   if (solicitanteIdx === -1) {
-    solicitanteIdx = 9;
+    solicitanteIdx = 9; // coluna J
   }
 
   raw.slice(1).forEach((row, index) => {
@@ -1002,8 +1001,22 @@ private getRowStringValue(row: any[], index: number): string {
 
     const tech = this.technicians.find(t => t.cpf === cleanCpf);
 
+    if (!tech) {
+      notFound++;
+      return;
+    }
 
-if (!cleanCpf) return;
+    (tech as any).solicitante = solicitante;
+    (tech as any).solicitor = solicitante;
+
+    updated++;
+  });
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+
+  return { updated, notFound, errors };
+}
 
   
   const solicitanteFinal =
