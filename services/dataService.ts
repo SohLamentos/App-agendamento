@@ -937,275 +937,146 @@ public updateCompaniesFromSpreadsheet(raw: any[][]) {
   let notFound = 0;
   const errors: ImportError[] = [];
 
-  const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
-  const cpfIdx = headers.indexOf("CPF");
-  const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
-
-  raw.slice(1).forEach((row, index) => {
-    if (!row || row.length === 0) return;
-
-    const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(
-      cpfIdx !== -1 ? row[cpfIdx] : null
-    );
-
-    if (cpfError) {
-      errors.push({
-        line: index + 2,
-        field: "CPF",
-        reason: cpfError,
-        value: cpfIdx !== -1 ? row[cpfIdx] : null
-      });
-      return;
-    }
-
-    if (!cleanCpf) return;
-
-    const companyPartner =
-      companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
-
-    const existingTechs = this.technicians.filter(
-      t => t.cpf === cleanCpf && t.groupId === ctx.groupId
-    );
-
-    if (existingTechs.length === 0) {
-      notFound++;
-      return;
-    }
-
-    existingTechs.forEach(t => {
-      t.company = companyPartner;
-    });
-
-    updated += existingTechs.length;
-  });
-
-  this.persist();
-  window.dispatchEvent(new Event('data-updated'));
-
-  return {
-    success: true,
-    updated,
-    notFound,
-    errors
-  };
-}
-  
-  public importTechniciansSimple(raw: any[][], requiresCert: boolean): ImportResult {
-    const ctx = this.getContext();
-    let inserted = 0;
-    let updated = 0;
-    let ignored = 0;
-    let duplicatedInClass = 0;
-    let newInOtherClass = 0;
-    const errors: ImportError[] = [];
-
-    const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
-    const cpfIdx = headers.indexOf("CPF");
-    const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
-    const cityIdx = headers.indexOf("CIDADE");
-    const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
-
-    raw.slice(1).forEach((row, index) => {
-      if (!row || row.length === 0) return;
-      
-      const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
-      const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
-      const companyPartner = companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
-      
-      const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(cpfIdx !== -1 ? row[cpfIdx] : null);
-      
-      if (cpfError) {
-        errors.push({ line: index + 2, field: 'CPF', reason: cpfError, value: cpfIdx !== -1 ? row[cpfIdx] : null });
-        return;
-      }
-      
-      if (!cleanCpf) return;
-
-const existing = this.technicians.find(t => t.cpf === cleanCpf && t.groupId === ctx.groupId);
-
-if (existing) {
-  existing.name = name;
-  existing.city = city;
-  existing.company = companyPartner;
-
-  const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
-  if (cityMatch) existing.state = cityMatch.uf;
-
-  existing.status_principal = requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO";
-  existing.generateCertification = requiresCert;
-  updated++;
-} else {
-  const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
-  const tech: Technician = { 
-    id: `tech-${Date.now()}-${Math.random()}`, 
-    groupId: ctx.groupId, 
-    name: name, 
-    cpf: cleanCpf, 
-    city: city, 
-    state: cityMatch ? cityMatch.uf : 'RS', 
-    email: '', 
-    phone: '', 
-    company: companyPartner, 
-    externalLogin: '', 
-    solicitor: '', 
-    certificationType: 'VIRTUAL', 
-    trainingClassId: '', 
-    participationStatus: ParticipationStatus.ENROLLED, 
-    eadExamScore: 0, 
-    finalTrainingScore: 0, 
-    eadApprovalStatus: ApprovalStatus.PENDING, 
-    generalApprovalStatus: ApprovalStatus.PENDING, 
-    certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, 
-    certificationReproofCount: 0, 
-    generateCertification: requiresCert, 
-    unique_key: cleanCpf + "_" + classObj.id,
-status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
-technology: classObj.type,
-solicitante: solicitante,
-  };
-  this.technicians.push(tech);
-  inserted++;
-}
-      
-    });
-    this.persist();
-    window.dispatchEvent(new Event('data-updated'));
-    return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors };
-  }
-
-  public createTrainingClass(params: { classNumber: string, subcategory: string, type: 'GPON' | 'HFC' | 'OUTROS', requiresCert: boolean }) {
-    const user = this.getCurrentUser();
-    // Padrão solicitado: {TIPO} — {SUBCATEGORIA} — TURMA {NUMERO}
-    const autoTitle = `${params.type} — ${params.subcategory} — TURMA ${params.classNumber}`.toUpperCase();
-    const newClass: TrainingClass = {
-      id: `class-${Date.now()}`,
-      groupId: user.groupId,
-      classNumber: params.classNumber,
-      title: autoTitle,
-      subcategory: params.subcategory,
-      type: params.type,
-      requiresCert: params.requiresCert,
-      locationId: 'REMOTO',
-      clientCompany: 'CLARO',
-      startDate: new Date().toISOString(),
-      endDate: new Date().toISOString(),
-      responsibleAnalystId: user.id,
-      status: TrainingStatus.PLANNED,
-      createdAt: new Date().toISOString(),
-      createdBy: user.fullName
-    };
-    this.trainingClasses.push(newClass);
-    this.persist();
-    
-    auditService.logTicket({
-      user,
-      action: 'CRIAR_TURMA',
-      targetType: 'Turma',
-      targetValue: params.classNumber,
-      after: JSON.stringify(newClass),
-      screen: 'Turmas e Técnicos',
-      groupId: user.groupId
-    });
-
-    window.dispatchEvent(new Event('data-updated'));
-    return newClass;
-  }
-
-  public importTechniciansForClass(classObj: TrainingClass, raw: any[][]): ImportResult {
-    const ctx = this.getContext();
-    let inserted = 0;
-    let updated = 0;
-    let ignored = 0;
-    let duplicatedInClass = 0;
-    let newInOtherClass = 0;
-    const errors: ImportError[] = [];
-
     const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
 const cpfIdx = headers.indexOf("CPF");
 const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
 const cityIdx = headers.indexOf("CIDADE");
 const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
 const solicitanteIdx = headers.indexOf("SOLICITANTE");
-    
-    raw.slice(1).forEach((row, index) => {
-      if (!row || row.length === 0) return;
 
-      const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
-const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
-const companyPartner = companyIdx !== -1 
-  ? String(row[companyIdx] || "").trim().toUpperCase() 
-  : "";
-const solicitante = solicitanteIdx !== -1
-  ? String(row[solicitanteIdx] || "").trim().toUpperCase()
-  : "";
-      
-      const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(cpfIdx !== -1 ? row[cpfIdx] : null);
-      
-      if (cpfError) {
-        errors.push({ line: index + 2, field: 'CPF', reason: cpfError, value: cpfIdx !== -1 ? row[cpfIdx] : null });
-        return;
-      }
+raw.slice(1).forEach((row, index) => {
+  if (!row || row.length === 0) return;
 
-      if (!cleanCpf) return;
-      
-      const inThisClass = this.technicians.find(t => t.cpf === cleanCpf && t.trainingClassId === classObj.id && t.groupId === ctx.groupId);
-      
-    if (inThisClass) {
-  inThisClass.name = name;
-inThisClass.city = city;
-inThisClass.company = companyPartner;
-(inThisClass as any).solicitante = solicitante;
+  const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
+  const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
+  const companyPartner =
+    companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
+  const solicitante =
+    solicitanteIdx !== -1 ? String(row[solicitanteIdx] || "").trim().toUpperCase() : "";
 
-  const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
-  if (cityMatch) inThisClass.state = cityMatch.uf;
+  const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(
+    cpfIdx !== -1 ? row[cpfIdx] : null
+  );
 
-  inThisClass.generateCertification = classObj.requiresCert;
-  inThisClass.status_principal = classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO";
-  inThisClass.technology = classObj.type;
-
-  updated++;
-  return;
-}
-      
-
-      // Se CPF existir em outra turma: permitir novo registro vinculado a esta turma
-      const inAnotherClass = this.technicians.find(t => t.cpf === cleanCpf && t.groupId === ctx.groupId);
-      
-      if (inAnotherClass) {
-        // NOVO EM OUTRA TURMA (Criamos um novo registro vinculado a esta turma)
-        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
-        const tech: Technician = { 
-          id: `tech-${Date.now()}-${Math.random()}`, 
-          groupId: ctx.groupId, 
-          name: name, 
-          cpf: cleanCpf, 
-          city: city, 
-          state: cityMatch ? cityMatch.uf : 'RS', 
-          email: '', phone: '', company: companyPartner, externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
-          status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
-          technology: classObj.type,
-          solicitante: solicitante,
-        };
-        this.technicians.push(tech);
-        newInOtherClass++;
-      } else {
-        // INSERIDO (Registro totalmente novo no sistema)
-        const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
-        const tech: Technician = { 
-          id: `tech-${Date.now()}-${Math.random()}`, 
-          groupId: ctx.groupId, 
-          name: name, 
-          cpf: cleanCpf, 
-          city: city, 
-          state: cityMatch ? cityMatch.uf : 'RS', 
-          email: '', phone: '', company: companyPartner, externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
-          status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
-          technology: classObj.type
-        };
-        this.technicians.push(tech);
-        inserted++;
-      }
+  if (cpfError) {
+    errors.push({
+      line: index + 2,
+      field: "CPF",
+      reason: cpfError,
+      value: cpfIdx !== -1 ? row[cpfIdx] : null
     });
+    return;
+  }
+
+  if (!cleanCpf) return;
+
+  const inThisClass = this.technicians.find(
+    t => t.cpf === cleanCpf && t.trainingClassId === classObj.id && t.groupId === ctx.groupId
+  );
+
+  if (inThisClass) {
+    inThisClass.name = name;
+    inThisClass.city = city;
+    inThisClass.company = companyPartner;
+    (inThisClass as any).solicitante = solicitante;
+
+    const cityMatch = mockCities.find(
+      mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
+    );
+    if (cityMatch) inThisClass.state = cityMatch.uf;
+
+    inThisClass.generateCertification = classObj.requiresCert;
+    inThisClass.status_principal = classObj.requiresCert
+      ? "PENDENTE_CERTIFICAÇÃO"
+      : "TREINAMENTO SEM CERTIFICAÇÃO";
+    inThisClass.technology = classObj.type;
+
+    updated++;
+    return;
+  }
+
+  const inAnotherClass = this.technicians.find(
+    t => t.cpf === cleanCpf && t.groupId === ctx.groupId
+  );
+
+  if (inAnotherClass) {
+    const cityMatch = mockCities.find(
+      mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
+    );
+
+    const tech: Technician = {
+      id: `tech-${Date.now()}-${Math.random()}`,
+      groupId: ctx.groupId,
+      name: name,
+      cpf: cleanCpf,
+      city: city,
+      state: cityMatch ? cityMatch.uf : 'RS',
+      email: '',
+      phone: '',
+      company: companyPartner,
+      externalLogin: '',
+      solicitor: '',
+      certificationType: 'VIRTUAL',
+      trainingClassId: classObj.id,
+      participationStatus: ParticipationStatus.ENROLLED,
+      eadExamScore: 0,
+      finalTrainingScore: 0,
+      eadApprovalStatus: ApprovalStatus.PENDING,
+      generalApprovalStatus: ApprovalStatus.PENDING,
+      certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
+      certificationReproofCount: 0,
+      generateCertification: classObj.requiresCert,
+      unique_key: cleanCpf + "_" + classObj.id,
+      status_principal: classObj.requiresCert
+        ? "PENDENTE_CERTIFICAÇÃO"
+        : "TREINAMENTO SEM CERTIFICAÇÃO",
+      technology: classObj.type,
+      solicitante: solicitante
+    } as any;
+
+    this.technicians.push(tech);
+    newInOtherClass++;
+    inserted++;
+    return;
+  }
+
+  const cityMatch = mockCities.find(
+    mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
+  );
+
+  const tech: Technician = {
+    id: `tech-${Date.now()}-${Math.random()}`,
+    groupId: ctx.groupId,
+    name: name,
+    cpf: cleanCpf,
+    city: city,
+    state: cityMatch ? cityMatch.uf : 'RS',
+    email: '',
+    phone: '',
+    company: companyPartner,
+    externalLogin: '',
+    solicitor: '',
+    certificationType: 'VIRTUAL',
+    trainingClassId: classObj.id,
+    participationStatus: ParticipationStatus.ENROLLED,
+    eadExamScore: 0,
+    finalTrainingScore: 0,
+    eadApprovalStatus: ApprovalStatus.PENDING,
+    generalApprovalStatus: ApprovalStatus.PENDING,
+    certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
+    certificationReproofCount: 0,
+    generateCertification: classObj.requiresCert,
+    unique_key: cleanCpf + "_" + classObj.id,
+    status_principal: classObj.requiresCert
+      ? "PENDENTE_CERTIFICAÇÃO"
+      : "TREINAMENTO SEM CERTIFICAÇÃO",
+    technology: classObj.type,
+    solicitante: solicitante
+  } as any;
+
+  this.technicians.push(tech);
+  inserted++;
+});
     
     this.persist();
     window.dispatchEvent(new Event('data-updated'));
