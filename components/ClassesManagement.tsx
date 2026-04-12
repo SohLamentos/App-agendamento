@@ -151,10 +151,17 @@ const provaTeorica =
   isAfternoon ? '13:30' :
   'N/D';
 
+const solicitante =
+  tech.solicitor ||
+  tech.requester ||
+  tech.solicitante ||
+  'N/D';
+
 const item = {
   analystName,
   technician: tech.name || 'N/D',
   turma,
+  solicitante,
   company,
   city,
   type,
@@ -217,25 +224,7 @@ const item = {
         rowsByAnalyst.push([]);
       });
 
-    const rowsByDate: any[][] = [
-  ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
-];
-
-    flatItems
-      .sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)))
-      .forEach((item) => {
-        rowsByDate.push([
-  item.dateLabel,
-  item.provaTeorica,
-  item.provaPratica,
-  item.analystName,
-  item.technician,
-  item.turma,
-  item.company,
-  item.city,
-  item.type
-]);
-      });
+    
 
     const rowsByDay: any[][] = [
   ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
@@ -290,45 +279,109 @@ Object.keys(groupedOperationalByDate)
     }
   });
 
-    const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
-const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
-
-wsByAnalyst['!cols'] = [
-  { wch: 24 }, // ANALISTA
-  { wch: 12 }, // DATA
-  { wch: 10 }, // NÚMERO
-  { wch: 36 }, // TURMA
-  { wch: 34 }, // TÉCNICO
-  { wch: 18 }, // EMPRESA
-  { wch: 22 }, // CIDADE
-  { wch: 14 }, // TIPO
-  { wch: 16 }, // PROVA TEÓRICA
-  { wch: 16 }  // PROVA PRÁTICA
+    // 🔹 ABA POR SOLICITANTE
+const rowsByRequester: any[][] = [
+  ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'SOLICITANTE', 'EMPRESA', 'CIDADE', 'TIPO']
 ];
 
+const groupedByRequesterDate: Record<string, any[]> = {};
+
+flatItems.forEach((item) => {
+  if (!groupedByRequesterDate[item.dateLabel]) {
+    groupedByRequesterDate[item.dateLabel] = [];
+  }
+  groupedByRequesterDate[item.dateLabel].push(item);
+});
+
+Object.keys(groupedByRequesterDate)
+  .sort((a, b) => {
+    const [da, ma, ya] = a.split('/').map(Number);
+    const [db, mb, yb] = b.split('/').map(Number);
+    const dateA = new Date(ya, ma - 1, da).getTime();
+    const dateB = new Date(yb, mb - 1, db).getTime();
+    return dateA - dateB;
+  })
+  .forEach((dateLabel, groupIndex, arr) => {
+    const items = groupedByRequesterDate[dateLabel]
+      .slice()
+      .sort((a, b) => {
+        const requesterDiff = String(a.solicitante).localeCompare(String(b.solicitante));
+        if (requesterDiff !== 0) return requesterDiff;
+
+        const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
+        if (analystDiff !== 0) return analystDiff;
+
+        return String(a.technician).localeCompare(String(b.technician));
+      });
+
+    items.forEach((item) => {
+      rowsByRequester.push([
+        item.dateLabel,
+        item.provaTeorica,
+        item.provaPratica,
+        item.analystName,
+        item.technician,
+        item.solicitante,
+        item.company,
+        item.city,
+        item.type
+      ]);
+    });
+
+    if (groupIndex < arr.length - 1) {
+      rowsByRequester.push(['', '', '', '', '', '', '', '', '']);
+    }
+  });
+    
+    const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
+const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
+const wsByRequester = XLSX.utils.aoa_to_sheet(rowsByRequester);
+
+wsByAnalyst['!cols'] = [
+  { wch: 24 },
+  { wch: 12 },
+  { wch: 10 },
+  { wch: 36 },
+  { wch: 34 },
+  { wch: 18 },
+  { wch: 22 },
+  { wch: 14 },
+  { wch: 16 },
+  { wch: 16 }
+];
 
 wsByDay['!cols'] = [
-  { wch: 12 }, // DATA
-  { wch: 16 }, // PROVA TEÓRICA
-  { wch: 16 }, // PROVA PRÁTICA
-  { wch: 24 }, // ANALISTA
-  { wch: 34 }, // TÉCNICO
-  { wch: 36 }, // TURMA
-  { wch: 18 }, // EMPRESA
-  { wch: 22 }, // CIDADE
-  { wch: 14 }  // TIPO
+  { wch: 12 },
+  { wch: 16 },
+  { wch: 16 },
+  { wch: 24 },
+  { wch: 34 },
+  { wch: 36 },
+  { wch: 18 },
+  { wch: 22 },
+  { wch: 14 }
+];
+
+wsByRequester['!cols'] = [
+  { wch: 12 },
+  { wch: 16 },
+  { wch: 16 },
+  { wch: 24 },
+  { wch: 34 },
+  { wch: 24 },
+  { wch: 18 },
+  { wch: 22 },
+  { wch: 14 }
 ];
 
 const applySheetStyle = (ws: XLSX.WorkSheet) => {
   if (!ws['!ref']) return;
 
   const range = XLSX.utils.decode_range(ws['!ref']);
+  const lastHeaderCell = XLSX.utils.encode_cell({ r: 0, c: range.e.c });
 
   ws['!autofilter'] = {
-    ref: XLSX.utils.encode_range({
-      s: { r: 0, c: 0 },
-      e: { r: range.e.r, c: range.e.c }
-    })
+    ref: `A1:${lastHeaderCell}`
   };
 
   for (let col = range.s.c; col <= range.e.c; col++) {
@@ -338,20 +391,28 @@ const applySheetStyle = (ws: XLSX.WorkSheet) => {
     ws[cellRef].s = {
       font: { bold: true, color: { rgb: 'FFFFFF' } },
       fill: { fgColor: { rgb: '9B0000' } },
-      alignment: { horizontal: 'center', vertical: 'center' }
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: {
+        top: { style: 'thin', color: { rgb: '7A0000' } },
+        bottom: { style: 'thin', color: { rgb: '7A0000' } },
+        left: { style: 'thin', color: { rgb: '7A0000' } },
+        right: { style: 'thin', color: { rgb: '7A0000' } }
+      }
     };
   }
 };
 
 applySheetStyle(wsByAnalyst);
 applySheetStyle(wsByDay);
+applySheetStyle(wsByRequester);
 
 const wb = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
 XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
+XLSX.utils.book_append_sheet(wb, wsByRequester, 'Por Solicitante');
 
-    const today = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `Agendados_${today}.xlsx`);
+const today = new Date().toISOString().split('T')[0];
+XLSX.writeFile(wb, `Agendados_${today}.xlsx`);
 
     setToast({ message: 'Arquivo de agendados exportado com sucesso.', type: 'success' });
   } catch (error: any) {
