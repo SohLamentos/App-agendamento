@@ -134,28 +134,35 @@ const refreshData = () => {
         (tech as any).turma ||
         'N/D';
 
-      const timeLabel = getScheduledExportTime(tech);
+      const provaPratica = getScheduledExportTime(tech);
 
-      const shiftValue = String(sch.shift ?? '').toUpperCase();
-      const provaUnificada =
-        shiftValue.includes('MORNING') || shiftValue.includes('MANHA')
-          ? '08:30'
-          : shiftValue.includes('AFTERNOON') || shiftValue.includes('TARDE')
-          ? '13:30'
-          : 'N/D';
+const shiftValue = String(sch.shift ?? '').toUpperCase();
+const isMorning =
+  shiftValue === String(Shift.MORNING).toUpperCase() ||
+  shiftValue.includes('MORNING') ||
+  shiftValue.includes('MANHA');
+const isAfternoon =
+  shiftValue === String(Shift.AFTERNOON).toUpperCase() ||
+  shiftValue.includes('AFTERNOON') ||
+  shiftValue.includes('TARDE');
 
-      const item = {
-        analystName,
-        technician: tech.name || 'N/D',
-        turma,
-        company,
-        city,
-        type,
-        dateLabel,
-        timeLabel,
-        provaUnificada,
-        datetime: sch.datetime || ''
-      };
+const provaTeorica =
+  isMorning ? '08:30' :
+  isAfternoon ? '13:30' :
+  'N/D';
+
+const item = {
+  analystName,
+  technician: tech.name || 'N/D',
+  turma,
+  company,
+  city,
+  type,
+  dateLabel,
+  provaTeorica,
+  provaPratica,
+  datetime: sch.datetime || ''
+};
 
       if (!groupedByAnalyst[analystName]) {
         groupedByAnalyst[analystName] = [];
@@ -180,54 +187,54 @@ const refreshData = () => {
         );
 
         rowsByAnalyst.push([
-          'ANALISTA',
-          'DATA',
-          'NÚMERO',
-          'TURMA',
-          'TECNICO',
-          'EMPRESA',
-          'CIDADE',
-          'TIPO',
-          'HORÁRIO',
-          'PROVA UNIFICADA'
-        ]);
+  'ANALISTA',
+  'DATA',
+  'NÚMERO',
+  'TURMA',
+  'TECNICO',
+  'EMPRESA',
+  'CIDADE',
+  'TIPO',
+  'PROVA TEÓRICA',
+  'PROVA PRÁTICA'
+]);
 
         items.forEach((item, index) => {
           rowsByAnalyst.push([
-            analystName,
-            item.dateLabel,
-            index + 1,
-            item.turma,
-            item.technician,
-            item.company,
-            item.city,
-            item.type,
-            item.timeLabel,
-            item.provaUnificada
-          ]);
+  analystName,
+  item.dateLabel,
+  index + 1,
+  item.turma,
+  item.technician,
+  item.company,
+  item.city,
+  item.type,
+  item.provaTeorica,
+  item.provaPratica
+]);
         });
 
         rowsByAnalyst.push([]);
       });
 
     const rowsByDate: any[][] = [
-      ['DATA', 'HORÁRIO', 'PROVA UNIFICADA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
-    ];
+  ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
+];
 
     flatItems
       .sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)))
       .forEach((item) => {
         rowsByDate.push([
-          item.dateLabel,
-          item.timeLabel,
-          item.provaUnificada,
-          item.analystName,
-          item.technician,
-          item.turma,
-          item.company,
-          item.city,
-          item.type
-        ]);
+  item.dateLabel,
+  item.provaTeorica,
+  item.provaPratica,
+  item.analystName,
+  item.technician,
+  item.turma,
+  item.company,
+  item.city,
+  item.type
+]);
       });
 
     const rowsByDay: any[][] = [];
@@ -246,28 +253,28 @@ const refreshData = () => {
         );
 
         rowsByDay.push([`DATA: ${dateLabel}`]);
-        rowsByDay.push([
-          'HORÁRIO',
-          'PROVA UNIFICADA',
-          'ANALISTA',
-          'TÉCNICO',
-          'TURMA',
-          'EMPRESA',
-          'CIDADE',
-          'TIPO'
-        ]);
+       rowsByDay.push([
+  'PROVA TEÓRICA',
+  'PROVA PRÁTICA',
+  'ANALISTA',
+  'TÉCNICO',
+  'TURMA',
+  'EMPRESA',
+  'CIDADE',
+  'TIPO'
+]);
 
         items.forEach((item) => {
-          rowsByDay.push([
-            item.timeLabel,
-            item.provaUnificada,
-            item.analystName,
-            item.technician,
-            item.turma,
-            item.company,
-            item.city,
-            item.type
-          ]);
+        rowsByDay.push([
+  item.provaTeorica,
+  item.provaPratica,
+  item.analystName,
+  item.technician,
+  item.turma,
+  item.company,
+  item.city,
+  item.type
+]); 
         });
 
         rowsByDay.push([]);
@@ -739,13 +746,35 @@ const getScheduledExportTime = (tech: Technician) => {
   const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
   if (!sch?.datetime || !sch?.analystId || !sch?.shift) return 'N/D';
 
+  const shiftValue = String(sch.shift ?? '').toUpperCase();
+  const isMorning =
+    shiftValue === String(Shift.MORNING).toUpperCase() ||
+    shiftValue.includes('MORNING') ||
+    shiftValue.includes('MANHA');
+  const isAfternoon =
+    shiftValue === String(Shift.AFTERNOON).toUpperCase() ||
+    shiftValue.includes('AFTERNOON') ||
+    shiftValue.includes('TARDE');
+
   const sameSlotSchedules = schedules
     .filter(s => {
       if (!s.datetime || !s.analystId || !s.shift) return false;
 
       const sameDay = s.datetime.split('T')[0] === sch.datetime.split('T')[0];
       const sameAnalyst = s.analystId === sch.analystId;
-      const sameShift = s.shift === sch.shift;
+
+      const sShift = String(s.shift ?? '').toUpperCase();
+      const sameShift =
+        (isMorning && (
+          sShift === String(Shift.MORNING).toUpperCase() ||
+          sShift.includes('MORNING') ||
+          sShift.includes('MANHA')
+        )) ||
+        (isAfternoon && (
+          sShift === String(Shift.AFTERNOON).toUpperCase() ||
+          sShift.includes('AFTERNOON') ||
+          sShift.includes('TARDE')
+        ));
 
       return sameDay && sameAnalyst && sameShift;
     })
@@ -759,27 +788,29 @@ const getScheduledExportTime = (tech: Technician) => {
   if (slotIndex < 0) return 'N/D';
 
   const position = slotIndex + 1;
-  const isPresential = sch.type === ExpertiseType.PRESENTIAL;
+  const isPresential =
+    sch.type === ExpertiseType.PRESENTIAL ||
+    String(sch.type ?? '').toUpperCase().includes('PRES');
 
   if (isPresential) {
-    if (sch.shift === Shift.MORNING) {
+    if (isMorning) {
       if (position === 1) return '09:00';
       if (position === 2) return '10:00';
       if (position === 3) return '11:00';
     }
 
-    if (sch.shift === Shift.AFTERNOON) {
+    if (isAfternoon) {
       if (position === 1) return '14:00';
       if (position === 2) return '15:00';
       if (position === 3) return '16:00';
     }
   } else {
-    if (sch.shift === Shift.MORNING) {
+    if (isMorning) {
       if (position === 1) return '09:30';
       if (position === 2) return '10:30';
     }
 
-    if (sch.shift === Shift.AFTERNOON) {
+    if (isAfternoon) {
       if (position === 1) return '14:30';
       if (position === 2) return '15:30';
     }
