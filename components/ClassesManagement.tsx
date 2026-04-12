@@ -90,115 +90,224 @@ const refreshData = () => {
 //FILTRO
  const handleExportScheduledTechnicians = () => {
   try {
-    if (activeSubTab !== 'scheduled') {
-      setToast({ message: 'Abra a aba AGENDADOS para exportar.', type: 'error' });
-      return;
-    }
-
-    const scheduledTechs = filteredTechs.filter(tech => tech.scheduledCertificationId);
+    const scheduledTechs = filteredTechs.filter(
+      tech => activeSubTab === 'scheduled' && tech.scheduledCertificationId
+    );
 
     if (scheduledTechs.length === 0) {
       setToast({ message: 'Não há técnicos agendados para exportar.', type: 'error' });
       return;
     }
 
-    const rows: any[][] = [];
-    const groupedByAnalystAndDate: Record<string, any[]> = {};
+    const groupedByAnalyst: Record<string, any[]> = {};
+    const groupedByDate: Record<string, any[]> = {};
+    const flatItems: any[] = [];
+
+    const getProvaUnificada = (shift: string) => {
+      if (!shift) return 'N/D';
+      const s = String(shift).toUpperCase();
+      if (s.includes('MORNING') || s.includes('MANHA')) return '08:30';
+      if (s.includes('AFTERNOON') || s.includes('TARDE')) return '13:30';
+      return 'N/D';
+    };
 
     scheduledTechs.forEach((tech) => {
       const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
-      if (!sch || !sch.datetime) return;
+      if (!sch) return;
 
       const analyst = allUsers.find(u => u.id === sch.analystId);
       const analystName = analyst?.fullName || analyst?.name || 'SEM ANALISTA';
-        const trainingClass = trainingClasses.find(c => c.id === tech.trainingClassId);
-  const classTitle = trainingClass?.title || 'SEM TURMA';
-
-      const isoDate = sch.datetime.split('T')[0];
-      const [year, month, day] = isoDate.split('-');
-      const formattedDate = `${day}/${month}/${year}`;
-
-      // usa o horário bruto salvo, sem converter fuso
-      const rawTime = getScheduledExportTime(tech);
 
       const company = tech.company || 'N/D';
       const city = `${tech.city || ''}${tech.state ? ' / ' + tech.state : ''}`;
       const type = sch.type === ExpertiseType.PRESENTIAL ? 'PRESENCIAL' : 'VIRTUAL';
 
-      const groupKey = `${analystName}__${isoDate}`;
+      const dateObj = sch.datetime ? new Date(sch.datetime) : null;
+      const dateLabel = dateObj
+        ? dateObj.toLocaleDateString('pt-BR')
+        : 'N/D';
 
-      if (!groupedByAnalystAndDate[groupKey]) {
-        groupedByAnalystAndDate[groupKey] = [];
+      const timeLabel = dateObj
+        ? dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : 'N/D';
+
+      const provaUnificada = getProvaUnificada(sch.shift);
+
+      const item = {
+        analystName,
+        technician: tech.name || 'N/D',
+        turma: tech.trainingClassName || tech.className || tech.turmaName || 'N/D',
+        company,
+        city,
+        type,
+        dateLabel,
+        timeLabel,
+        provaUnificada,
+        datetime: sch.datetime || ''
+      };
+
+      if (!groupedByAnalyst[analystName]) {
+        groupedByAnalyst[analystName] = [];
       }
 
-      groupedByAnalystAndDate[groupKey].push({
-  analystName,
-  isoDate,
-  formattedDate,
-  classTitle,
-  technician: tech.name || 'N/D',
-  company,
-  city,
-  type,
-  rawTime,
-  datetime: sch.datetime
-});
+      if (!groupedByDate[dateLabel]) {
+        groupedByDate[dateLabel] = [];
+      }
+
+      groupedByAnalyst[analystName].push(item);
+      groupedByDate[dateLabel].push(item);
+      flatItems.push(item);
     });
 
-    Object.keys(groupedByAnalystAndDate)
-      .sort((a, b) => {
-        const [analystA, dateA] = a.split('__');
-        const [analystB, dateB] = b.split('__');
+    const rowsByAnalyst: any[][] = [];
 
-        if (analystA !== analystB) {
-          return analystA.localeCompare(analystB);
-        }
-
-        return dateA.localeCompare(dateB);
-      })
-      .forEach((groupKey) => {
-        const items = groupedByAnalystAndDate[groupKey].sort((a, b) =>
+    Object.keys(groupedByAnalyst)
+      .sort((a, b) => a.localeCompare(b))
+      .forEach((analystName) => {
+        const items = groupedByAnalyst[analystName].sort((a, b) =>
           String(a.datetime).localeCompare(String(b.datetime))
         );
 
-        rows.push(['ANALISTA', 'DATA', 'NÚMERO', 'TURMA', 'TECNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'HORÁRIO']);
+        rowsByAnalyst.push([
+          'ANALISTA',
+          'DATA',
+          'NÚMERO',
+          'TURMA',
+          'TECNICO',
+          'EMPRESA',
+          'CIDADE',
+          'TIPO',
+          'HORÁRIO',
+          'PROVA UNIFICADA'
+        ]);
 
         items.forEach((item, index) => {
-          rows.push([
-  item.analystName,
-  item.formattedDate,
-  index + 1,
-  item.classTitle,
-  item.technician,
-  item.company,
-  item.city,
-  item.type,
-  item.rawTime
-]);
+          rowsByAnalyst.push([
+            analystName,
+            item.dateLabel,
+            index + 1,
+            item.turma,
+            item.technician,
+            item.company,
+            item.city,
+            item.type,
+            item.timeLabel,
+            item.provaUnificada
+          ]);
         });
 
-        rows.push([]);
+        rowsByAnalyst.push([]);
       });
 
-    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const rowsByDate: any[][] = [
+      ['DATA', 'HORÁRIO', 'PROVA UNIFICADA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
+    ];
 
-    ws['!cols'] = [
-  { wch: 24 }, // ANALISTA
-  { wch: 12 }, // DATA
-  { wch: 10 }, // NÚMERO
-  { wch: 38 }, // TURMA
-  { wch: 35 }, // TECNICO
-  { wch: 18 }, // EMPRESA
-  { wch: 24 }, // CIDADE
-  { wch: 14 }, // TIPO
-  { wch: 10 }  // HORÁRIO
-];
+    flatItems
+      .sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)))
+      .forEach((item) => {
+        rowsByDate.push([
+          item.dateLabel,
+          item.timeLabel,
+          item.provaUnificada,
+          item.analystName,
+          item.technician,
+          item.turma,
+          item.company,
+          item.city,
+          item.type
+        ]);
+      });
+
+    const rowsByDay: any[][] = [];
+
+    Object.keys(groupedByDate)
+      .sort((a, b) => {
+        const [da, ma, ya] = a.split('/').map(Number);
+        const [db, mb, yb] = b.split('/').map(Number);
+        const dateA = new Date(ya, ma - 1, da).getTime();
+        const dateB = new Date(yb, mb - 1, db).getTime();
+        return dateA - dateB;
+      })
+      .forEach((dateLabel) => {
+        const items = groupedByDate[dateLabel].sort((a, b) =>
+          String(a.datetime).localeCompare(String(b.datetime))
+        );
+
+        rowsByDay.push([`DATA: ${dateLabel}`]);
+        rowsByDay.push([
+          'HORÁRIO',
+          'PROVA UNIFICADA',
+          'ANALISTA',
+          'TÉCNICO',
+          'TURMA',
+          'EMPRESA',
+          'CIDADE',
+          'TIPO'
+        ]);
+
+        items.forEach((item) => {
+          rowsByDay.push([
+            item.timeLabel,
+            item.provaUnificada,
+            item.analystName,
+            item.technician,
+            item.turma,
+            item.company,
+            item.city,
+            item.type
+          ]);
+        });
+
+        rowsByDay.push([]);
+      });
+
+    const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
+    wsByAnalyst['!cols'] = [
+      { wch: 24 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 34 },
+      { wch: 35 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 14 },
+      { wch: 10 },
+      { wch: 18 }
+    ];
+
+    const wsByDate = XLSX.utils.aoa_to_sheet(rowsByDate);
+    wsByDate['!cols'] = [
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 18 },
+      { wch: 24 },
+      { wch: 35 },
+      { wch: 34 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 14 }
+    ];
+
+    const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
+    wsByDay['!cols'] = [
+      { wch: 10 },
+      { wch: 18 },
+      { wch: 24 },
+      { wch: 35 },
+      { wch: 34 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 14 }
+    ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Agendados');
+    XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
+    XLSX.utils.book_append_sheet(wb, wsByDate, 'Por Data');
+    XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
 
     const today = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `agendados_${today}.xlsx`);
+    XLSX.writeFile(wb, `Agendados_${today}.xlsx`);
 
     setToast({ message: 'Arquivo de agendados exportado com sucesso.', type: 'success' });
   } catch (error: any) {
