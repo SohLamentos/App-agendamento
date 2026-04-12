@@ -237,48 +237,34 @@ const item = {
 ]);
       });
 
-    const rowsByDay: any[][] = [];
+    const rowsByDay: any[][] = [
+  ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
+];
 
-    Object.keys(groupedByDate)
-      .sort((a, b) => {
-        const [da, ma, ya] = a.split('/').map(Number);
-        const [db, mb, yb] = b.split('/').map(Number);
-        const dateA = new Date(ya, ma - 1, da).getTime();
-        const dateB = new Date(yb, mb - 1, db).getTime();
-        return dateA - dateB;
-      })
-      .forEach((dateLabel) => {
-        const items = groupedByDate[dateLabel].sort((a, b) =>
-          String(a.datetime).localeCompare(String(b.datetime))
-        );
+flatItems
+  .slice()
+  .sort((a, b) => {
+    const dateDiff = String(a.datetime).localeCompare(String(b.datetime));
+    if (dateDiff !== 0) return dateDiff;
 
-        rowsByDay.push([`DATA: ${dateLabel}`]);
-       rowsByDay.push([
-  'PROVA TEÓRICA',
-  'PROVA PRÁTICA',
-  'ANALISTA',
-  'TÉCNICO',
-  'TURMA',
-  'EMPRESA',
-  'CIDADE',
-  'TIPO'
-]);
+    const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
+    if (analystDiff !== 0) return analystDiff;
 
-        items.forEach((item) => {
-        rowsByDay.push([
-  item.provaTeorica,
-  item.provaPratica,
-  item.analystName,
-  item.technician,
-  item.turma,
-  item.company,
-  item.city,
-  item.type
-]); 
-        });
-
-        rowsByDay.push([]);
-      });
+    return String(a.technician).localeCompare(String(b.technician));
+  })
+  .forEach((item) => {
+    rowsByDay.push([
+      item.dateLabel,
+      item.provaTeorica,
+      item.provaPratica,
+      item.analystName,
+      item.technician,
+      item.turma,
+      item.company,
+      item.city,
+      item.type
+    ]);
+  });
 
     const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
 const wsByDate = XLSX.utils.aoa_to_sheet(rowsByDate);
@@ -310,6 +296,7 @@ wsByDate['!cols'] = [
 ];
 
 wsByDay['!cols'] = [
+  { wch: 12 }, // DATA
   { wch: 16 }, // PROVA TEÓRICA
   { wch: 16 }, // PROVA PRÁTICA
   { wch: 24 }, // ANALISTA
