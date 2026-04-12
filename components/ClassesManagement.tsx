@@ -281,7 +281,10 @@ const item = {
       });
 
     const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
-    wsByAnalyst['!cols'] = [
+const wsByDate = XLSX.utils.aoa_to_sheet(rowsByDate);
+const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
+
+wsByAnalyst['!cols'] = [
   { wch: 24 }, // ANALISTA
   { wch: 12 }, // DATA
   { wch: 10 }, // NÚMERO
@@ -317,25 +320,22 @@ wsByDay['!cols'] = [
   { wch: 14 }  // TIPO
 ];
 
-    const applySheetStyle = (ws: XLSX.WorkSheet) => {
-      
+const applySheetStyle = (ws: XLSX.WorkSheet) => {
   if (!ws['!ref']) return;
 
   ws['!autofilter'] = {
     ref: ws['!ref']
   };
-
-  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
 };
-    
-    applySheetStyle(wsByAnalyst);
+
+applySheetStyle(wsByAnalyst);
 applySheetStyle(wsByDate);
 applySheetStyle(wsByDay);
-    
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
-    XLSX.utils.book_append_sheet(wb, wsByDate, 'Por Data');
-    XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
+
+const wb = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
+XLSX.utils.book_append_sheet(wb, wsByDate, 'Por Data');
+XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
 
     const today = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `Agendados_${today}.xlsx`);
