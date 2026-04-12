@@ -951,11 +951,14 @@ private getRowStringValue(row: any[], index: number): string {
   }
 public updateCompaniesFromSpreadsheet(raw: any[][]) {
   const ctx = this.getContext();
-  let updated = 0;
-  let notFound = 0;
-  const errors: ImportError[] = [];
+let inserted = 0;
+let updated = 0;
+let ignored = 0;
+let duplicatedInClass = 0;
+let newInOtherClass = 0;
+const errors: ImportError[] = [];
 
-  const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
+const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
 
 const cpfIdx = this.getHeaderIndex(headers, ["CPF"]);
 const nameIdx = this.getHeaderIndex(headers, ["NOME", "NOME COMPLETO"]);
@@ -978,8 +981,8 @@ let solicitanteIdx = this.getHeaderIndex(headers, [
 ]);
 
 if (solicitanteIdx === -1) {
-  solicitanteIdx = 9; // coluna J
-}  
+  solicitanteIdx = 9; // coluna J do modelo oficial
+}
 
 raw.slice(1).forEach((row, index) => {
   if (!row || row.length === 0) return;
@@ -989,7 +992,6 @@ const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : 
 const companyPartner =
   companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
 
-// lê exatamente da coluna do modelo
 const solicitante =
   solicitanteIdx !== -1 && row.length > solicitanteIdx
     ? String(row[solicitanteIdx] ?? "").trim()
@@ -1020,14 +1022,10 @@ const solicitante =
   inThisClass.city = city;
   inThisClass.company = companyPartner;
 
-  // grava o valor real da planilha; se vier vazio, mantém o antigo
   const solicitanteFinal =
     solicitante && solicitante.trim() !== ""
       ? solicitante.trim()
       : ((inThisClass as any).solicitante || (inThisClass as any).solicitor || "");
-
-  (inThisClass as any).solicitante = solicitanteFinal;
-  (inThisClass as any).solicitor = solicitanteFinal;   
 
   (inThisClass as any).solicitante = solicitanteFinal;
   (inThisClass as any).solicitor = solicitanteFinal;
