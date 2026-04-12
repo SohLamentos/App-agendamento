@@ -100,7 +100,6 @@ const refreshData = () => {
     }
 
     const groupedByAnalyst: Record<string, any[]> = {};
-    const groupedByDate: Record<string, any[]> = {};
     const flatItems: any[] = [];
 
     scheduledTechs.forEach((tech) => {
@@ -136,53 +135,49 @@ const refreshData = () => {
 
       const provaPratica = getScheduledExportTime(tech);
 
-const shiftValue = String(sch.shift ?? '').toUpperCase();
-const isMorning =
-  shiftValue === String(Shift.MORNING).toUpperCase() ||
-  shiftValue.includes('MORNING') ||
-  shiftValue.includes('MANHA');
-const isAfternoon =
-  shiftValue === String(Shift.AFTERNOON).toUpperCase() ||
-  shiftValue.includes('AFTERNOON') ||
-  shiftValue.includes('TARDE');
+      const shiftValue = String(sch.shift ?? '').toUpperCase();
+      const isMorning =
+        shiftValue === String(Shift.MORNING).toUpperCase() ||
+        shiftValue.includes('MORNING') ||
+        shiftValue.includes('MANHA');
+      const isAfternoon =
+        shiftValue === String(Shift.AFTERNOON).toUpperCase() ||
+        shiftValue.includes('AFTERNOON') ||
+        shiftValue.includes('TARDE');
 
-const provaTeorica =
-  isMorning ? '08:30' :
-  isAfternoon ? '13:30' :
-  'N/D';
+      const provaTeorica =
+        isMorning ? '08:30' :
+        isAfternoon ? '13:30' :
+        'N/D';
 
-      console.log('EXPORT TECH SAMPLE', tech);
-      
-const solicitante =
-  tech.solicitor ||
-  tech.requester ||
-  tech.solicitante ||
-  'N/D';
+      const solicitante =
+        (tech as any).solicitante ||
+        (tech as any).solicitanteNome ||
+        (tech as any).requestedBy ||
+        (tech as any).requesterName ||
+        (tech as any).solicitor ||
+        (tech as any).requester ||
+        'N/D';
 
-const item = {
-  analystName,
-  technician: tech.name || 'N/D',
-  turma,
-  solicitante,
-  company,
-  city,
-  type,
-  dateLabel,
-  provaTeorica,
-  provaPratica,
-  datetime: sch.datetime || ''
-};
+      const item = {
+        analystName,
+        technician: tech.name || 'N/D',
+        turma,
+        solicitante,
+        company,
+        city,
+        type,
+        dateLabel,
+        provaTeorica,
+        provaPratica,
+        datetime: sch.datetime || ''
+      };
 
       if (!groupedByAnalyst[analystName]) {
         groupedByAnalyst[analystName] = [];
       }
 
-      if (!groupedByDate[dateLabel]) {
-        groupedByDate[dateLabel] = [];
-      }
-
       groupedByAnalyst[analystName].push(item);
-      groupedByDate[dateLabel].push(item);
       flatItems.push(item);
     });
 
@@ -196,225 +191,222 @@ const item = {
         );
 
         rowsByAnalyst.push([
-  'ANALISTA',
-  'DATA',
-  'NÚMERO',
-  'TURMA',
-  'TECNICO',
-  'EMPRESA',
-  'CIDADE',
-  'TIPO',
-  'PROVA TEÓRICA',
-  'PROVA PRÁTICA'
-]);
+          'ANALISTA',
+          'DATA',
+          'NÚMERO',
+          'TURMA',
+          'TECNICO',
+          'EMPRESA',
+          'CIDADE',
+          'TIPO',
+          'PROVA TEÓRICA',
+          'PROVA PRÁTICA'
+        ]);
 
         items.forEach((item, index) => {
           rowsByAnalyst.push([
-  analystName,
-  item.dateLabel,
-  index + 1,
-  item.turma,
-  item.technician,
-  item.company,
-  item.city,
-  item.type,
-  item.provaTeorica,
-  item.provaPratica
-]);
+            analystName,
+            item.dateLabel,
+            index + 1,
+            item.turma,
+            item.technician,
+            item.company,
+            item.city,
+            item.type,
+            item.provaTeorica,
+            item.provaPratica
+          ]);
         });
 
         rowsByAnalyst.push([]);
       });
 
-    
-
     const rowsByDay: any[][] = [
-  ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
-];
+      ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
+    ];
 
-const groupedOperationalByDate: Record<string, any[]> = {};
+    const groupedOperationalByDate: Record<string, any[]> = {};
 
-flatItems.forEach((item) => {
-  if (!groupedOperationalByDate[item.dateLabel]) {
-    groupedOperationalByDate[item.dateLabel] = [];
-  }
-  groupedOperationalByDate[item.dateLabel].push(item);
-});
-
-Object.keys(groupedOperationalByDate)
-  .sort((a, b) => {
-    const [da, ma, ya] = a.split('/').map(Number);
-    const [db, mb, yb] = b.split('/').map(Number);
-    const dateA = new Date(ya, ma - 1, da).getTime();
-    const dateB = new Date(yb, mb - 1, db).getTime();
-    return dateA - dateB;
-  })
-  .forEach((dateLabel, groupIndex, arr) => {
-    const items = groupedOperationalByDate[dateLabel]
-      .slice()
-      .sort((a, b) => {
-        const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
-        if (analystDiff !== 0) return analystDiff;
-
-        const practicalDiff = String(a.provaPratica).localeCompare(String(b.provaPratica));
-        if (practicalDiff !== 0) return practicalDiff;
-
-        return String(a.technician).localeCompare(String(b.technician));
-      });
-
-    items.forEach((item) => {
-      rowsByDay.push([
-        item.dateLabel,
-        item.provaTeorica,
-        item.provaPratica,
-        item.analystName,
-        item.technician,
-        item.turma,
-        item.company,
-        item.city,
-        item.type
-      ]);
+    flatItems.forEach((item) => {
+      if (!groupedOperationalByDate[item.dateLabel]) {
+        groupedOperationalByDate[item.dateLabel] = [];
+      }
+      groupedOperationalByDate[item.dateLabel].push(item);
     });
 
-    if (groupIndex < arr.length - 1) {
-      rowsByDay.push(['', '', '', '', '', '', '', '', '']);
-    }
-  });
-
-    // 🔹 ABA POR SOLICITANTE
-const rowsByRequester: any[][] = [
-  ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'SOLICITANTE', 'EMPRESA', 'CIDADE', 'TIPO']
-];
-
-const groupedByRequesterDate: Record<string, any[]> = {};
-
-flatItems.forEach((item) => {
-  if (!groupedByRequesterDate[item.dateLabel]) {
-    groupedByRequesterDate[item.dateLabel] = [];
-  }
-  groupedByRequesterDate[item.dateLabel].push(item);
-});
-
-Object.keys(groupedByRequesterDate)
-  .sort((a, b) => {
-    const [da, ma, ya] = a.split('/').map(Number);
-    const [db, mb, yb] = b.split('/').map(Number);
-    const dateA = new Date(ya, ma - 1, da).getTime();
-    const dateB = new Date(yb, mb - 1, db).getTime();
-    return dateA - dateB;
-  })
-  .forEach((dateLabel, groupIndex, arr) => {
-    const items = groupedByRequesterDate[dateLabel]
-      .slice()
+    Object.keys(groupedOperationalByDate)
       .sort((a, b) => {
-        const requesterDiff = String(a.solicitante).localeCompare(String(b.solicitante));
-        if (requesterDiff !== 0) return requesterDiff;
+        const [da, ma, ya] = a.split('/').map(Number);
+        const [db, mb, yb] = b.split('/').map(Number);
+        const dateA = new Date(ya, ma - 1, da).getTime();
+        const dateB = new Date(yb, mb - 1, db).getTime();
+        return dateA - dateB;
+      })
+      .forEach((dateLabel, groupIndex, arr) => {
+        const items = groupedOperationalByDate[dateLabel]
+          .slice()
+          .sort((a, b) => {
+            const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
+            if (analystDiff !== 0) return analystDiff;
 
-        const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
-        if (analystDiff !== 0) return analystDiff;
+            const practicalDiff = String(a.provaPratica).localeCompare(String(b.provaPratica));
+            if (practicalDiff !== 0) return practicalDiff;
 
-        return String(a.technician).localeCompare(String(b.technician));
+            return String(a.technician).localeCompare(String(b.technician));
+          });
+
+        items.forEach((item) => {
+          rowsByDay.push([
+            item.dateLabel,
+            item.provaTeorica,
+            item.provaPratica,
+            item.analystName,
+            item.technician,
+            item.turma,
+            item.company,
+            item.city,
+            item.type
+          ]);
+        });
+
+        if (groupIndex < arr.length - 1) {
+          rowsByDay.push(['', '', '', '', '', '', '', '', '']);
+        }
       });
 
-    items.forEach((item) => {
-      rowsByRequester.push([
-        item.dateLabel,
-        item.provaTeorica,
-        item.provaPratica,
-        item.analystName,
-        item.technician,
-        item.solicitante,
-        item.company,
-        item.city,
-        item.type
-      ]);
+    const rowsByRequester: any[][] = [
+      ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'SOLICITANTE', 'EMPRESA', 'CIDADE', 'TIPO']
+    ];
+
+    const groupedByRequesterDate: Record<string, any[]> = {};
+
+    flatItems.forEach((item) => {
+      if (!groupedByRequesterDate[item.dateLabel]) {
+        groupedByRequesterDate[item.dateLabel] = [];
+      }
+      groupedByRequesterDate[item.dateLabel].push(item);
     });
 
-    if (groupIndex < arr.length - 1) {
-      rowsByRequester.push(['', '', '', '', '', '', '', '', '']);
-    }
-  });
-    
+    Object.keys(groupedByRequesterDate)
+      .sort((a, b) => {
+        const [da, ma, ya] = a.split('/').map(Number);
+        const [db, mb, yb] = b.split('/').map(Number);
+        const dateA = new Date(ya, ma - 1, da).getTime();
+        const dateB = new Date(yb, mb - 1, db).getTime();
+        return dateA - dateB;
+      })
+      .forEach((dateLabel, groupIndex, arr) => {
+        const items = groupedByRequesterDate[dateLabel]
+          .slice()
+          .sort((a, b) => {
+            const requesterDiff = String(a.solicitante).localeCompare(String(b.solicitante));
+            if (requesterDiff !== 0) return requesterDiff;
+
+            const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
+            if (analystDiff !== 0) return analystDiff;
+
+            return String(a.technician).localeCompare(String(b.technician));
+          });
+
+        items.forEach((item) => {
+          rowsByRequester.push([
+            item.dateLabel,
+            item.provaTeorica,
+            item.provaPratica,
+            item.analystName,
+            item.technician,
+            item.solicitante,
+            item.company,
+            item.city,
+            item.type
+          ]);
+        });
+
+        if (groupIndex < arr.length - 1) {
+          rowsByRequester.push(['', '', '', '', '', '', '', '', '']);
+        }
+      });
+
     const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
-const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
-const wsByRequester = XLSX.utils.aoa_to_sheet(rowsByRequester);
+    const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
+    const wsByRequester = XLSX.utils.aoa_to_sheet(rowsByRequester);
 
-wsByAnalyst['!cols'] = [
-  { wch: 24 },
-  { wch: 12 },
-  { wch: 10 },
-  { wch: 36 },
-  { wch: 34 },
-  { wch: 18 },
-  { wch: 22 },
-  { wch: 14 },
-  { wch: 16 },
-  { wch: 16 }
-];
+    wsByAnalyst['!cols'] = [
+      { wch: 24 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 36 },
+      { wch: 34 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 14 },
+      { wch: 16 },
+      { wch: 16 }
+    ];
 
-wsByDay['!cols'] = [
-  { wch: 12 },
-  { wch: 16 },
-  { wch: 16 },
-  { wch: 24 },
-  { wch: 34 },
-  { wch: 36 },
-  { wch: 18 },
-  { wch: 22 },
-  { wch: 14 }
-];
+    wsByDay['!cols'] = [
+      { wch: 12 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 24 },
+      { wch: 34 },
+      { wch: 36 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 14 }
+    ];
 
-wsByRequester['!cols'] = [
-  { wch: 12 },
-  { wch: 16 },
-  { wch: 16 },
-  { wch: 24 },
-  { wch: 34 },
-  { wch: 24 },
-  { wch: 18 },
-  { wch: 22 },
-  { wch: 14 }
-];
+    wsByRequester['!cols'] = [
+      { wch: 12 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 24 },
+      { wch: 34 },
+      { wch: 24 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 14 }
+    ];
 
-const applySheetStyle = (ws: XLSX.WorkSheet) => {
-  if (!ws['!ref']) return;
+    const applySheetStyle = (ws: XLSX.WorkSheet) => {
+      if (!ws['!ref']) return;
 
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  const lastHeaderCell = XLSX.utils.encode_cell({ r: 0, c: range.e.c });
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      const lastHeaderCell = XLSX.utils.encode_cell({ r: 0, c: range.e.c });
 
-  ws['!autofilter'] = {
-    ref: `A1:${lastHeaderCell}`
-  };
+      ws['!autofilter'] = {
+        ref: `A1:${lastHeaderCell}`
+      };
 
-  for (let col = range.s.c; col <= range.e.c; col++) {
-    const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
-    if (!ws[cellRef]) continue;
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (!ws[cellRef]) continue;
 
-    ws[cellRef].s = {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '9B0000' } },
-      alignment: { horizontal: 'center', vertical: 'center' },
-      border: {
-        top: { style: 'thin', color: { rgb: '7A0000' } },
-        bottom: { style: 'thin', color: { rgb: '7A0000' } },
-        left: { style: 'thin', color: { rgb: '7A0000' } },
-        right: { style: 'thin', color: { rgb: '7A0000' } }
+        ws[cellRef].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '9B0000' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: {
+            top: { style: 'thin', color: { rgb: '7A0000' } },
+            bottom: { style: 'thin', color: { rgb: '7A0000' } },
+            left: { style: 'thin', color: { rgb: '7A0000' } },
+            right: { style: 'thin', color: { rgb: '7A0000' } }
+          }
+        };
       }
     };
-  }
-};
 
-applySheetStyle(wsByAnalyst);
-applySheetStyle(wsByDay);
-applySheetStyle(wsByRequester);
+    applySheetStyle(wsByAnalyst);
+    applySheetStyle(wsByDay);
+    applySheetStyle(wsByRequester);
 
-const wb = XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
-XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
-XLSX.utils.book_append_sheet(wb, wsByRequester, 'Por Solicitante');
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
+    XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
+    XLSX.utils.book_append_sheet(wb, wsByRequester, 'Por Solicitante');
 
-const today = new Date().toISOString().split('T')[0];
-XLSX.writeFile(wb, `Agendados_${today}.xlsx`);
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Agendados_${today}.xlsx`);
 
     setToast({ message: 'Arquivo de agendados exportado com sucesso.', type: 'success' });
   } catch (error: any) {
