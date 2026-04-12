@@ -956,10 +956,19 @@ public updateCompaniesFromSpreadsheet(raw: any[][]) {
   const errors: ImportError[] = [];
 
     const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
-const cpfIdx = this.getHeaderIndex(headers, ["CPF"]);
-const nameIdx = this.getHeaderIndex(headers, ["NOME", "NOME COMPLETO"]);
-const cityIdx = this.getHeaderIndex(headers, ["CIDADE"]);
-const companyIdx = this.getHeaderIndex(headers, [
+const cpfIdx = headers.indexOf("CPF");
+const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
+const cityIdx = headers.indexOf("CIDADE");
+const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
+
+// prioridade 1: localizar pelo nome do cabeçalho
+let solicitanteIdx = headers.indexOf("SOLICITANTE");
+
+// prioridade 2: se não achar, usar a coluna J do modelo de importação
+if (solicitanteIdx === -1) {
+  solicitanteIdx = 9; // coluna J
+}
+  
   "EMPRESA/PARCEIRO",
   "EMPRESA / PARCEIRO",
   "EMPRESA",
@@ -980,10 +989,16 @@ const solicitanteIdx = this.getHeaderIndex(headers, [
 raw.slice(1).forEach((row, index) => {
   if (!row || row.length === 0) return;
 
-  const name = this.getRowStringValue(row, nameIdx);
-const city = this.getRowStringValue(row, cityIdx);
-const companyPartner = this.getRowStringValue(row, companyIdx);
-const solicitante = this.getRowStringValue(row, solicitanteIdx);
+  const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
+const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
+const companyPartner =
+  companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
+
+// lê exatamente da coluna do modelo
+const solicitante =
+  solicitanteIdx !== -1 && row.length > solicitanteIdx
+    ? String(row[solicitanteIdx] ?? "").trim()
+    : "";
 
   const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(
     cpfIdx !== -1 ? row[cpfIdx] : null
@@ -1005,16 +1020,19 @@ const solicitante = this.getRowStringValue(row, solicitanteIdx);
     t => t.cpf === cleanCpf && t.trainingClassId === classObj.id && t.groupId === ctx.groupId
   );
 
-      if (inThisClass) {
+   if (inThisClass) {
   inThisClass.name = name;
   inThisClass.city = city;
   inThisClass.company = companyPartner;
 
+  // grava o valor real da planilha; se vier vazio, mantém o antigo
   const solicitanteFinal =
-    solicitante ||
-    (inThisClass as any).solicitante ||
-    (inThisClass as any).solicitor ||
-    '';
+    solicitante && solicitante.trim() !== ""
+      ? solicitante.trim()
+      : ((inThisClass as any).solicitante || (inThisClass as any).solicitor || "");
+
+  (inThisClass as any).solicitante = solicitanteFinal;
+  (inThisClass as any).solicitor = solicitanteFinal;   
 
   (inThisClass as any).solicitante = solicitanteFinal;
   (inThisClass as any).solicitor = solicitanteFinal;
@@ -1055,6 +1073,7 @@ const solicitante = this.getRowStringValue(row, solicitanteIdx);
   company: companyPartner,
   externalLogin: '',
   solicitor: solicitante,
+  solicitante: solicitante,
   certificationType: 'VIRTUAL',
   trainingClassId: classObj.id,
   participationStatus: ParticipationStatus.ENROLLED,
@@ -1094,6 +1113,7 @@ const solicitante = this.getRowStringValue(row, solicitanteIdx);
   company: companyPartner,
   externalLogin: '',
   solicitor: solicitante,
+  solicitante: solicitante,  
   certificationType: 'VIRTUAL',
   trainingClassId: classObj.id,
   participationStatus: ParticipationStatus.ENROLLED,
