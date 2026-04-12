@@ -950,14 +950,19 @@ private getRowStringValue(row: any[], index: number): string {
     return { cpf: padded };
   }
 
-  public backfillSolicitanteFromSpreadsheet(raw: any[][]) {
+  public updateCompaniesFromSpreadsheet(raw: any[][]) {
   let updated = 0;
   let notFound = 0;
   const errors: ImportError[] = [];
 
+  if (!raw || raw.length === 0) {
+    return { updated, notFound, errors };
+  }
+
   const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
 
   const cpfIdx = this.getHeaderIndex(headers, ["CPF"]);
+
   let solicitanteIdx = this.getHeaderIndex(headers, [
     "SOLICITANTE",
     "SOLICITANTE/NOME",
@@ -966,8 +971,9 @@ private getRowStringValue(row: any[], index: number): string {
     "SOLICITANTE NOME"
   ]);
 
+  // fallback: coluna J do modelo oficial
   if (solicitanteIdx === -1) {
-    solicitanteIdx = 9; // coluna J
+    solicitanteIdx = 9;
   }
 
   raw.slice(1).forEach((row, index) => {
@@ -1003,6 +1009,7 @@ private getRowStringValue(row: any[], index: number): string {
 
     (tech as any).solicitante = solicitante;
     (tech as any).solicitor = solicitante;
+
     updated++;
   });
 
