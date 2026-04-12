@@ -949,67 +949,68 @@ private getRowStringValue(row: any[], index: number): string {
 
     return { cpf: padded };
   }
-public updateCompaniesFromSpreadsheet(classObj: TrainingClass, raw: any[][]) {
-  const ctx = this.getContext();
-let inserted = 0;
-let updated = 0;
-let ignored = 0;
-let duplicatedInClass = 0;
-let newInOtherClass = 0;
-const errors: ImportError[] = [];
 
-const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
+  public backfillSolicitanteFromSpreadsheet(raw: any[][]) {
+  let updated = 0;
+  let notFound = 0;
+  const errors: ImportError[] = [];
 
-const cpfIdx = this.getHeaderIndex(headers, ["CPF"]);
-const nameIdx = this.getHeaderIndex(headers, ["NOME", "NOME COMPLETO"]);
-const cityIdx = this.getHeaderIndex(headers, ["CIDADE"]);
+  const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
 
-const companyIdx = this.getHeaderIndex(headers, [
-  "EMPRESA/PARCEIRO",
-  "EMPRESA / PARCEIRO",
-  "EMPRESA",
-  "PARCEIRO",
-  "EMPRESA PARCEIRO"
-]);
+  const cpfIdx = this.getHeaderIndex(headers, ["CPF"]);
+  let solicitanteIdx = this.getHeaderIndex(headers, [
+    "SOLICITANTE",
+    "SOLICITANTE/NOME",
+    "SOLICITANTE / NOME",
+    "NOME DO SOLICITANTE",
+    "SOLICITANTE NOME"
+  ]);
 
-let solicitanteIdx = this.getHeaderIndex(headers, [
-  "SOLICITANTE",
-  "SOLICITANTE/NOME",
-  "SOLICITANTE / NOME",
-  "NOME DO SOLICITANTE",
-  "SOLICITANTE NOME"
-]);
-
-if (solicitanteIdx === -1) {
-  solicitanteIdx = 9; // coluna J do modelo oficial
-}
-
-raw.slice(1).forEach((row, index) => {
-  if (!row || row.length === 0) return;
-
-  const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
-const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
-const companyPartner =
-  companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
-
-const solicitante =
-  solicitanteIdx !== -1 && row.length > solicitanteIdx
-    ? String(row[solicitanteIdx] ?? "").trim()
-    : "";
-
-  const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(
-    cpfIdx !== -1 ? row[cpfIdx] : null
-  );
-
-  if (cpfError) {
-    errors.push({
-      line: index + 2,
-      field: "CPF",
-      reason: cpfError,
-      value: cpfIdx !== -1 ? row[cpfIdx] : null
-    });
-    return;
+  if (solicitanteIdx === -1) {
+    solicitanteIdx = 9; // coluna J
   }
+
+  raw.slice(1).forEach((row, index) => {
+    if (!row || row.length === 0) return;
+
+    const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(
+      cpfIdx !== -1 ? row[cpfIdx] : null
+    );
+
+    if (cpfError) {
+      errors.push({
+        line: index + 2,
+        field: "CPF",
+        reason: cpfError,
+        value: cpfIdx !== -1 ? row[cpfIdx] : null
+      });
+      return;
+    }
+
+    if (!cleanCpf) return;
+
+    const solicitante =
+      solicitanteIdx !== -1 && row.length > solicitanteIdx
+        ? String(row[solicitanteIdx] ?? "").trim()
+        : "";
+
+    const tech = this.technicians.find(t => t.cpf === cleanCpf);
+
+    if (!tech) {
+      notFound++;
+      return;
+    }
+
+    (tech as any).solicitante = solicitante;
+    (tech as any).solicitor = solicitante;
+    updated++;
+  });
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+
+  return { updated, notFound, errors };
+}
 
   if (!cleanCpf) return;
 
