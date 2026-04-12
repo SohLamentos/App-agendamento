@@ -978,7 +978,6 @@ raw.slice(1).forEach((row, index) => {
     inThisClass.name = name;
 inThisClass.city = city;
 inThisClass.company = companyPartner;
-(inThisClass as any).solicitante = solicitante;
 (inThisClass as any).solicitor = solicitante;
 
     const cityMatch = mockCities.find(
@@ -1006,34 +1005,33 @@ inThisClass.company = companyPartner;
     );
 
     const tech: Technician = {
-      id: `tech-${Date.now()}-${Math.random()}`,
-      groupId: ctx.groupId,
-      name: name,
-      cpf: cleanCpf,
-      city: city,
-      state: cityMatch ? cityMatch.uf : 'RS',
-      email: '',
-      phone: '',
-      company: companyPartner,
-externalLogin: '',
-solicitor: solicitante,
-certificationType: 'VIRTUAL',
-      trainingClassId: classObj.id,
-      participationStatus: ParticipationStatus.ENROLLED,
-      eadExamScore: 0,
-      finalTrainingScore: 0,
-      eadApprovalStatus: ApprovalStatus.PENDING,
-      generalApprovalStatus: ApprovalStatus.PENDING,
-      certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
-      certificationReproofCount: 0,
-      generateCertification: classObj.requiresCert,
-      unique_key: cleanCpf + "_" + classObj.id,
-      status_principal: classObj.requiresCert
-        ? "PENDENTE_CERTIFICAÇÃO"
-        : "TREINAMENTO SEM CERTIFICAÇÃO",
-      technology: classObj.type,
-      solicitante: solicitante
-    } as any;
+  id: `tech-${Date.now()}-${Math.random()}`,
+  groupId: ctx.groupId,
+  name: name,
+  cpf: cleanCpf,
+  city: city,
+  state: cityMatch ? cityMatch.uf : 'RS',
+  email: '',
+  phone: '',
+  company: companyPartner,
+  externalLogin: '',
+  solicitor: solicitante,
+  certificationType: 'VIRTUAL',
+  trainingClassId: classObj.id,
+  participationStatus: ParticipationStatus.ENROLLED,
+  eadExamScore: 0,
+  finalTrainingScore: 0,
+  eadApprovalStatus: ApprovalStatus.PENDING,
+  generalApprovalStatus: ApprovalStatus.PENDING,
+  certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
+  certificationReproofCount: 0,
+  generateCertification: classObj.requiresCert,
+  unique_key: cleanCpf + "_" + classObj.id,
+  status_principal: classObj.requiresCert
+    ? "PENDENTE_CERTIFICAÇÃO"
+    : "TREINAMENTO SEM CERTIFICAÇÃO",
+  technology: classObj.type
+} as any;
 
     this.technicians.push(tech);
     newInOtherClass++;
@@ -1046,34 +1044,33 @@ certificationType: 'VIRTUAL',
   );
 
   const tech: Technician = {
-    id: `tech-${Date.now()}-${Math.random()}`,
-    groupId: ctx.groupId,
-    name: name,
-    cpf: cleanCpf,
-    city: city,
-    state: cityMatch ? cityMatch.uf : 'RS',
-    email: '',
-    phone: '',
-    company: companyPartner,
-externalLogin: '',
-solicitor: solicitante,
-certificationType: 'VIRTUAL',
-    trainingClassId: classObj.id,
-    participationStatus: ParticipationStatus.ENROLLED,
-    eadExamScore: 0,
-    finalTrainingScore: 0,
-    eadApprovalStatus: ApprovalStatus.PENDING,
-    generalApprovalStatus: ApprovalStatus.PENDING,
-    certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
-    certificationReproofCount: 0,
-    generateCertification: classObj.requiresCert,
-    unique_key: cleanCpf + "_" + classObj.id,
-    status_principal: classObj.requiresCert
-      ? "PENDENTE_CERTIFICAÇÃO"
-      : "TREINAMENTO SEM CERTIFICAÇÃO",
-    technology: classObj.type,
-    solicitante: solicitante
-  } as any;
+  id: `tech-${Date.now()}-${Math.random()}`,
+  groupId: ctx.groupId,
+  name: name,
+  cpf: cleanCpf,
+  city: city,
+  state: cityMatch ? cityMatch.uf : 'RS',
+  email: '',
+  phone: '',
+  company: companyPartner,
+  externalLogin: '',
+  solicitor: solicitante,
+  certificationType: 'VIRTUAL',
+  trainingClassId: classObj.id,
+  participationStatus: ParticipationStatus.ENROLLED,
+  eadExamScore: 0,
+  finalTrainingScore: 0,
+  eadApprovalStatus: ApprovalStatus.PENDING,
+  generalApprovalStatus: ApprovalStatus.PENDING,
+  certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
+  certificationReproofCount: 0,
+  generateCertification: classObj.requiresCert,
+  unique_key: cleanCpf + "_" + classObj.id,
+  status_principal: classObj.requiresCert
+    ? "PENDENTE_CERTIFICAÇÃO"
+    : "TREINAMENTO SEM CERTIFICAÇÃO",
+  technology: classObj.type
+} as any;
 
   this.technicians.push(tech);
   inserted++;
