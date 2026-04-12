@@ -975,6 +975,7 @@ if (solicitanteIdx === -1) {
   "PARCEIRO",
   "EMPRESA PARCEIRO"
 ]);
+];
 const solicitanteIdx = this.getHeaderIndex(headers, [
   "SOLICITANTE",
   "SOLICITANTE/NOME",
