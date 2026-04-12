@@ -1019,7 +1019,7 @@ private getRowStringValue(row: any[], index: number): string {
   return { updated, notFound, errors };
 }
 
-  if (!cleanCpf) return;
+if (!cleanCpf) return;
 
   const inThisClass = this.technicians.find(
     t => t.cpf === cleanCpf && t.trainingClassId === classObj.id && t.groupId === ctx.groupId
