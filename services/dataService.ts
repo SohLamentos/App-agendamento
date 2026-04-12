@@ -976,9 +976,10 @@ raw.slice(1).forEach((row, index) => {
 
   if (inThisClass) {
     inThisClass.name = name;
-    inThisClass.city = city;
-    inThisClass.company = companyPartner;
-    (inThisClass as any).solicitante = solicitante;
+inThisClass.city = city;
+inThisClass.company = companyPartner;
+(inThisClass as any).solicitante = solicitante;
+(inThisClass as any).solicitor = solicitante;
 
     const cityMatch = mockCities.find(
       mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
@@ -1014,9 +1015,9 @@ raw.slice(1).forEach((row, index) => {
       email: '',
       phone: '',
       company: companyPartner,
-      externalLogin: '',
-      solicitor: '',
-      certificationType: 'VIRTUAL',
+externalLogin: '',
+solicitor: solicitante,
+certificationType: 'VIRTUAL',
       trainingClassId: classObj.id,
       participationStatus: ParticipationStatus.ENROLLED,
       eadExamScore: 0,
@@ -1054,9 +1055,9 @@ raw.slice(1).forEach((row, index) => {
     email: '',
     phone: '',
     company: companyPartner,
-    externalLogin: '',
-    solicitor: '',
-    certificationType: 'VIRTUAL',
+externalLogin: '',
+solicitor: solicitante,
+certificationType: 'VIRTUAL',
     trainingClassId: classObj.id,
     participationStatus: ParticipationStatus.ENROLLED,
     eadExamScore: 0,
