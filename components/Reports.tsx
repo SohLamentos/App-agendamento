@@ -1,12 +1,20 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  Cell, PieChart, Pie, Legend
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  PieChart,
+  Pie,
+  Legend
 } from 'recharts';
 import { dataService } from '../services/dataService';
-import { User, UserRole } from '../types';
+import { User } from '../types';
 
 interface ReportsProps {
   user: User;
@@ -14,7 +22,6 @@ interface ReportsProps {
 }
 
 const Reports: React.FC<ReportsProps> = ({ user, type }) => {
-  // Função auxiliar para obter data local em formato YYYY-MM-DD sem desvios de UTC
   const getLocalDateString = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -22,11 +29,10 @@ const Reports: React.FC<ReportsProps> = ({ user, type }) => {
     return `${year}-${month}-${day}`;
   };
 
-  // Inicialização robusta: Segunda e Sexta da semana atual em horário LOCAL
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1); 
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(now.setDate(diff));
     return getLocalDateString(monday);
   });
@@ -46,100 +52,300 @@ const Reports: React.FC<ReportsProps> = ({ user, type }) => {
       const data = dataService.getDetailedIdleAnalysis(startDate, endDate);
       setReportData(data);
     };
+
     load();
     window.addEventListener('data-updated', load);
     return () => window.removeEventListener('data-updated', load);
   }, [startDate, endDate]);
 
-  import * as XLSX from 'xlsx';
+  const handleExportExcel = () => {
+    try {
+      const schedules = (dataService as any).getSchedules?.() || [];
+      const technicians = (dataService as any).getTechnicians?.() || [];
+      const users = (dataService as any).getUsers?.() || [];
 
-const handleExportCSV = () => {
-  const schedules = dataService.getSchedules?.() || [];
-  const technicians = dataService.getTechnicians?.() || [];
+      const filteredSchedules = schedules.filter((s: any) => {
+        if (!s?.datetime) return false;
+        const dateOnly = String(s.datetime).split('T')[0];
+        return dateOnly >= startDate && dateOnly <= endDate;
+      });
 
-  const getHora = (shift: string) => {
-    if (!shift) return '';
-    const s = shift.toUpperCase();
-    if (s.includes('MORNING') || s.includes('MANHA')) return '08:30';
-    if (s.includes('AFTERNOON') || s.includes('TARDE')) return '13:30';
-    return '';
+      if (!filteredSchedules.length) {
+        alert('Não há agendamentos no período selecionado para exportar.');
+        return;
+      }
+
+      const getProvaUnificada = (shift: string) => {
+        if (!shift) return 'N/D';
+        const s = String(shift).toUpperCase();
+        if (s.includes('MORNING') || s.includes('MANHA')) return '08:30';
+        if (s.includes('AFTERNOON') || s.includes('TARDE')) return '13:30';
+        return 'N/D';
+      };
+
+      const getCertificationTime = (schedule: any, typeValue: string, position: number) => {
+        const isPresential = String(typeValue || '').toUpperCase().includes('PRES');
+
+        if (isPresential) {
+          if (position === 1) return schedule.shift?.toUpperCase().includes('MORNING') || schedule.shift?.toUpperCase().includes('MANHA') ? '09:00' : '14:00';
+          if (position === 2) return schedule.shift?.toUpperCase().includes('MORNING') || schedule.shift?.toUpperCase().includes('MANHA') ? '10:00' : '15:00';
+          if (position === 3) return schedule.shift?.toUpperCase().includes('MORNING') || schedule.shift?.toUpperCase().includes('MANHA') ? '11:00' : '16:00';
+          return 'N/D';
+        }
+
+        if (position === 1) return schedule.shift?.toUpperCase().includes('MORNING') || schedule.shift?.toUpperCase().includes('MANHA') ? '09:30' : '14:30';
+        if (position === 2) return schedule.shift?.toUpperCase().includes('MORNING') || schedule.shift?.toUpperCase().includes('MANHA') ? '10:30' : '15:30';
+
+        return 'N/D';
+      };
+
+      const groupedPositionKey: Record<string, number> = {};
+      const baseData = filteredSchedules
+        .slice()
+        .sort((a: any, b: any) => {
+          const dateDiff = new Date(a?.datetime ?? '').getTime() - new Date(b?.datetime ?? '').getTime();
+          if (dateDiff !== 0) return dateDiff;
+          return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
+        })
+        .map((s: any) => {
+          const tech = technicians.find((t: any) => {
+            const scheduleId = String(s?.id ?? '');
+            const technicianId = String(
+              s?.technicianId ??
+              s?.techId ??
+              s?.userId ??
+              s?.technician?.id ??
+              ''
+            );
+
+            const scheduleCpf = String(
+              s?.cpf ??
+              s?.technicianCpf ??
+              s?.user?.cpf ??
+              s?.technician?.cpf ??
+              ''
+            ).replace(/\D/g, '');
+
+            const scheduleUniqueKey = String(
+              s?.unique_key ??
+              s?.uniqueKey ??
+              s?.technicianUniqueKey ??
+              s?.technician?.unique_key ??
+              s?.technician?.uniqueKey ??
+              ''
+            );
+
+            const tId = String(t?.id ?? '');
+            const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
+            const certificationScheduleId = String(t?.certificationScheduleId ?? '');
+            const currentScheduleId = String(t?.scheduleId ?? '');
+            const currentTechId = String(t?.technicianId ?? '');
+            const techCpf = String(t?.cpf ?? '').replace(/\D/g, '');
+            const techUniqueKey = String(t?.unique_key ?? t?.uniqueKey ?? '');
+
+            return (
+              (scheduleId && scheduledCertificationId === scheduleId) ||
+              (scheduleId && certificationScheduleId === scheduleId) ||
+              (scheduleId && currentScheduleId === scheduleId) ||
+              (technicianId && tId === technicianId) ||
+              (technicianId && currentTechId === technicianId) ||
+              (scheduleCpf && techCpf === scheduleCpf) ||
+              (scheduleUniqueKey && techUniqueKey === scheduleUniqueKey)
+            );
+          });
+
+          const analyst = users.find((u: any) => String(u.id) === String(s.analystId));
+          const analystName =
+            analyst?.fullName ||
+            analyst?.name ||
+            s?.analystName ||
+            s?.analystId ||
+            'SEM ANALISTA';
+
+          const technicianName =
+            tech?.name ||
+            tech?.fullName ||
+            s?.technicianName ||
+            s?.techName ||
+            s?.name ||
+            s?.user?.name ||
+            s?.technician?.name ||
+            'N/D';
+
+          const company =
+            tech?.company ||
+            s?.company ||
+            s?.technician?.company ||
+            'N/D';
+
+          const city =
+            tech?.city ||
+            s?.city ||
+            s?.user?.city ||
+            s?.technician?.city ||
+            'N/D';
+
+          const state =
+            tech?.state ||
+            s?.state ||
+            s?.user?.state ||
+            s?.technician?.state ||
+            '';
+
+          const cityState = `${city}${state ? ' / ' + state : ''}`;
+
+          const dateObj = s?.datetime ? new Date(s.datetime) : null;
+          const dateLabel = dateObj ? dateObj.toLocaleDateString('pt-BR') : 'N/D';
+
+          const shiftValue = String(s?.shift ?? '').toUpperCase();
+          const typeValue =
+            String(s?.type ?? '').toUpperCase().includes('PRES')
+              ? 'PRESENCIAL'
+              : 'VIRTUAL';
+
+          const key = [
+            String(s?.analystId ?? ''),
+            String(s?.datetime ?? '').split('T')[0],
+            shiftValue,
+            typeValue,
+            String(s?.technology ?? '')
+          ].join('|');
+
+          groupedPositionKey[key] = (groupedPositionKey[key] || 0) + 1;
+          const position = groupedPositionKey[key];
+
+          const horarioCertificacao = getCertificationTime(s, typeValue, position);
+          const provaUnificada = getProvaUnificada(s.shift);
+
+          return {
+            Analista: analystName,
+            Data: dateLabel,
+            DataISO: String(s?.datetime ?? '').split('T')[0],
+            Número: position,
+            Turma:
+              s?.title ||
+              s?.trainingName ||
+              s?.className ||
+              s?.technology ||
+              'N/D',
+            Técnico: technicianName,
+            Empresa: company,
+            Cidade: cityState,
+            Tipo: typeValue,
+            Tecnologia: s?.technology || 'N/D',
+            'Horário Certificação': horarioCertificacao,
+            'Prova Unificada': provaUnificada,
+            Turno: s?.shift || 'N/D',
+            Datetime: s?.datetime || ''
+          };
+        });
+
+      const byAnalyst = baseData
+        .slice()
+        .sort((a, b) => {
+          const analystDiff = String(a.Analista).localeCompare(String(b.Analista));
+          if (analystDiff !== 0) return analystDiff;
+          return String(a.Datetime).localeCompare(String(b.Datetime));
+        })
+        .map(({ DataISO, Datetime, ...rest }) => rest);
+
+      const byDate = baseData
+        .slice()
+        .sort((a, b) => String(a.Datetime).localeCompare(String(b.Datetime)))
+        .map(({ DataISO, Datetime, ...rest }) => rest);
+
+      const byDayRows: any[] = [];
+      const groupedByDay: Record<string, any[]> = {};
+
+      baseData.forEach((row) => {
+        if (!groupedByDay[row.Data]) groupedByDay[row.Data] = [];
+        groupedByDay[row.Data].push(row);
+      });
+
+      Object.keys(groupedByDay)
+        .sort((a, b) => {
+          const [da, ma, ya] = a.split('/').map(Number);
+          const [db, mb, yb] = b.split('/').map(Number);
+          return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
+        })
+        .forEach((date) => {
+          byDayRows.push({
+            'Horário Certificação': `DATA: ${date}`,
+            'Prova Unificada': '',
+            Analista: '',
+            Técnico: '',
+            Empresa: '',
+            Cidade: '',
+            Tipo: ''
+          });
+
+          groupedByDay[date]
+            .sort((a, b) => String(a.Datetime).localeCompare(String(b.Datetime)))
+            .forEach((row) => {
+              byDayRows.push({
+                'Horário Certificação': row['Horário Certificação'],
+                'Prova Unificada': row['Prova Unificada'],
+                Analista: row.Analista,
+                Técnico: row.Técnico,
+                Empresa: row.Empresa,
+                Cidade: row.Cidade,
+                Tipo: row.Tipo
+              });
+            });
+        });
+
+      const wsAnalyst = XLSX.utils.json_to_sheet(byAnalyst);
+      const wsDate = XLSX.utils.json_to_sheet(byDate);
+      const wsDay = XLSX.utils.json_to_sheet(byDayRows);
+
+      wsAnalyst['!cols'] = [
+        { wch: 24 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 34 },
+        { wch: 34 },
+        { wch: 18 },
+        { wch: 22 },
+        { wch: 14 },
+        { wch: 12 },
+        { wch: 18 }
+      ];
+
+      wsDate['!cols'] = [
+        { wch: 24 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 34 },
+        { wch: 34 },
+        { wch: 18 },
+        { wch: 22 },
+        { wch: 14 },
+        { wch: 12 },
+        { wch: 18 }
+      ];
+
+      wsDay['!cols'] = [
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 24 },
+        { wch: 34 },
+        { wch: 18 },
+        { wch: 22 },
+        { wch: 14 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, wsAnalyst, 'Por Analista');
+      XLSX.utils.book_append_sheet(wb, wsDate, 'Por Data');
+      XLSX.utils.book_append_sheet(wb, wsDay, 'Operacional');
+
+      XLSX.writeFile(wb, `Agendados_${startDate}_${endDate}.xlsx`);
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      alert('Erro ao exportar Excel.');
+    }
   };
 
-  const baseData = schedules.map((s: any) => {
-    const tech = technicians.find((t: any) =>
-      String(t.id) === String(s.technicianId)
-    );
-
-    return {
-      Analista: s.analystName || s.analystId,
-      Data: s.datetime?.split('T')[0],
-      Hora: getHora(s.shift),
-      Turno: s.shift,
-      Modalidade: s.type,
-      Tecnologia: s.technology,
-      Técnico: tech?.name || 'N/D',
-      Cidade: tech?.city || '',
-    };
-  });
-
-  // ===============================
-  // ABA 1 — POR ANALISTA
-  // ===============================
-  const sheet1 = XLSX.utils.json_to_sheet(baseData);
-
-  // ===============================
-  // ABA 2 — POR DATA
-  // ===============================
-  const sortedByDate = [...baseData].sort(
-    (a, b) => new Date(a.Data).getTime() - new Date(b.Data).getTime()
-  );
-
-  const sheet2 = XLSX.utils.json_to_sheet(sortedByDate);
-
-  // ===============================
-  // ABA 3 — VISÃO OPERACIONAL
-  // ===============================
-  const operacional = sortedByDate.map((r) => ({
-    Data: r.Data,
-    Hora: r.Hora,
-    Analista: r.Analista,
-    Técnico: r.Técnico,
-    Cidade: r.Cidade,
-    Tipo: `${r.Modalidade} - ${r.Tecnologia}`,
-  }));
-
-  const sheet3 = XLSX.utils.json_to_sheet(operacional);
-
-  // ===============================
-  // FORMATAÇÃO (largura colunas)
-  // ===============================
-  const setColWidth = (ws: any) => {
-    ws['!cols'] = [
-      { wch: 12 },
-      { wch: 8 },
-      { wch: 15 },
-      { wch: 30 },
-      { wch: 20 },
-      { wch: 25 },
-    ];
-  };
-
-  setColWidth(sheet1);
-  setColWidth(sheet2);
-  setColWidth(sheet3);
-
-  // ===============================
-  // CRIA WORKBOOK
-  // ===============================
-  const wb = XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(wb, sheet1, 'Por Analista');
-  XLSX.utils.book_append_sheet(wb, sheet2, 'Por Data');
-  XLSX.utils.book_append_sheet(wb, sheet3, 'Operacional');
-
-  XLSX.writeFile(wb, 'Agenda_Certificacoes.xlsx');
-};
-    
   const renderCapacityView = () => {
     const totals = reportData.reduce((acc, curr) => ({
       productive: acc.productive + curr.productiveHours,
@@ -271,7 +477,7 @@ const handleExportCSV = () => {
               <input type="date" className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 font-bold bg-slate-50 outline-none focus:border-claro-red" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
-          <button onClick={handleExportCSV} className="bg-slate-900 text-white text-[10px] font-black px-8 py-3.5 rounded-2xl uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg">Exportar Auditoria</button>
+          <button onClick={handleExportExcel} className="bg-slate-900 text-white text-[10px] font-black px-8 py-3.5 rounded-2xl uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg">Exportar Auditoria</button>
         </div>
       </div>
       {type === 'capacity' ? renderCapacityView() : renderPerformanceView()}
