@@ -477,7 +477,7 @@ const Reports: React.FC<ReportsProps> = ({ user, type }) => {
               <input type="date" className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 font-bold bg-slate-50 outline-none focus:border-claro-red" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
-          <button onClick={handleExportExcel} className="bg-slate-900 text-white text-[10px] font-black px-8 py-3.5 rounded-2xl uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg">Exportar Auditoria</button>
+          <button onClick={handleExportExcel} className="bg-slate-900 text-white text-[10px] font-black px-8 py-3.5 rounded-2xl uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg">Exportar Excel</button>
         </div>
       </div>
       {type === 'capacity' ? renderCapacityView() : renderPerformanceView()}
