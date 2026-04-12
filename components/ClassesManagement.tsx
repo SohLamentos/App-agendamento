@@ -159,6 +159,7 @@ const solicitante =
   (tech as any).requesterName ||
   (tech as any).solicitor ||
   (tech as any).requester ||
+  trainingClasses.find(tc => tc.id === tech.trainingClassId)?.createdBy ||
   'N/D';
 
       const item = {
