@@ -241,33 +241,56 @@ const item = {
   ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'TURMA', 'EMPRESA', 'CIDADE', 'TIPO']
 ];
 
-flatItems
-  .slice()
+const groupedOperationalByDate: Record<string, any[]> = {};
+
+flatItems.forEach((item) => {
+  if (!groupedOperationalByDate[item.dateLabel]) {
+    groupedOperationalByDate[item.dateLabel] = [];
+  }
+  groupedOperationalByDate[item.dateLabel].push(item);
+});
+
+Object.keys(groupedOperationalByDate)
   .sort((a, b) => {
-    const dateDiff = String(a.datetime).localeCompare(String(b.datetime));
-    if (dateDiff !== 0) return dateDiff;
-
-    const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
-    if (analystDiff !== 0) return analystDiff;
-
-    return String(a.technician).localeCompare(String(b.technician));
+    const [da, ma, ya] = a.split('/').map(Number);
+    const [db, mb, yb] = b.split('/').map(Number);
+    const dateA = new Date(ya, ma - 1, da).getTime();
+    const dateB = new Date(yb, mb - 1, db).getTime();
+    return dateA - dateB;
   })
-  .forEach((item) => {
-    rowsByDay.push([
-      item.dateLabel,
-      item.provaTeorica,
-      item.provaPratica,
-      item.analystName,
-      item.technician,
-      item.turma,
-      item.company,
-      item.city,
-      item.type
-    ]);
+  .forEach((dateLabel, groupIndex, arr) => {
+    const items = groupedOperationalByDate[dateLabel]
+      .slice()
+      .sort((a, b) => {
+        const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
+        if (analystDiff !== 0) return analystDiff;
+
+        const practicalDiff = String(a.provaPratica).localeCompare(String(b.provaPratica));
+        if (practicalDiff !== 0) return practicalDiff;
+
+        return String(a.technician).localeCompare(String(b.technician));
+      });
+
+    items.forEach((item) => {
+      rowsByDay.push([
+        item.dateLabel,
+        item.provaTeorica,
+        item.provaPratica,
+        item.analystName,
+        item.technician,
+        item.turma,
+        item.company,
+        item.city,
+        item.type
+      ]);
+    });
+
+    if (groupIndex < arr.length - 1) {
+      rowsByDay.push(['', '', '', '', '', '', '', '', '']);
+    }
   });
 
     const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
-const wsByDate = XLSX.utils.aoa_to_sheet(rowsByDate);
 const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
 
 wsByAnalyst['!cols'] = [
@@ -283,17 +306,6 @@ wsByAnalyst['!cols'] = [
   { wch: 16 }  // PROVA PRÁTICA
 ];
 
-wsByDate['!cols'] = [
-  { wch: 12 }, // DATA
-  { wch: 16 }, // PROVA TEÓRICA
-  { wch: 16 }, // PROVA PRÁTICA
-  { wch: 24 }, // ANALISTA
-  { wch: 34 }, // TÉCNICO
-  { wch: 36 }, // TURMA
-  { wch: 18 }, // EMPRESA
-  { wch: 22 }, // CIDADE
-  { wch: 14 }  // TIPO
-];
 
 wsByDay['!cols'] = [
   { wch: 12 }, // DATA
@@ -310,18 +322,32 @@ wsByDay['!cols'] = [
 const applySheetStyle = (ws: XLSX.WorkSheet) => {
   if (!ws['!ref']) return;
 
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
   ws['!autofilter'] = {
-    ref: ws['!ref']
+    ref: XLSX.utils.encode_range({
+      s: { r: 0, c: 0 },
+      e: { r: range.e.r, c: range.e.c }
+    })
   };
+
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
+    if (!ws[cellRef]) continue;
+
+    ws[cellRef].s = {
+      font: { bold: true, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '9B0000' } },
+      alignment: { horizontal: 'center', vertical: 'center' }
+    };
+  }
 };
 
 applySheetStyle(wsByAnalyst);
-applySheetStyle(wsByDate);
 applySheetStyle(wsByDay);
 
 const wb = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
-XLSX.utils.book_append_sheet(wb, wsByDate, 'Por Data');
 XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
 
     const today = new Date().toISOString().split('T')[0];
