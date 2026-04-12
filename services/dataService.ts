@@ -949,7 +949,7 @@ private getRowStringValue(row: any[], index: number): string {
 
     return { cpf: padded };
   }
-public updateCompaniesFromSpreadsheet(raw: any[][]) {
+public updateCompaniesFromSpreadsheet(classObj: TrainingClass, raw: any[][]) {
   const ctx = this.getContext();
 let inserted = 0;
 let updated = 0;
