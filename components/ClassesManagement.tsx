@@ -151,6 +151,8 @@ const provaTeorica =
   isAfternoon ? '13:30' :
   'N/D';
 
+      console.log('EXPORT TECH SAMPLE', tech);
+      
 const solicitante =
   tech.solicitor ||
   tech.requester ||
