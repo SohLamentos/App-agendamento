@@ -950,7 +950,7 @@ private getRowStringValue(row: any[], index: number): string {
     return { cpf: padded };
   }
 
-  public updateCompaniesFromSpreadsheet(raw: any[][]) {
+    public updateCompaniesFromSpreadsheet(raw: any[][]) {
   let updated = 0;
   let notFound = 0;
   const errors: ImportError[] = [];
@@ -1017,7 +1017,6 @@ private getRowStringValue(row: any[], index: number): string {
 
   return { updated, notFound, errors };
 }
-
   
   const solicitanteFinal =
     solicitante && solicitante.trim() !== ""
