@@ -282,43 +282,56 @@ const item = {
 
     const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
     wsByAnalyst['!cols'] = [
-      { wch: 24 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 34 },
-      { wch: 35 },
-      { wch: 18 },
-      { wch: 22 },
-      { wch: 14 },
-      { wch: 10 },
-      { wch: 18 }
-    ];
+  { wch: 24 }, // ANALISTA
+  { wch: 12 }, // DATA
+  { wch: 10 }, // NÚMERO
+  { wch: 36 }, // TURMA
+  { wch: 34 }, // TÉCNICO
+  { wch: 18 }, // EMPRESA
+  { wch: 22 }, // CIDADE
+  { wch: 14 }, // TIPO
+  { wch: 16 }, // PROVA TEÓRICA
+  { wch: 16 }  // PROVA PRÁTICA
+];
 
-    const wsByDate = XLSX.utils.aoa_to_sheet(rowsByDate);
-    wsByDate['!cols'] = [
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 18 },
-      { wch: 24 },
-      { wch: 35 },
-      { wch: 34 },
-      { wch: 18 },
-      { wch: 22 },
-      { wch: 14 }
-    ];
+wsByDate['!cols'] = [
+  { wch: 12 }, // DATA
+  { wch: 16 }, // PROVA TEÓRICA
+  { wch: 16 }, // PROVA PRÁTICA
+  { wch: 24 }, // ANALISTA
+  { wch: 34 }, // TÉCNICO
+  { wch: 36 }, // TURMA
+  { wch: 18 }, // EMPRESA
+  { wch: 22 }, // CIDADE
+  { wch: 14 }  // TIPO
+];
 
-    const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
-    wsByDay['!cols'] = [
-      { wch: 10 },
-      { wch: 18 },
-      { wch: 24 },
-      { wch: 35 },
-      { wch: 34 },
-      { wch: 18 },
-      { wch: 22 },
-      { wch: 14 }
-    ];
+wsByDay['!cols'] = [
+  { wch: 16 }, // PROVA TEÓRICA
+  { wch: 16 }, // PROVA PRÁTICA
+  { wch: 24 }, // ANALISTA
+  { wch: 34 }, // TÉCNICO
+  { wch: 36 }, // TURMA
+  { wch: 18 }, // EMPRESA
+  { wch: 22 }, // CIDADE
+  { wch: 14 }  // TIPO
+];
 
+    const applySheetStyle = (ws: XLSX.WorkSheet) => {
+      
+  if (!ws['!ref']) return;
+
+  ws['!autofilter'] = {
+    ref: ws['!ref']
+  };
+
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+};
+    
+    applySheetStyle(wsByAnalyst);
+applySheetStyle(wsByDate);
+applySheetStyle(wsByDay);
+    
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
     XLSX.utils.book_append_sheet(wb, wsByDate, 'Por Data');
