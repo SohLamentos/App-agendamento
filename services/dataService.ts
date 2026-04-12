@@ -974,25 +974,27 @@ raw.slice(1).forEach((row, index) => {
     t => t.cpf === cleanCpf && t.trainingClassId === classObj.id && t.groupId === ctx.groupId
   );
 
-  if (inThisClass) {
-    inThisClass.name = name;
-inThisClass.city = city;
-inThisClass.company = companyPartner;
-(inThisClass as any).solicitor = solicitante;
+      if (inThisClass) {
+  inThisClass.name = name;
+  inThisClass.city = city;
+  inThisClass.company = companyPartner;
+  (inThisClass as any).solicitante = solicitante;
+  (inThisClass as any).solicitor = solicitante;
 
-    const cityMatch = mockCities.find(
-      mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
-    );
-    if (cityMatch) inThisClass.state = cityMatch.uf;
+  const cityMatch = mockCities.find(
+    mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
+  );
+  if (cityMatch) inThisClass.state = cityMatch.uf;
 
-    inThisClass.generateCertification = classObj.requiresCert;
-    inThisClass.status_principal = classObj.requiresCert
-      ? "PENDENTE_CERTIFICAÇÃO"
-      : "TREINAMENTO SEM CERTIFICAÇÃO";
-    inThisClass.technology = classObj.type;
+  inThisClass.generateCertification = classObj.requiresCert;
+  inThisClass.status_principal = classObj.requiresCert
+    ? "PENDENTE_CERTIFICAÇÃO"
+    : "TREINAMENTO SEM CERTIFICAÇÃO";
+  inThisClass.technology = classObj.type;
 
-    updated++;
-    return;
+  updated++;
+  return;
+}
   }
 
   const inAnotherClass = this.technicians.find(
