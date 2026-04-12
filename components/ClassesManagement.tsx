@@ -152,7 +152,7 @@ const refreshData = () => {
 
       console.log('EXPORT TECH SAMPLE', JSON.stringify(tech, null, 2));
 
-const solicitante =
+
   const solicitante =
   (tech as any).solicitante ||
   (tech as any).solicitor ||
