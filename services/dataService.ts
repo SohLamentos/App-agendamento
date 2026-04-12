@@ -899,10 +899,28 @@ class DataService {
   }
 
   private normalizeHeaderName(name: any): string {
-    const s = (name === null || name === undefined) ? "" : String(name);
-    // Trim, Uppercase, e remove caracteres invisíveis (BOM, ZWSP, etc)
-    return s.trim().toUpperCase().replace(/[\u200B-\u200D\uFEFF]/g, "");
+  const s = (name === null || name === undefined) ? "" : String(name);
+  return s
+    .trim()
+    .toUpperCase()
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*\/\s*/g, "/");
+}
+  private getHeaderIndex(headers: string[], aliases: string[]): number {
+  for (const alias of aliases) {
+    const idx = headers.indexOf(this.normalizeHeaderName(alias));
+    if (idx !== -1) return idx;
   }
+  return -1;
+}
+
+private getRowStringValue(row: any[], index: number): string {
+  if (index < 0) return "";
+  return String(row[index] ?? "").trim().toUpperCase();
+}
 
   private processCpfValue(value: any): { cpf: string | null; error?: string } {
     if (value === null || value === undefined || Number.isNaN(value)) {
@@ -938,21 +956,34 @@ public updateCompaniesFromSpreadsheet(raw: any[][]) {
   const errors: ImportError[] = [];
 
     const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
-const cpfIdx = headers.indexOf("CPF");
-const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
-const cityIdx = headers.indexOf("CIDADE");
-const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
-const solicitanteIdx = headers.indexOf("SOLICITANTE");
+const cpfIdx = this.getHeaderIndex(headers, ["CPF"]);
+const nameIdx = this.getHeaderIndex(headers, ["NOME", "NOME COMPLETO"]);
+const cityIdx = this.getHeaderIndex(headers, ["CIDADE"]);
+const companyIdx = this.getHeaderIndex(headers, [
+  "EMPRESA/PARCEIRO",
+  "EMPRESA / PARCEIRO",
+  "EMPRESA",
+  "PARCEIRO",
+  "EMPRESA PARCEIRO"
+]);
+const solicitanteIdx = this.getHeaderIndex(headers, [
+  "SOLICITANTE",
+  "SOLICITANTE/NOME",
+  "SOLICITANTE / NOME",
+  "NOME DO SOLICITANTE",
+  "SOLICITANTE NOME",
+  "GESTOR",
+  "SOLICITOR",
+  "REQUESTER"
+]);
 
 raw.slice(1).forEach((row, index) => {
   if (!row || row.length === 0) return;
 
-  const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
-  const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
-  const companyPartner =
-    companyIdx !== -1 ? String(row[companyIdx] || "").trim().toUpperCase() : "";
-  const solicitante =
-    solicitanteIdx !== -1 ? String(row[solicitanteIdx] || "").trim().toUpperCase() : "";
+  const name = this.getRowStringValue(row, nameIdx);
+const city = this.getRowStringValue(row, cityIdx);
+const companyPartner = this.getRowStringValue(row, companyIdx);
+const solicitante = this.getRowStringValue(row, solicitanteIdx);
 
   const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(
     cpfIdx !== -1 ? row[cpfIdx] : null
@@ -978,8 +1009,15 @@ raw.slice(1).forEach((row, index) => {
   inThisClass.name = name;
   inThisClass.city = city;
   inThisClass.company = companyPartner;
-  (inThisClass as any).solicitante = solicitante;
-  (inThisClass as any).solicitor = solicitante;
+
+  const solicitanteFinal =
+    solicitante ||
+    (inThisClass as any).solicitante ||
+    (inThisClass as any).solicitor ||
+    '';
+
+  (inThisClass as any).solicitante = solicitanteFinal;
+  (inThisClass as any).solicitor = solicitanteFinal;
 
   const cityMatch = mockCities.find(
     mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
