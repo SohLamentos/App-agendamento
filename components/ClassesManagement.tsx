@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { dataService, ImportResult, StatusEngine, ManualScheduleValidationResult, SchedulingSummary } from '../services/dataService';
-import { User, UserRole, Technician, TrainingClass, CertificationProcessStatus, ExpertiseType, Shift } from '../types';
+import { User, UserRole, Technician, TrainingClass, CertificationProcessStatus, ExpertiseType, Shift, ScheduleStatus } from '../types';
 
 interface ClassesManagementProps {
   user: User;
@@ -103,14 +103,6 @@ const refreshData = () => {
     const groupedByDate: Record<string, any[]> = {};
     const flatItems: any[] = [];
 
-    const getProvaUnificada = (shift: string) => {
-      if (!shift) return 'N/D';
-      const s = String(shift).toUpperCase();
-      if (s.includes('MORNING') || s.includes('MANHA')) return '08:30';
-      if (s.includes('AFTERNOON') || s.includes('TARDE')) return '13:30';
-      return 'N/D';
-    };
-
     scheduledTechs.forEach((tech) => {
       const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
       if (!sch) return;
@@ -122,21 +114,40 @@ const refreshData = () => {
       const city = `${tech.city || ''}${tech.state ? ' / ' + tech.state : ''}`;
       const type = sch.type === ExpertiseType.PRESENTIAL ? 'PRESENCIAL' : 'VIRTUAL';
 
-      const dateObj = sch.datetime ? new Date(sch.datetime) : null;
-      const dateLabel = dateObj
-        ? dateObj.toLocaleDateString('pt-BR')
+      const dateOnly = sch.datetime ? String(sch.datetime).split('T')[0] : '';
+      const dateLabel = dateOnly
+        ? (() => {
+            const [y, m, d] = dateOnly.split('-');
+            return `${d}/${m}/${y}`;
+          })()
         : 'N/D';
 
-      const timeLabel = dateObj
-        ? dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-        : 'N/D';
+      const classRef =
+        trainingClasses.find(c => c.id === tech.trainingClassId) ||
+        trainingClasses.find(c => c.id === (tech as any).classId);
 
-      const provaUnificada = getProvaUnificada(sch.shift);
+      const turma =
+        classRef?.title ||
+        (tech as any).trainingClassName ||
+        (tech as any).className ||
+        (tech as any).turmaName ||
+        (tech as any).turma ||
+        'N/D';
+
+      const timeLabel = getScheduledExportTime(tech);
+
+      const shiftValue = String(sch.shift ?? '').toUpperCase();
+      const provaUnificada =
+        shiftValue.includes('MORNING') || shiftValue.includes('MANHA')
+          ? '08:30'
+          : shiftValue.includes('AFTERNOON') || shiftValue.includes('TARDE')
+          ? '13:30'
+          : 'N/D';
 
       const item = {
         analystName,
         technician: tech.name || 'N/D',
-        turma: tech.trainingClassName || tech.className || tech.turmaName || 'N/D',
+        turma,
         company,
         city,
         type,
