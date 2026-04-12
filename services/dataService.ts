@@ -1058,8 +1058,10 @@ if (existing) {
     certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, 
     certificationReproofCount: 0, 
     generateCertification: requiresCert, 
-    unique_key: cleanCpf, 
-    status_principal: requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO"
+    unique_key: cleanCpf + "_" + classObj.id,
+status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
+technology: classObj.type,
+solicitante: solicitante,
   };
   this.technicians.push(tech);
   inserted++;
@@ -1119,18 +1121,22 @@ if (existing) {
     const errors: ImportError[] = [];
 
     const headers = (raw[0] || []).map(h => this.normalizeHeaderName(h));
-    const cpfIdx = headers.indexOf("CPF");
-    const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
-    const cityIdx = headers.indexOf("CIDADE");
-    const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
+const cpfIdx = headers.indexOf("CPF");
+const nameIdx = headers.findIndex(h => h === "NOME" || h === "NOME COMPLETO");
+const cityIdx = headers.indexOf("CIDADE");
+const companyIdx = headers.indexOf("EMPRESA/PARCEIRO");
+const solicitanteIdx = headers.indexOf("SOLICITANTE");
     
     raw.slice(1).forEach((row, index) => {
       if (!row || row.length === 0) return;
 
       const name = nameIdx !== -1 ? String(row[nameIdx] || "").trim().toUpperCase() : "";
-      const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
-      const companyPartner = companyIdx !== -1 
+const city = cityIdx !== -1 ? String(row[cityIdx] || "").trim().toUpperCase() : "";
+const companyPartner = companyIdx !== -1 
   ? String(row[companyIdx] || "").trim().toUpperCase() 
+  : "";
+const solicitante = solicitanteIdx !== -1
+  ? String(row[solicitanteIdx] || "").trim().toUpperCase()
   : "";
       
       const { cpf: cleanCpf, error: cpfError } = this.processCpfValue(cpfIdx !== -1 ? row[cpfIdx] : null);
@@ -1146,8 +1152,9 @@ if (existing) {
       
     if (inThisClass) {
   inThisClass.name = name;
-  inThisClass.city = city;
-  inThisClass.company = companyPartner;
+inThisClass.city = city;
+inThisClass.company = companyPartner;
+(inThisClass as any).solicitante = solicitante;
 
   const cityMatch = mockCities.find(mc => this.safeNormalize(mc.name) === this.safeNormalize(city));
   if (cityMatch) inThisClass.state = cityMatch.uf;
@@ -1176,7 +1183,8 @@ if (existing) {
           state: cityMatch ? cityMatch.uf : 'RS', 
           email: '', phone: '', company: companyPartner, externalLogin: '', solicitor: '', certificationType: 'VIRTUAL', trainingClassId: classObj.id, participationStatus: ParticipationStatus.ENROLLED, eadExamScore: 0, finalTrainingScore: 0, eadApprovalStatus: ApprovalStatus.PENDING, generalApprovalStatus: ApprovalStatus.PENDING, certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING, certificationReproofCount: 0, generateCertification: classObj.requiresCert, unique_key: cleanCpf + "_" + classObj.id, 
           status_principal: classObj.requiresCert ? "PENDENTE_CERTIFICAÇÃO" : "TREINAMENTO SEM CERTIFICAÇÃO",
-          technology: classObj.type
+          technology: classObj.type,
+          solicitante: solicitante,
         };
         this.technicians.push(tech);
         newInOtherClass++;
