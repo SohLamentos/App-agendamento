@@ -615,7 +615,7 @@ useEffect(() => {
   subcategory: subcategoryValue
 });
 
-const res = dataService.updateCompaniesFromSpreadsheet(rawData);
+const res = dataService.updateCompaniesFromSpreadsheet(classObj, rawData);
         
         setLastClassCreated(classObj);
         setImportResult(res);
