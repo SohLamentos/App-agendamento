@@ -150,14 +150,16 @@ const refreshData = () => {
         isAfternoon ? '13:30' :
         'N/D';
 
-      const solicitante =
-        (tech as any).solicitante ||
-        (tech as any).solicitanteNome ||
-        (tech as any).requestedBy ||
-        (tech as any).requesterName ||
-        (tech as any).solicitor ||
-        (tech as any).requester ||
-        'N/D';
+      console.log('EXPORT TECH SAMPLE', JSON.stringify(tech, null, 2));
+
+const solicitante =
+  (tech as any).solicitante ||
+  (tech as any).solicitanteNome ||
+  (tech as any).requestedBy ||
+  (tech as any).requesterName ||
+  (tech as any).solicitor ||
+  (tech as any).requester ||
+  'N/D';
 
       const item = {
         analystName,
