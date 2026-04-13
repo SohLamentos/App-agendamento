@@ -287,12 +287,69 @@ class DataService {
   }
 
   importTechnicians(data: any[]): number {
-    let count = 0;
-    data.forEach(item => { count++; });
-    this.persist();
-    window.dispatchEvent(new Event('data-updated'));
-    return count;
-  }
+  let count = 0;
+
+  data.forEach((item: any) => {
+    const cpfRaw = String(item.CPF ?? item.cpf ?? '').replace(/\D/g, '');
+    if (!cpfRaw) return;
+
+    const cpf = cpfRaw.padStart(11, '0');
+
+    const nome = String(item.Nome ?? item.NOME ?? item.nome ?? '').trim().toUpperCase();
+    const cidade = String(item.Cidade ?? item.CIDADE ?? item.cidade ?? '').trim().toUpperCase();
+    const estado = String(item.Estado ?? item.ESTADO ?? item.estado ?? '').trim().toUpperCase();
+    const empresaParceiro = String(
+      item['Empresa/Parceiro'] ??
+      item['EMPRESA/PARCEIRO'] ??
+      item.empresa ??
+      item.EMPRESA ??
+      ''
+    ).trim().toUpperCase();
+
+    const solicitante = String(
+      item.Solicitante ??
+      item.SOLICITANTE ??
+      item.solicitante ??
+      ''
+    ).trim();
+
+    let tech = this.technicians.find(t => String(t.cpf ?? '').replace(/\D/g, '').padStart(11, '0') === cpf);
+
+    if (tech) {
+      tech.name = nome || tech.name;
+      tech.city = cidade || tech.city;
+      tech.state = estado || tech.state;
+      (tech as any).company = empresaParceiro || (tech as any).company || '';
+      (tech as any).solicitante = solicitante;
+      (tech as any).solicitor = solicitante;
+    } else {
+      tech = {
+        id: `tech-${Date.now()}-${Math.random()}`,
+        name: nome,
+        cpf,
+        city: cidade,
+        state: estado || 'RS',
+        email: '',
+        phone: '',
+        company: empresaParceiro,
+        externalLogin: '',
+        solicitor: solicitante,
+        solicitante: solicitante,
+        generateCertification: true,
+        certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
+        certificationReproofCount: 0
+      } as Technician;
+
+      this.technicians.push(tech);
+    }
+
+    count++;
+  });
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+  return count;
+}
 
   createSchedule(tech: Technician, analyst: User, date: string, shift: Shift, type: ExpertiseType, location: string) {
     // Fix missing groupId in CertificationSchedule creation
