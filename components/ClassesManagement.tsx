@@ -632,7 +632,6 @@ useEffect(() => {
       const firstSheet = workbook.Sheets[firstSheetName];
       const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
 
-      // valida cabeçalho
       const validation = validateHeader(rawData[0]);
       if (!validation.isValid) {
         setHeaderErrors(validation.errors);
@@ -645,16 +644,15 @@ useEffect(() => {
           ? formClass.customSubcategory.trim()
           : formClass.subcategory;
 
-      // 1) cria a turma
       const classObj = dataService.createTrainingClass({
         ...formClass,
         subcategory: subcategoryValue
       });
 
-      // 2) importa os técnicos normalmente
+      // 1) importa os técnicos na turma
       const importRes = dataService.importTechniciansForClass(classObj, rawData);
 
-      // 3) usa a MESMA planilha como referência para preencher solicitante por CPF
+      // 2) usa a MESMA planilha como referência para preencher o solicitante por CPF
       const solicitanteRes = dataService.updateCompaniesFromSpreadsheet(rawData);
 
       refreshData();
