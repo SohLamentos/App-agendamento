@@ -1018,11 +1018,6 @@ private getRowStringValue(row: any[], index: number): string {
   return { updated, notFound, errors };
 }
   
-  const solicitanteFinal =
-    solicitante && solicitante.trim() !== ""
-      ? solicitante.trim()
-      : ((inThisClass as any).solicitante || (inThisClass as any).solicitor || "");
-
   (inThisClass as any).solicitante = solicitanteFinal;
   (inThisClass as any).solicitor = solicitanteFinal;
 
@@ -1124,11 +1119,7 @@ private getRowStringValue(row: any[], index: number): string {
   inserted++;
 });
     
-    this.persist();
-    window.dispatchEvent(new Event('data-updated'));
-    return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors };
-  }
-
+   
   public getUnconfiguredCities() {
     const configuredNames = new Set(this.cities.map(c => this.safeNormalize(c.name)));
     return mockCities.filter(mc => !configuredNames.has(this.safeNormalize(mc.name)));
