@@ -967,27 +967,19 @@ const getScheduledExportTime = (tech: Technician) => {
       type="file"
       ref={fileInputRef}
       className="hidden"
-      accept=".xlsx,.xls"
+      accept=".xlsx,.xls,.csv"
       onChange={handleFileForClass}
     />
 
-    <input
-      type="file"
-      ref={requesterFileInputRef}
-      className="hidden"
-      accept=".xlsx,.xls"
-      onChange={handleBackfillSolicitante}
-    />
-        className="hidden" 
-        accept=".xlsx,.xls,.csv" 
-        onChange={handleFileForClass} 
-      />
-
-      {toast && (
-        <div className={`fixed top-10 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-right-10 duration-300 ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
-          {toast.message}
-        </div>
-      )}
+    {toast && (
+      <div
+        className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-white ${
+          toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+        }`}
+      >
+        {toast.message}
+      </div>
+    )}
 
       {/* ActionBar Fixa */}
       <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-6">
