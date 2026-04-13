@@ -27,6 +27,7 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const requesterFileInputRef = useRef<HTMLInputElement>(null);
 
   // NOVO FLUXO INSERIR TURMA
   const [isClassWizardOpen, setIsClassWizardOpen] = useState(false);
@@ -87,12 +88,47 @@ const refreshData = () => {
   setSelectedTechIds(new Set());
 };
 
+  const handleBackfillSolicitante = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const data = new Uint8Array(event.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const firstSheet = workbook.Sheets[firstSheetName];
+      const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+
+      const result = dataService.updateCompaniesFromSpreadsheet(rawData);
+
+      refreshData();
+
+      setToast({
+        message: `Solicitante atualizado. ${result.updated} técnico(s) encontrado(s), ${result.notFound} não localizado(s).`,
+        type: 'success'
+      });
+    } catch (error: any) {
+      setToast({
+        message: `Erro ao atualizar solicitante: ${error.message}`,
+        type: 'error'
+      });
+    } finally {
+      if (requesterFileInputRef.current) requesterFileInputRef.current.value = '';
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+};
+
 //FILTRO
  const handleExportScheduledTechnicians = () => {
   try {
     const scheduledTechs = filteredTechs.filter(
       tech => activeSubTab === 'scheduled' && tech.scheduledCertificationId
     );
+  
 
     if (scheduledTechs.length === 0) {
       setToast({ message: 'Não há técnicos agendados para exportar.', type: 'error' });
@@ -583,52 +619,77 @@ useEffect(() => {
   };
 
   const handleFileForClass = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    
+  const reader = new FileReader();
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const firstSheet = workbook.Sheets[firstSheetName];
-        const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
-        
-        // Validação de Cabeçalho
-        const validation = validateHeader(rawData[0]);
-        if (!validation.isValid) {
-          setHeaderErrors(validation.errors);
-          setIsHeaderErrorModalOpen(true);
-          return;
-        }
+  reader.onload = (event) => {
+    try {
+      const data = new Uint8Array(event.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const firstSheet = workbook.Sheets[firstSheetName];
+      const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
 
-        const subcategoryValue = formClass.subcategory === 'Outros' 
+      // valida cabeçalho
+      const validation = validateHeader(rawData[0]);
+      if (!validation.isValid) {
+        setHeaderErrors(validation.errors);
+        setIsHeaderErrorModalOpen(true);
+        return;
+      }
+
+      const subcategoryValue =
+        formClass.subcategory === 'Outros'
           ? formClass.customSubcategory.trim()
           : formClass.subcategory;
 
-        // Criar turma e importar técnicos
-        const classObj = dataService.createTrainingClass({
-  ...formClass,
-  subcategory: subcategoryValue
-});
+      // 1) cria a turma
+      const classObj = dataService.createTrainingClass({
+        ...formClass,
+        subcategory: subcategoryValue
+      });
 
-const res = dataService.backfillSolicitanteFromSpreadsheet(rawData);
-        
-        setLastClassCreated(classObj);
-        setImportResult(res);
-        setIsClassWizardOpen(false);
-        setIsFinalSummaryOpen(true);
-      } catch (err: any) {
-        setToast({ message: 'Erro ao processar turma: ' + err.message, type: 'error' });
-      } finally {
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    };
-    reader.readAsArrayBuffer(file);
+      // 2) importa os técnicos normalmente
+      const importRes = dataService.importTechniciansForClass(classObj, rawData);
+
+      // 3) usa a MESMA planilha como referência para preencher solicitante por CPF
+      const solicitanteRes = dataService.updateCompaniesFromSpreadsheet(rawData);
+
+      refreshData();
+      setLastClassCreated(classObj);
+
+      setImportResult({
+        ...importRes,
+        errors: [
+          ...importRes.errors,
+          ...(solicitanteRes.errors || [])
+        ]
+      });
+
+      setIsClassWizardOpen(false);
+      setIsFinalSummaryOpen(true);
+
+      setToast({
+        message:
+          `Turma importada com sucesso. ` +
+          `${importRes.inserted} inserido(s), ${importRes.updated} atualizado(s). ` +
+          `Solicitante preenchido em ${solicitanteRes.updated} técnico(s).`,
+        type: 'success'
+      });
+    } catch (err: any) {
+      setToast({
+        message: 'Erro ao processar turma: ' + err.message,
+        type: 'error'
+      });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
+
+  reader.readAsArrayBuffer(file);
+};
 
   const handleApproveTech = (tech: Technician) => {
     if (!tech || !tech.id) {
@@ -900,11 +961,23 @@ const getScheduledExportTime = (tech: Technician) => {
   return 'N/D';
 };
   
-return (
-    <div className="space-y-8 animate-in fade-in duration-500 relative">
-      <input 
-        type="file" 
-        ref={fileInputRef} 
+ return (
+  <div className="space-y-8 animate-in fade-in duration-500 relative">
+    <input
+      type="file"
+      ref={fileInputRef}
+      className="hidden"
+      accept=".xlsx,.xls"
+      onChange={handleFileForClass}
+    />
+
+    <input
+      type="file"
+      ref={requesterFileInputRef}
+      className="hidden"
+      accept=".xlsx,.xls"
+      onChange={handleBackfillSolicitante}
+    />
         className="hidden" 
         accept=".xlsx,.xls,.csv" 
         onChange={handleFileForClass} 
