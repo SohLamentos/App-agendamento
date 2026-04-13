@@ -1017,113 +1017,11 @@ private getRowStringValue(row: any[], index: number): string {
 
   return { updated, notFound, errors };
 }
-  
-  (inThisClass as any).solicitante = solicitanteFinal;
-  (inThisClass as any).solicitor = solicitanteFinal;
 
-  const cityMatch = mockCities.find(
-    mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
-  );
-  if (cityMatch) inThisClass.state = cityMatch.uf;
-
-  inThisClass.generateCertification = classObj.requiresCert;
-  inThisClass.status_principal = classObj.requiresCert
-    ? "PENDENTE_CERTIFICAÇÃO"
-    : "TREINAMENTO SEM CERTIFICAÇÃO";
-  inThisClass.technology = classObj.type;
-
-  updated++;
-  return;
+public getUnconfiguredCities() {
+  const configuredNames = new Set(this.cities.map(c => this.safeNormalize(c.name)));
+  return mockCities.filter(mc => !configuredNames.has(this.safeNormalize(mc.name)));
 }
-  
-  const inAnotherClass = this.technicians.find(
-    t => t.cpf === cleanCpf && t.groupId === ctx.groupId
-  );
-
-  if (inAnotherClass) {
-    const cityMatch = mockCities.find(
-      mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
-    );
-
-    const tech: Technician = {
-  id: `tech-${Date.now()}-${Math.random()}`,
-  groupId: ctx.groupId,
-  name: name,
-  cpf: cleanCpf,
-  city: city,
-  state: cityMatch ? cityMatch.uf : 'RS',
-  email: '',
-  phone: '',
-  company: companyPartner,
-  externalLogin: '',
-  solicitor: solicitante,
-  solicitante: solicitante,
-  certificationType: 'VIRTUAL',
-  trainingClassId: classObj.id,
-  participationStatus: ParticipationStatus.ENROLLED,
-  eadExamScore: 0,
-  finalTrainingScore: 0,
-  eadApprovalStatus: ApprovalStatus.PENDING,
-  generalApprovalStatus: ApprovalStatus.PENDING,
-  certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
-  certificationReproofCount: 0,
-  generateCertification: classObj.requiresCert,
-  unique_key: cleanCpf + "_" + classObj.id,
-  status_principal: classObj.requiresCert
-    ? "PENDENTE_CERTIFICAÇÃO"
-    : "TREINAMENTO SEM CERTIFICAÇÃO",
-  technology: classObj.type
-} as any;
-
-    this.technicians.push(tech);
-    newInOtherClass++;
-    inserted++;
-    return;
-  }
-
-  const cityMatch = mockCities.find(
-    mc => this.safeNormalize(mc.name) === this.safeNormalize(city)
-  );
-
-  const tech: Technician = {
-  id: `tech-${Date.now()}-${Math.random()}`,
-  groupId: ctx.groupId,
-  name: name,
-  cpf: cleanCpf,
-  city: city,
-  state: cityMatch ? cityMatch.uf : 'RS',
-  email: '',
-  phone: '',
-  company: companyPartner,
-  externalLogin: '',
-  solicitor: solicitante,
-  solicitante: solicitante,  
-  certificationType: 'VIRTUAL',
-  trainingClassId: classObj.id,
-  participationStatus: ParticipationStatus.ENROLLED,
-  eadExamScore: 0,
-  finalTrainingScore: 0,
-  eadApprovalStatus: ApprovalStatus.PENDING,
-  generalApprovalStatus: ApprovalStatus.PENDING,
-  certificationProcessStatus: CertificationProcessStatus.QUALIFIED_AWAITING,
-  certificationReproofCount: 0,
-  generateCertification: classObj.requiresCert,
-  unique_key: cleanCpf + "_" + classObj.id,
-  status_principal: classObj.requiresCert
-    ? "PENDENTE_CERTIFICAÇÃO"
-    : "TREINAMENTO SEM CERTIFICAÇÃO",
-  technology: classObj.type
-} as any;
-
-  this.technicians.push(tech);
-  inserted++;
-});
-    
-   
-  public getUnconfiguredCities() {
-    const configuredNames = new Set(this.cities.map(c => this.safeNormalize(c.name)));
-    return mockCities.filter(mc => !configuredNames.has(this.safeNormalize(mc.name)));
-  }
 
   public resetUserPassword(userId: string): boolean {
     const user = this.users.find(u => u.id === userId);
