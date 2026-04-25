@@ -260,13 +260,17 @@ export interface EventSchedule {
   id: string;
   groupId: string;
   title: string;
-  type: 'Training' | 'Meeting' | 'Day Off' | 'Banked Hours' | 'Other';
+  type: 'Training' | 'Meeting' | 'Day Off' | 'Banked Hours' | 'Other' | 'CQ_SUPPORT';
   startDatetime: string;
   endDatetime: string;
   involvedUserIds: string[];
   locationId?: string;
   shift: Shift;
   color?: string;
+
+  // Apoio CQ
+  capacityExtra?: number;
+  active?: boolean;
 }
 
 export interface SchedulingConfig {
