@@ -994,6 +994,16 @@ getAnalystMappings() {
   window.dispatchEvent(new Event('data-updated'));
   return normalizedRule;
 }
+  public deleteRoutingRule(ruleId: string) {
+  const ctx = this.getContext();
+
+  this.routingRules = this.routingRules.filter(
+    r => !(r.id === ruleId && r.groupId === ctx.groupId)
+  );
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+}
 
   public saveAnalystMapping(mapping: AnalystIntegrationMapping) {
   const ctx = this.getContext();
