@@ -1198,7 +1198,16 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
 
   const validRules = this.routingRules
     .filter(r => r.active)
-    .filter(r => this.safeNormalize(r.city) === cityNorm)
+    const validRules = this.routingRules
+  .filter(r => r.active)
+  .filter(r => {
+    const mainCity = this.safeNormalize(r.city);
+    const coveredCities = (r.coveredCities || []).map(c => this.safeNormalize(c));
+
+    return mainCity === cityNorm || coveredCities.includes(cityNorm);
+  })
+  .filter(r => this.safeNormalize(r.uf) === ufNorm)
+  .sort((a, b) => (a.priority || 999) - (b.priority || 999));
     .filter(r => this.safeNormalize(r.uf) === ufNorm)
     .sort((a, b) => (a.priority || 999) - (b.priority || 999));
 
