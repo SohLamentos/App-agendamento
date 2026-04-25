@@ -1394,14 +1394,20 @@ const activeAdjustments = this.scoreAdjustments.filter(
   const city = this.safeNormalize(tech.city || '');
   const state = this.safeNormalize(tech.state || '');
   const classId = this.safeNormalize(tech.trainingClassId || 'SEM_TURMA');
+  const company = this.safeNormalize(tech.company || '');
 
-  // 🔴 PRESENCIAL → NÃO QUEBRA POR EMPRESA
   if (targetType === ExpertiseType.PRESENTIAL) {
-    return `${targetType}__${city}__${state}__${classId}`;
+    const routingMatch = this.resolveBaseForScheduling({
+      city: tech.city,
+      uf: tech.state,
+      company: tech.company
+    });
+
+    const baseKey = routingMatch.base?.id || 'SEM_BASE';
+
+    return `${targetType}__${baseKey}__${city}__${state}__${classId}`;
   }
 
-  // 🔵 VIRTUAL → MANTÉM EMPRESA
-  const company = this.safeNormalize(tech.company || '');
   return `${targetType}__${company}__${city}__${state}__${classId}`;
 };
 
