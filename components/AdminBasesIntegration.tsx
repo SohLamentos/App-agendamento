@@ -81,7 +81,7 @@ const [coveredUfInput, setCoveredUfInput] = useState('');
   company: rule.company || '',
   baseId: rule.baseId || '',
   priority: rule.priority || 1,
-  notes: ''
+  notes: rule.notes || ''
 });
 
   refresh();
@@ -469,84 +469,16 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
             <div className="flex gap-2">
   <input
     placeholder="Cidade"
-    value={newRule.city}
-    onChange={(e) => setNewRule({ ...newRule, city: e.target.value })}
+    value={newBase.city}
+onChange={(e) => setNewBase({ ...newBase, city: e.target.value })}
     className="w-full p-3 border rounded-xl"
   />
   <input
     placeholder="UF"
-    value={newRule.uf}
-    onChange={(e) => setNewRule({ ...newRule, uf: e.target.value })}
+    value={newBase.uf}
+onChange={(e) => setNewBase({ ...newBase, uf: e.target.value })}
     className="w-20 p-3 border rounded-xl"
   />
-</div>
-
-{/* 👇 COLAR AQUI */}
-
-<div>
-  <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">
-    Cidades atendidas pela base
-  </label>
-
-  <div className="flex gap-2 mb-3">
-    <input
-      value={coveredCityInput}
-      onChange={(e) => setCoveredCityInput(e.target.value)}
-      placeholder="Ex: Cambé"
-      className="flex-1 p-3 border rounded-xl text-xs font-bold"
-    />
-
-    <input
-      value={coveredUfInput}
-      onChange={(e) => setCoveredUfInput(e.target.value.toUpperCase())}
-      placeholder="UF"
-      maxLength={2}
-      className="w-20 p-3 border rounded-xl text-xs font-bold uppercase"
-    />
-
-    <button
-      type="button"
-      onClick={() => {
-        if (!coveredCityInput || !coveredUfInput) return;
-
-        setNewRule({
-          ...newRule,
-          coveredCities: [...newRule.coveredCities, coveredCityInput.toUpperCase()],
-          coveredUfs: [...newRule.coveredUfs, coveredUfInput.toUpperCase()]
-        });
-
-        setCoveredCityInput('');
-        setCoveredUfInput('');
-      }}
-      className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase"
-    >
-      +
-    </button>
-  </div>
-
-  <div className="flex flex-wrap gap-2">
-    {newRule.coveredCities.map((city, index) => (
-      <span
-        key={index}
-        className="px-3 py-2 bg-red-50 text-red-700 rounded-full text-[10px] font-black uppercase flex items-center gap-2"
-      >
-        {city}/{newRule.coveredUfs[index]}
-
-        <button
-          type="button"
-          onClick={() => {
-            setNewRule({
-              ...newRule,
-              coveredCities: newRule.coveredCities.filter((_, i) => i !== index),
-              coveredUfs: newRule.coveredUfs.filter((_, i) => i !== index)
-            });
-          }}
-        >
-          ×
-        </button>
-      </span>
-    ))}
-  </div>
 </div>
 
             <input
@@ -613,6 +545,72 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
                 className="w-20 p-3 border rounded-xl"
               />
             </div>
+            <div>
+  <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">
+    Cidades atendidas pela base
+  </label>
+
+  <div className="flex gap-2 mb-3">
+    <input
+      value={coveredCityInput}
+      onChange={(e) => setCoveredCityInput(e.target.value)}
+      placeholder="Ex: Cambé"
+      className="flex-1 p-3 border rounded-xl text-xs font-bold"
+    />
+
+    <input
+      value={coveredUfInput}
+      onChange={(e) => setCoveredUfInput(e.target.value.toUpperCase())}
+      placeholder="UF"
+      maxLength={2}
+      className="w-20 p-3 border rounded-xl text-xs font-bold uppercase"
+    />
+
+    <button
+      type="button"
+      onClick={() => {
+        if (!coveredCityInput || !coveredUfInput) return;
+
+        setNewRule({
+          ...newRule,
+          coveredCities: [...newRule.coveredCities, coveredCityInput.toUpperCase()],
+          coveredUfs: [...newRule.coveredUfs, coveredUfInput.toUpperCase()]
+        });
+
+        setCoveredCityInput('');
+        setCoveredUfInput('');
+      }}
+      className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase"
+    >
+      +
+    </button>
+  </div>
+
+  <div className="flex flex-wrap gap-2">
+    {newRule.coveredCities.map((city, index) => (
+      <span
+        key={`${city}-${index}`}
+        className="px-3 py-2 bg-red-50 text-red-700 rounded-full text-[10px] font-black uppercase flex items-center gap-2"
+      >
+        {city}/{newRule.coveredUfs[index] || newRule.uf}
+
+        <button
+          type="button"
+          onClick={() => {
+            setNewRule({
+              ...newRule,
+              coveredCities: newRule.coveredCities.filter((_, i) => i !== index),
+              coveredUfs: newRule.coveredUfs.filter((_, i) => i !== index)
+            });
+          }}
+          className="text-red-600 font-black"
+        >
+          ×
+        </button>
+      </span>
+    ))}
+  </div>
+</div>
 
             <select
               value={newRule.analystId}
@@ -667,6 +665,9 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   priority: 1,
   notes: ''
 });
+
+setCoveredCityInput('');
+setCoveredUfInput('');
 }}
                 className="flex-1 p-3 bg-slate-200 rounded-xl text-xs font-black uppercase"
               >
