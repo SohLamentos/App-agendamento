@@ -31,8 +31,6 @@ const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
 
 const [newRule, setNewRule] = useState({
-  city: '',
-  uf: '',
   coveredCities: [] as string[],
   coveredUfs: [] as string[],
   analystId: '',
@@ -45,66 +43,60 @@ const [newRule, setNewRule] = useState({
 const [coveredCityInput, setCoveredCityInput] = useState('');
 const [coveredUfInput, setCoveredUfInput] = useState('');
 
-  const handleSaveRule = () => {
-  if (!newRule.city || !newRule.uf || !newRule.baseId) {
-    alert('Preencha Cidade, UF e Base');
+const handleSaveRule = () => {
+  if (!newRule.baseId || newRule.coveredCities.length === 0) {
+    alert('Selecione a Base e adicione pelo menos 1 cidade atendida');
     return;
   }
 
+  const mainCity = newRule.coveredCities[0] || '';
+  const mainUf = newRule.coveredUfs[0] || '';
+
   const rule: RoutingRule = {
-  id: editingRuleId || 'rule-' + Date.now(),
-  groupId: user.groupId,
-  city: newRule.city
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .toUpperCase()
-  .trim(),
-
-uf: newRule.uf.toUpperCase().trim(),
-
-coveredCities: newRule.coveredCities.map(c =>
-  c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim()
-),
-
-coveredUfs: newRule.coveredUfs.map(uf =>
-  uf.toUpperCase().trim()
-),
-  analystId: newRule.analystId || undefined,
-  company: newRule.company || undefined,
-  baseId: newRule.baseId,
-  priority: Number(newRule.priority) || 1,
-  active: editingRuleId
-    ? rules.find(r => r.id === editingRuleId)?.active ?? true
-    : true
-};
+    id: editingRuleId || 'rule-' + Date.now(),
+    groupId: user.groupId,
+    city: mainCity,
+    uf: mainUf,
+    coveredCities: newRule.coveredCities.map(c =>
+      c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim()
+    ),
+    coveredUfs: newRule.coveredUfs.map(uf =>
+      uf.toUpperCase().trim()
+    ),
+    analystId: newRule.analystId || undefined,
+    company: newRule.company || undefined,
+    baseId: newRule.baseId,
+    priority: Number(newRule.priority) || 1,
+    active: editingRuleId
+      ? rules.find(r => r.id === editingRuleId)?.active ?? true
+      : true,
+    notes: newRule.notes || ''
+  };
 
   dataService.saveRoutingRule(rule);
 
   setIsRuleModalOpen(false);
   setEditingRuleId(null);
-
   setNewRule({
-  city: rule.city || '',
-  uf: rule.uf || '',
-  coveredCities: rule.coveredCities || [],
-  coveredUfs: rule.coveredUfs || [],
-  analystId: rule.analystId || '',
-  company: rule.company || '',
-  baseId: rule.baseId || '',
-  priority: rule.priority || 1,
-  notes: rule.notes || ''
-});
-
+    coveredCities: [],
+    coveredUfs: [],
+    analystId: '',
+    company: '',
+    baseId: '',
+    priority: 1,
+    notes: ''
+  });
+  setCoveredCityInput('');
+  setCoveredUfInput('');
   refresh();
 };
-  const handleEditRule = (rule: RoutingRule) => {
+
+const handleEditRule = (rule: RoutingRule) => {
   setEditingRuleId(rule.id);
 
   setNewRule({
-    city: rule.city || '',
-    uf: rule.uf || '',
-    coveredCities: rule.coveredCities || [],
-    coveredUfs: rule.coveredUfs || [],
+    coveredCities: rule.coveredCities || [rule.city],
+    coveredUfs: rule.coveredUfs || [rule.uf],
     analystId: rule.analystId || '',
     company: rule.company || '',
     baseId: rule.baseId || '',
@@ -285,7 +277,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Base</th>
-                    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Cidade/UF</th>
+                    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Cidade/UF da Base</th>
                     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Endereço</th>
                     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">ID PowerApps</th>
                     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Status</th>
@@ -389,7 +381,16 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
 
                       return (
                         <tr key={rule.id} className="border-t border-slate-100">
-                          <td className="p-4 text-xs font-bold text-slate-700">{rule.city}/{rule.uf}</td>
+                          <td className="p-4 text-xs font-bold text-slate-700">
+  {(rule.coveredCities || [rule.city]).map((city, index) => (
+    <span
+      key={`${city}-${index}`}
+      className="inline-block mr-1 mb-1 px-2 py-1 rounded-full bg-red-50 text-red-700 text-[9px] font-black uppercase"
+    >
+      {city}/{(rule.coveredUfs || [rule.uf])[index] || rule.uf}
+    </span>
+  ))}
+</td>
                           <td className="p-4 text-xs font-bold text-slate-600">{analyst?.fullName || 'Qualquer analista'}</td>
                           <td className="p-4 text-xs font-bold text-slate-600">{rule.company || 'Qualquer empresa'}</td>
                           <td className="p-4 text-xs font-bold text-slate-600">{base?.name || 'Base não encontrada'}</td>
@@ -499,18 +500,22 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
 
             <div className="flex gap-2">
   <input
-    placeholder="Cidade"
+    placeholder="Cidade da Base"
     value={newBase.city}
-onChange={(e) => setNewBase({ ...newBase, city: e.target.value })}
+    onChange={(e) => setNewBase({ ...newBase, city: e.target.value })}
     className="w-full p-3 border rounded-xl"
   />
+
   <input
     placeholder="UF"
     value={newBase.uf}
-onChange={(e) => setNewBase({ ...newBase, uf: e.target.value })}
-    className="w-20 p-3 border rounded-xl"
+    onChange={(e) => setNewBase({ ...newBase, uf: e.target.value.toUpperCase() })}
+    maxLength={2}
+    className="w-20 p-3 border rounded-xl uppercase"
   />
 </div>
+
+            
 
             <input
               placeholder="Endereço"
@@ -562,23 +567,10 @@ onChange={(e) => setNewBase({ ...newBase, uf: e.target.value })}
               {editingRuleId ? 'Editar Regra de Roteamento' : 'Nova Regra de Roteamento'}
             </h3>
 
-            <div className="flex gap-2">
-              <input
-                placeholder="Cidade"
-                value={newRule.city}
-                onChange={(e) => setNewRule({ ...newRule, city: e.target.value })}
-                className="w-full p-3 border rounded-xl"
-              />
-              <input
-                placeholder="UF"
-                value={newRule.uf}
-                onChange={(e) => setNewRule({ ...newRule, uf: e.target.value })}
-                className="w-20 p-3 border rounded-xl"
-              />
-            </div>
+            
             <div>
   <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">
-    Cidades atendidas pela base
+    Cidades presenciais atendidas pela base
   </label>
 
   <div className="flex gap-2 mb-3">
@@ -633,7 +625,7 @@ coveredUfs: [
         key={`${city}-${index}`}
         className="px-3 py-2 bg-red-50 text-red-700 rounded-full text-[10px] font-black uppercase flex items-center gap-2"
       >
-        {city}/{newRule.coveredUfs[index] || newRule.uf}
+        {city}/{newRule.coveredUfs[index] || ''}
 
         <button
           type="button"
@@ -696,8 +688,6 @@ coveredUfs: [
   setIsRuleModalOpen(false);
   setEditingRuleId(null);
   setNewRule({
-  city: '',
-  uf: '',
   coveredCities: [],
   coveredUfs: [],
   analystId: '',
