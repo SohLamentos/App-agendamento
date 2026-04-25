@@ -493,6 +493,47 @@ this.analystMappings = [];
     return { success: false, message: error?.message || 'Erro ao resetar base de teste.' };
   }
 }
+  public addCqSupportEvent(params: {
+  analystId: string;
+  dateIso: string;
+  shift?: Shift;
+  capacityExtra?: number;
+  notes?: string;
+}) {
+  const ctx = this.getContext();
+  const currentUser = this.getCurrentUser();
+
+  const event: EventSchedule = {
+    id: `evt-cq-${Date.now()}-${Math.random()}`,
+    groupId: ctx.groupId,
+    title: 'APOIO CQ',
+    type: 'CQ_SUPPORT',
+    startDatetime: `${params.dateIso}T00:00:00`,
+    endDatetime: `${params.dateIso}T23:59:59`,
+    involvedUserIds: [params.analystId],
+    shift: params.shift || Shift.FULL_DAY,
+    color: '#facc15',
+    capacityExtra: params.capacityExtra || 6,
+    active: true
+  };
+
+  this.events.push(event);
+  this.persist();
+
+  auditService.logTicket({
+    user: currentUser,
+    action: 'APOIO_CQ_CRIADO',
+    targetType: 'Analista',
+    targetValue: params.analystId,
+    reason: `Apoio CQ criado para ${params.dateIso}, capacidade extra ${event.capacityExtra}.`,
+    screen: 'Agenda',
+    groupId: ctx.groupId
+  });
+
+  window.dispatchEvent(new Event('data-updated'));
+
+  return event;
+}
 
   public safeNormalize(value: any): string {
     const s = (value === null || value === undefined) ? "" : String(value);
