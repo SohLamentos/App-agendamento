@@ -1554,7 +1554,8 @@ const simulateLotCapacityForAnalyst = (
   targetType: ExpertiseType,
   businessDaysToUse: string[],
   limitPerShiftToUse: number,
-  lotSize: number
+  lotSize: number,
+  baseIdToUse?: string
 ): LotSimulationResult => {
   let bestResult: LotSimulationResult = {
     analystId: analyst.id,
@@ -1575,25 +1576,17 @@ const simulateLotCapacityForAnalyst = (
 
     for (let dayIndex = startIndex; dayIndex < businessDaysToUse.length; dayIndex++) {
       const dateIso = businessDaysToUse[dayIndex];
-      const lotBaseMatch = this.resolveBaseForScheduling({
-  city: tech.city,
-  uf: tech.state,
-  company: tech.company
-});
 
-const freeSlots = getAvailableSlotsForAnalystOnDate(
-  analyst.id,
-  dateIso,
-  targetType,
-  limitPerShiftToUse,
-  lotBaseMatch.base?.id
-);
+      const freeSlots = getAvailableSlotsForAnalystOnDate(
+        analyst.id,
+        dateIso,
+        targetType,
+        limitPerShiftToUse,
+        baseIdToUse
+      );
 
-      // antes de começar o lote, pode pular dia sem problema
       if (capacity === 0) {
-        if (freeSlots <= 0) {
-          continue;
-        }
+        if (freeSlots <= 0) continue;
 
         startDate = dateIso;
         endDate = dateIso;
@@ -1615,7 +1608,6 @@ const freeSlots = getAvailableSlotsForAnalystOnDate(
         continue;
       }
 
-      // depois que começou, precisa manter continuidade
       if (freeSlots <= 0) {
         brokeContinuity = true;
         break;
@@ -1797,6 +1789,12 @@ if (shouldLockLotToOneAnalyst) {
 
   let lotOwner: User | null = null;
 
+const lotRoutingMatch = this.resolveBaseForScheduling({
+  city: tech.city,
+  uf: tech.state,
+  company: tech.company
+});
+
 const simulations = allowedAnalysts.map((analyst, index) => ({
   analyst,
   orderIndex: index,
@@ -1805,7 +1803,8 @@ const simulations = allowedAnalysts.map((analyst, index) => ({
     targetType,
     businessDays,
     limitPerShift,
-    lotSize
+    lotSize,
+    lotRoutingMatch.base?.id
   )
 }));
 
