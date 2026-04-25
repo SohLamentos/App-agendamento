@@ -122,6 +122,16 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   dataService.saveRoutingRule(updatedRule);
   refresh();
 };
+  const handleDeleteRule = (rule: RoutingRule) => {
+  const confirmDelete = window.confirm(
+    `Deseja excluir definitivamente a regra de ${rule.city}/${rule.uf}?`
+  );
+
+  if (!confirmDelete) return;
+
+  dataService.deleteRoutingRule(rule.id);
+  refresh();
+};
   
 
   const refresh = () => {
@@ -314,15 +324,23 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
                             </button>
 
                             <button
-                              onClick={() => handleToggleBaseStatus(base)}
-                              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
-                                base.active
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                  : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                              }`}
-                            >
-                              {base.active ? 'Inativar' : 'Ativar'}
-                            </button>
+  onClick={() => handleToggleRuleStatus(rule)}
+  className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
+    rule.active
+      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+      : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+  }`}
+>
+  {rule.active ? 'Inativar' : 'Ativar'}
+</button>
+
+<button
+  onClick={() => handleDeleteRule(rule)}
+  className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black"
+>
+  Excluir
+</button>
+                            
                           </div>
                         </td>
                       </tr>
