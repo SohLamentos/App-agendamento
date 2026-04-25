@@ -1500,6 +1500,7 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
     e =>
       e.involvedUserIds.includes(analystId) &&
       e.startDatetime.startsWith(dateIso) &&
+      (e as any).type !== 'CQ_SUPPORT' && // 🔥 IGNORA CQ
       (e.shift === Shift.FULL_DAY || e.shift === shift)
   );
 };
@@ -1541,9 +1542,33 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
       }
     }
 
-    const shiftCount = shiftSchedules.length;
-    const freeSlots = Math.max(0, limitPerShiftToUse - shiftCount);
-    totalFreeSlots += freeSlots;
+    // 🔥 BUSCAR APOIO CQ
+const cqSupportEvents = this.events.filter(
+  e =>
+    e.involvedUserIds.includes(analystId) &&
+    e.startDatetime.startsWith(dateIso) &&
+    (e as any).type === 'CQ_SUPPORT' &&
+    ((e as any).active ?? true) &&
+    (e.shift === Shift.FULL_DAY || e.shift === shift)
+);
+
+// 🔥 SOMAR CAPACIDADE EXTRA
+let cqExtraSlots = 0;
+
+cqSupportEvents.forEach(event => {
+  const extra = (event as any).capacityExtra || 6;
+
+  // dividir por turno (6 total = 3 manhã + 3 tarde)
+  cqExtraSlots += extra / 2;
+});
+
+// 🔥 NOVO LIMITE COM CQ
+const shiftLimitWithCq = limitPerShiftToUse + cqExtraSlots;
+
+const shiftCount = shiftSchedules.length;
+const freeSlots = Math.max(0, shiftLimitWithCq - shiftCount);
+
+totalFreeSlots += freeSlots;
   }
 
   return totalFreeSlots;
