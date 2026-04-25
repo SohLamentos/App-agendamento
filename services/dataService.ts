@@ -1205,48 +1205,73 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
   uf?: string;
   analystId?: string;
   company?: string;
-}): { base: IntegrationBase | null; rule: RoutingRule | null } {
+}): { base: IntegrationBase | null; rule: RoutingRule | null; hasCityCoverage: boolean } {
   const cityNorm = this.safeNormalize(params.city || '');
   const ufNorm = this.safeNormalize(params.uf || '');
   const companyNorm = this.safeNormalize(params.company || '');
 
-  const validRules = this.routingRules
+  const cityRules = this.routingRules
     .filter(r => r.active)
     .filter(r => {
-      const mainCity = this.safeNormalize(r.city);
-      const coveredCities = (r.coveredCities || []).map(c => this.safeNormalize(c));
+      const base = this.integrationBases.find(
+        b => b.id === r.baseId && b.active
+      );
 
-      return mainCity === cityNorm || coveredCities.includes(cityNorm);
+      return !!base;
     })
-    .filter(r => this.safeNormalize(r.uf) === ufNorm)
+    .filter(r => {
+      const coveredCities = (r.coveredCities || [r.city]).map(c =>
+        this.safeNormalize(c)
+      );
+
+      const coveredUfs = (r.coveredUfs || [r.uf]).map(uf =>
+        this.safeNormalize(uf)
+      );
+
+      return coveredCities.some((city, index) => {
+        const ruleUf = coveredUfs[index] || this.safeNormalize(r.uf);
+        return city === cityNorm && ruleUf === ufNorm;
+      });
+    })
     .sort((a, b) => (a.priority || 999) - (b.priority || 999));
 
+  const hasCityCoverage = cityRules.length > 0;
+
   const match =
-    validRules.find(r =>
+    cityRules.find(r =>
       r.analystId === params.analystId &&
       this.safeNormalize(r.company || '') === companyNorm
     ) ||
-    validRules.find(r =>
-      r.analystId === params.analystId &&
-      !r.company
-    ) ||
-    validRules.find(r =>
+    cityRules.find(r =>
       !r.analystId &&
       this.safeNormalize(r.company || '') === companyNorm
     ) ||
-    validRules.find(r =>
+    cityRules.find(r =>
+      r.analystId === params.analystId &&
+      !r.company
+    ) ||
+    cityRules.find(r =>
       !r.analystId &&
       !r.company
-    );
+    ) ||
+    null;
 
   if (!match) {
-    return { base: null, rule: null };
+    return {
+      base: null,
+      rule: null,
+      hasCityCoverage
+    };
   }
 
   const base =
     this.integrationBases.find(b => b.id === match.baseId && b.active) || null;
 
-  return { base, rule: match };
+  return {
+    base,
+    rule: match,
+    hasCityCoverage
+  };
 }
   private getBusinessDays(startDateIso: string, count: number): string[] {
     const days: string[] = [];
