@@ -94,6 +94,18 @@ export const StatusEngine = [
   }
 ];
 
+const normalizeText = (value?: string): string => {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+};
+
+const normalizeUF = (value?: string): string => {
+  return String(value || '').toUpperCase().trim();
+};
+
 class DataService {
   private users: User[];
   private groups: Group[];
