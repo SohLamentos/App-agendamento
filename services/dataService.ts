@@ -1660,13 +1660,15 @@ const simulateLotCapacityForAnalyst = (
     const lotsMap = new Map<string, Technician[]>();
 
 for (const tech of techniciansPool) {
-  const cityConfig = this.cities.find(
-    c => this.safeNormalize(c.name) === this.safeNormalize(tech.city)
-  );
+  const routingMatch = this.resolveBaseForScheduling({
+  city: tech.city,
+  uf: tech.state,
+  company: tech.company
+});
 
-  const requiresPresential = cityConfig?.type === ExpertiseType.PRESENTIAL;
-  const targetType = requiresPresential ? ExpertiseType.PRESENTIAL : ExpertiseType.VIRTUAL;
-  const lotKey = getLotKey(tech, targetType);
+const requiresPresential = !!routingMatch.base;
+const targetType = requiresPresential ? ExpertiseType.PRESENTIAL : ExpertiseType.VIRTUAL;
+const lotKey = getLotKey(tech, targetType);
 
   if (!lotsMap.has(lotKey)) {
     lotsMap.set(lotKey, []);
@@ -1686,12 +1688,14 @@ const lots = Array.from(lotsMap.entries()).map(([lotKey, techs]) => ({
   const tech = lotTechs[0];
   
 
-    const cityConfig = this.cities.find(
-      c => this.safeNormalize(c.name) === this.safeNormalize(tech.city)
-    );
+    const routingMatch = this.resolveBaseForScheduling({
+  city: tech.city,
+  uf: tech.state,
+  company: tech.company
+});
 
-    const requiresPresential = cityConfig?.type === ExpertiseType.PRESENTIAL;
-    const targetType = requiresPresential ? ExpertiseType.PRESENTIAL : ExpertiseType.VIRTUAL;
+const requiresPresential = !!routingMatch.base;
+const targetType = requiresPresential ? ExpertiseType.PRESENTIAL : ExpertiseType.VIRTUAL;
 
     const limitPerShift =
       targetType === ExpertiseType.VIRTUAL
@@ -1699,8 +1703,12 @@ const lots = Array.from(lotsMap.entries()).map(([lotKey, techs]) => ({
         : (groupRule.presencialPerShift || 3);
 
     let allowedAnalysts = requiresPresential
-      ? analystsPool.filter(a => cityConfig?.responsibleAnalystIds.includes(a.analystProfileId || ''))
-      : analystsPool;
+  ? analystsPool.filter(a =>
+      routingMatch.rule?.analystId
+        ? a.id === routingMatch.rule.analystId
+        : true
+    )
+  : analystsPool;
 
     allowedAnalysts = sortAnalystsForScenario(allowedAnalysts, requiresPresential);
 
