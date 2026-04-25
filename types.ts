@@ -240,6 +240,7 @@ baseName?: string;
 baseAddress?: string;
 baseNotes?: string;
 powerAppsBaseId?: string;
+routingRuleId?: string;
 
   trainingClassId?: string;
 
@@ -298,8 +299,15 @@ export interface IntegrationBase {
 export interface RoutingRule {
   id: string;
   groupId: string;
+
+  // Cidade principal/base da regra
   city: string;
   uf: string;
+
+  // Novidade: cidades atendidas pela mesma base
+  coveredCities?: string[];
+  coveredUfs?: string[];
+
   analystId?: string;
   company?: string;
   baseId: string;
