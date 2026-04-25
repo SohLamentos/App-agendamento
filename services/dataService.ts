@@ -1675,9 +1675,22 @@ const simulateLotCapacityForAnalyst = (
       }
 
       if (freeSlots <= 0) {
-        brokeContinuity = true;
-        break;
-      }
+  // 🔥 NOVO: só quebra continuidade se NÃO houver CQ
+  const hasCqSupport = this.events.some(
+    e =>
+      e.involvedUserIds.includes(analyst.id) &&
+      e.startDatetime.startsWith(dateIso) &&
+      (e as any).type === 'CQ_SUPPORT' &&
+      ((e as any).active ?? true)
+  );
+
+  if (!hasCqSupport) {
+    brokeContinuity = true;
+    break;
+  }
+
+  continue;
+}
 
       endDate = dateIso;
       plannedDates.push(dateIso);
@@ -1962,13 +1975,34 @@ const plannedDatesToUse = chosenSimulation?.result.plannedDates || [];
 
   for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
     const isBlocked = this.events.some(
-      e =>
-        e.involvedUserIds.includes(lotOwner.id) &&
-        e.startDatetime.startsWith(dateIso) &&
-        (e.shift === Shift.FULL_DAY || e.shift === shift)
-    );
+  e =>
+    e.involvedUserIds.includes(lotOwner.id) &&
+    e.startDatetime.startsWith(dateIso) &&
+    (e as any).type !== 'CQ_SUPPORT' &&
+    (e.shift === Shift.FULL_DAY || e.shift === shift)
+);
 
-    if (isBlocked) continue;
+const cqSupportEvents = this.events.filter(
+  e =>
+    e.involvedUserIds.includes(lotOwner.id) &&
+    e.startDatetime.startsWith(dateIso) &&
+    (e as any).type === 'CQ_SUPPORT' &&
+    ((e as any).active ?? true) &&
+    (e.shift === Shift.FULL_DAY || e.shift === shift)
+);
+
+let cqExtraSlots = 0;
+
+cqSupportEvents.forEach(event => {
+  const extra = (event as any).capacityExtra || 6;
+  cqExtraSlots += extra / 2;
+});
+
+if (isBlocked && cqExtraSlots <= 0) continue;
+
+const shiftLimitWithCq = isBlocked
+  ? cqExtraSlots
+  : limitPerShift + cqExtraSlots;
 
     let shiftSchedules = this.schedules.filter(
       s =>
@@ -1991,7 +2025,7 @@ if (targetType === ExpertiseType.PRESENTIAL && hasDifferentBaseOnShift) {
   continue;
 }
 
-    while (shiftSchedules.length < limitPerShift && scheduledEntries.length < lotTechs.length) {
+    while (shiftSchedules.length < shiftLimitWithCq && scheduledEntries.length < lotTechs.length) {
       const nextTech = lotTechs[scheduledEntries.length];
 
       const scheduleTime = this.getManualScheduleTime(
