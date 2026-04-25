@@ -657,14 +657,16 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   setIsRuleModalOpen(false);
   setEditingRuleId(null);
   setNewRule({
-    city: '',
-    uf: '',
-    analystId: '',
-    company: '',
-    baseId: '',
-    priority: 1,
-    notes: ''
-  });
+  city: '',
+  uf: '',
+  coveredCities: [],
+  coveredUfs: [],
+  analystId: '',
+  company: '',
+  baseId: '',
+  priority: 1,
+  notes: ''
+});
 }}
                 className="flex-1 p-3 bg-slate-200 rounded-xl text-xs font-black uppercase"
               >
