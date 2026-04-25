@@ -33,12 +33,17 @@ const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
 const [newRule, setNewRule] = useState({
   city: '',
   uf: '',
+  coveredCities: [] as string[],
+  coveredUfs: [] as string[],
   analystId: '',
   company: '',
   baseId: '',
   priority: 1,
   notes: ''
 });
+
+const [coveredCityInput, setCoveredCityInput] = useState('');
+const [coveredUfInput, setCoveredUfInput] = useState('');
 
   const handleSaveRule = () => {
   if (!newRule.city || !newRule.uf || !newRule.baseId) {
@@ -47,18 +52,20 @@ const [newRule, setNewRule] = useState({
   }
 
   const rule: RoutingRule = {
-    id: editingRuleId || 'rule-' + Date.now(),
-    groupId: user.groupId,
-    city: newRule.city.toUpperCase(),
-    uf: newRule.uf.toUpperCase(),
-    analystId: newRule.analystId || undefined,
-    company: newRule.company || undefined,
-    baseId: newRule.baseId,
-    priority: Number(newRule.priority) || 1,
-    active: editingRuleId
-      ? rules.find(r => r.id === editingRuleId)?.active ?? true
-      : true
-  };
+  id: editingRuleId || 'rule-' + Date.now(),
+  groupId: user.groupId,
+  city: newRule.city.toUpperCase(),
+  uf: newRule.uf.toUpperCase(),
+  coveredCities: newRule.coveredCities,
+  coveredUfs: newRule.coveredUfs,
+  analystId: newRule.analystId || undefined,
+  company: newRule.company || undefined,
+  baseId: newRule.baseId,
+  priority: Number(newRule.priority) || 1,
+  active: editingRuleId
+    ? rules.find(r => r.id === editingRuleId)?.active ?? true
+    : true
+};
 
   dataService.saveRoutingRule(rule);
 
@@ -66,14 +73,16 @@ const [newRule, setNewRule] = useState({
   setEditingRuleId(null);
 
   setNewRule({
-    city: '',
-    uf: '',
-    analystId: '',
-    company: '',
-    baseId: '',
-    priority: 1,
-    notes: ''
-  });
+  city: rule.city || '',
+  uf: rule.uf || '',
+  coveredCities: rule.coveredCities || [],
+  coveredUfs: rule.coveredUfs || [],
+  analystId: rule.analystId || '',
+  company: rule.company || '',
+  baseId: rule.baseId || '',
+  priority: rule.priority || 1,
+  notes: ''
+});
 
   refresh();
 };
@@ -458,19 +467,87 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
             />
 
             <div className="flex gap-2">
-              <input
-                placeholder="Cidade"
-                value={newBase.city}
-                onChange={(e) => setNewBase({ ...newBase, city: e.target.value })}
-                className="w-full p-3 border rounded-xl"
-              />
-              <input
-                placeholder="UF"
-                value={newBase.uf}
-                onChange={(e) => setNewBase({ ...newBase, uf: e.target.value })}
-                className="w-20 p-3 border rounded-xl"
-              />
-            </div>
+  <input
+    placeholder="Cidade"
+    value={newRule.city}
+    onChange={(e) => setNewRule({ ...newRule, city: e.target.value })}
+    className="w-full p-3 border rounded-xl"
+  />
+  <input
+    placeholder="UF"
+    value={newRule.uf}
+    onChange={(e) => setNewRule({ ...newRule, uf: e.target.value })}
+    className="w-20 p-3 border rounded-xl"
+  />
+</div>
+
+{/* 👇 COLAR AQUI */}
+
+<div>
+  <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">
+    Cidades atendidas pela base
+  </label>
+
+  <div className="flex gap-2 mb-3">
+    <input
+      value={coveredCityInput}
+      onChange={(e) => setCoveredCityInput(e.target.value)}
+      placeholder="Ex: Cambé"
+      className="flex-1 p-3 border rounded-xl text-xs font-bold"
+    />
+
+    <input
+      value={coveredUfInput}
+      onChange={(e) => setCoveredUfInput(e.target.value.toUpperCase())}
+      placeholder="UF"
+      maxLength={2}
+      className="w-20 p-3 border rounded-xl text-xs font-bold uppercase"
+    />
+
+    <button
+      type="button"
+      onClick={() => {
+        if (!coveredCityInput || !coveredUfInput) return;
+
+        setNewRule({
+          ...newRule,
+          coveredCities: [...newRule.coveredCities, coveredCityInput.toUpperCase()],
+          coveredUfs: [...newRule.coveredUfs, coveredUfInput.toUpperCase()]
+        });
+
+        setCoveredCityInput('');
+        setCoveredUfInput('');
+      }}
+      className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase"
+    >
+      +
+    </button>
+  </div>
+
+  <div className="flex flex-wrap gap-2">
+    {newRule.coveredCities.map((city, index) => (
+      <span
+        key={index}
+        className="px-3 py-2 bg-red-50 text-red-700 rounded-full text-[10px] font-black uppercase flex items-center gap-2"
+      >
+        {city}/{newRule.coveredUfs[index]}
+
+        <button
+          type="button"
+          onClick={() => {
+            setNewRule({
+              ...newRule,
+              coveredCities: newRule.coveredCities.filter((_, i) => i !== index),
+              coveredUfs: newRule.coveredUfs.filter((_, i) => i !== index)
+            });
+          }}
+        >
+          ×
+        </button>
+      </span>
+    ))}
+  </div>
+</div>
 
             <input
               placeholder="Endereço"
