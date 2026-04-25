@@ -54,10 +54,21 @@ const [coveredUfInput, setCoveredUfInput] = useState('');
   const rule: RoutingRule = {
   id: editingRuleId || 'rule-' + Date.now(),
   groupId: user.groupId,
-  city: newRule.city.toUpperCase(),
-  uf: newRule.uf.toUpperCase(),
-  coveredCities: newRule.coveredCities,
-  coveredUfs: newRule.coveredUfs,
+  city: newRule.city
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toUpperCase()
+  .trim(),
+
+uf: newRule.uf.toUpperCase().trim(),
+
+coveredCities: newRule.coveredCities.map(c =>
+  c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim()
+),
+
+coveredUfs: newRule.coveredUfs.map(uf =>
+  uf.toUpperCase().trim()
+),
   analystId: newRule.analystId || undefined,
   company: newRule.company || undefined,
   baseId: newRule.baseId,
@@ -573,8 +584,18 @@ onChange={(e) => setNewBase({ ...newBase, uf: e.target.value })}
 
         setNewRule({
           ...newRule,
-          coveredCities: [...newRule.coveredCities, coveredCityInput.toUpperCase()],
-          coveredUfs: [...newRule.coveredUfs, coveredUfInput.toUpperCase()]
+          coveredCities: [
+  ...newRule.coveredCities,
+  coveredCityInput
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim()
+],
+coveredUfs: [
+  ...newRule.coveredUfs,
+  coveredUfInput.toUpperCase().trim()
+]
         });
 
         setCoveredCityInput('');
