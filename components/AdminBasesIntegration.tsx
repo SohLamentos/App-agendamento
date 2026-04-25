@@ -210,7 +210,10 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
     refresh();
   };
 
-  if (user.role !== UserRole.ADMIN) {
+  if (
+  user.role !== UserRole.ADMIN &&
+  user.role !== UserRole.MANAGER
+) {
     return (
       <div className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm">
         <h2 className="text-sm font-black uppercase text-slate-900">
