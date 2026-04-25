@@ -1503,11 +1503,13 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
       (e.shift === Shift.FULL_DAY || e.shift === shift)
   );
 };
-    const getAvailableSlotsForAnalystOnDate = (
+    
+  const getAvailableSlotsForAnalystOnDate = (
   analystId: string,
   dateIso: string,
   targetType: ExpertiseType,
-  limitPerShiftToUse: number
+  limitPerShiftToUse: number,
+  baseIdToUse?: string
 ) => {
   const daySchedules = getDaySchedulesForAnalyst(analystId, dateIso);
 
@@ -1527,7 +1529,19 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
     const blocked = isShiftBlockedForAnalyst(analystId, dateIso, shift);
     if (blocked) continue;
 
-    const shiftCount = daySchedules.filter(s => s.shift === shift).length;
+    const shiftSchedules = daySchedules.filter(s => s.shift === shift);
+
+    if (targetType === ExpertiseType.PRESENTIAL && baseIdToUse) {
+      const hasDifferentBaseOnShift = shiftSchedules.some(
+        s => s.type === ExpertiseType.PRESENTIAL && s.baseId && s.baseId !== baseIdToUse
+      );
+
+      if (hasDifferentBaseOnShift) {
+        continue;
+      }
+    }
+
+    const shiftCount = shiftSchedules.length;
     const freeSlots = Math.max(0, limitPerShiftToUse - shiftCount);
     totalFreeSlots += freeSlots;
   }
@@ -1561,12 +1575,19 @@ const simulateLotCapacityForAnalyst = (
 
     for (let dayIndex = startIndex; dayIndex < businessDaysToUse.length; dayIndex++) {
       const dateIso = businessDaysToUse[dayIndex];
-      const freeSlots = getAvailableSlotsForAnalystOnDate(
-        analyst.id,
-        dateIso,
-        targetType,
-        limitPerShiftToUse
-      );
+      const lotBaseMatch = this.resolveBaseForScheduling({
+  city: tech.city,
+  uf: tech.state,
+  company: tech.company
+});
+
+const freeSlots = getAvailableSlotsForAnalystOnDate(
+  analyst.id,
+  dateIso,
+  targetType,
+  limitPerShiftToUse,
+  lotBaseMatch.base?.id
+);
 
       // antes de começar o lote, pode pular dia sem problema
       if (capacity === 0) {
