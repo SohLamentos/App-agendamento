@@ -229,16 +229,16 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
   };
 
   const COLORS = {
-    VIRTUAL: '#00A86B',
-    PRESENTIAL: '#1E88E5',
-    FERIAS: '#C62828',
-    FOLGA: '#757575',
-    BLOQUEIO: '#FB8C00',
-    IMPREVISTO: '#6A1B9A',
-    OUTROS: '#455A64',
-    FERIADO: '#000000'
-  };
-
+  VIRTUAL: '#00A86B',
+  PRESENTIAL: '#1E88E5',
+  FERIAS: '#C62828',
+  FOLGA: '#757575',
+  BLOQUEIO: '#FB8C00',
+  IMPREVISTO: '#6A1B9A',
+  OUTROS: '#455A64',
+  FERIADO: '#000000',
+  CQ_SUPPORT: '#4F46E5'
+};
   const getCellContent = (userId: string, dateIso: string) => {
     const dayBlocks = events.filter(e => e.involvedUserIds.includes(userId) && e.startDatetime.startsWith(dateIso));
     const daySchs = schedules.filter(s => s.analystId === userId && s.datetime.startsWith(dateIso) && s.status !== ScheduleStatus.CANCELLED);
@@ -278,6 +278,7 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
       const title = fullDayBlock.title.toUpperCase();
       let color = COLORS.BLOQUEIO;
       if (title.includes('FÉRIAS')) color = COLORS.FERIAS;
+        else if (title.includes('CQ_SUPPORT')) color = COLORS.CQ_SUPPORT;
 else if (title.includes('FOLGA')) color = COLORS.FOLGA;
 else if (title.includes('IMPREVISTO')) color = COLORS.IMPREVISTO;
 else if (title.includes('OUTROS')) {
@@ -289,11 +290,11 @@ else if (title.includes('ETN ') || title.includes('TREINAMENTO')) {
 }
 
       const displayTitle =
-  title.includes('OUTROS - ')
-    ? title.replace('OUTROS - ', '')
-    : title.includes('IMPREVISTO - ')
-      ? title.replace('IMPREVISTO - ', '')
-      : title;
+  title === 'CQ_SUPPORT'
+    ? 'APOIO CQ'
+    : title
+        .replace('OUTROS - ', '')
+        .replace('IMPREVISTO - ', '');
 
 return renderCard(displayTitle, color);
     }
@@ -731,6 +732,19 @@ const setStatus = (title: string | null, shift: Shift = Shift.FULL_DAY, color?: 
         : title === 'IMPREVISTO'
           ? ((improvisoReason || '').trim() ? `IMPREVISTO - ${improvisoReason.trim()}` : 'IMPREVISTO')
           : title;
+    if (title === 'CQ_SUPPORT') {
+  dataService.addCqSupportEvent({
+    analystId: selection.userId,
+    dateIso: selection.dateIso,
+    shift: Shift.FULL_DAY,
+    capacityExtra: 6,
+    notes: 'Apoio CQ lançado pela agenda'
+  });
+
+  setToast({ message: 'Apoio CQ lançado com sucesso (+6 vagas).', type: 'success' });
+  setSelection(null);
+  return;
+}
 
     dataService.addEvent({
       id: `evt-${Date.now()}`,
@@ -1297,6 +1311,14 @@ return (
   className="w-full text-left px-8 py-4 text-[11px] font-black text-[#6A1B9A] hover:bg-[#6A1B9A] hover:text-white uppercase transition-all tracking-wider"
 >
   Lançar Improviso
+</button>
+              <button
+  onClick={() => {
+    setStatus('CQ_SUPPORT', Shift.FULL_DAY);
+  }}
+  className="w-full text-left px-8 py-4 text-[11px] font-black text-indigo-600 hover:bg-indigo-600 hover:text-white uppercase transition-all tracking-wider"
+>
+  Apoio CQ
 </button>
   
 
