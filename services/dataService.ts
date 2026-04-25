@@ -1568,52 +1568,52 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
   let totalFreeSlots = 0;
 
   for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
-    const blocked = isShiftBlockedForAnalyst(analystId, dateIso, shift);
-    if (blocked) continue;
 
-    const shiftSchedules = daySchedules.filter(s => s.shift === shift);
+  const blocked = isShiftBlockedForAnalyst(analystId, dateIso, shift);
 
-    if (targetType === ExpertiseType.PRESENTIAL && baseIdToUse) {
-      const hasDifferentBaseOnShift = shiftSchedules.some(
-        s => s.type === ExpertiseType.PRESENTIAL && s.baseId && s.baseId !== baseIdToUse
-      );
+  // 🔥 BUSCAR APOIO CQ (UMA ÚNICA VEZ)
+  const cqSupportEvents = this.events.filter(
+    e =>
+      e.involvedUserIds.includes(analystId) &&
+      e.startDatetime.startsWith(dateIso) &&
+      (e as any).type === 'CQ_SUPPORT' &&
+      ((e as any).active ?? true) &&
+      (e.shift === Shift.FULL_DAY || e.shift === shift)
+  );
 
-      if (hasDifferentBaseOnShift) {
-        continue;
-      }
-    }
+  let cqExtraSlots = 0;
 
-    // 🔥 BUSCAR APOIO CQ
-const cqSupportEvents = this.events.filter(
-  e =>
-    e.involvedUserIds.includes(analystId) &&
-    e.startDatetime.startsWith(dateIso) &&
-    (e as any).type === 'CQ_SUPPORT' &&
-    ((e as any).active ?? true) &&
-    (e.shift === Shift.FULL_DAY || e.shift === shift)
-);
+  cqSupportEvents.forEach(event => {
+    const extra = (event as any).capacityExtra || 6;
+    cqExtraSlots += extra / 2;
+  });
 
-// 🔥 SOMAR CAPACIDADE EXTRA
-let cqExtraSlots = 0;
+  // 🔥 REGRA PRINCIPAL
+  if (blocked && cqExtraSlots <= 0) continue;
 
-cqSupportEvents.forEach(event => {
-  const extra = (event as any).capacityExtra || 6;
+  const shiftSchedules = daySchedules.filter(s => s.shift === shift);
 
-  // dividir por turno (6 total = 3 manhã + 3 tarde)
-  cqExtraSlots += extra / 2;
-});
+  if (targetType === ExpertiseType.PRESENTIAL && baseIdToUse) {
+    const hasDifferentBaseOnShift = shiftSchedules.some(
+      s => s.type === ExpertiseType.PRESENTIAL && s.baseId && s.baseId !== baseIdToUse
+    );
 
-// 🔥 NOVO LIMITE COM CQ
-const shiftLimitWithCq = limitPerShiftToUse + cqExtraSlots;
-
-const shiftCount = shiftSchedules.length;
-const freeSlots = Math.max(0, shiftLimitWithCq - shiftCount);
-
-totalFreeSlots += freeSlots;
+    if (hasDifferentBaseOnShift) continue;
   }
 
-  return totalFreeSlots;
-};
+  const shiftLimitWithCq = blocked
+    ? cqExtraSlots
+    : limitPerShiftToUse + cqExtraSlots;
+
+  const shiftCount = shiftSchedules.length;
+  const freeSlots = Math.max(0, shiftLimitWithCq - shiftCount);
+
+  totalFreeSlots += freeSlots;
+}
+
+return totalFreeSlots;
+  };
+  
 
 const simulateLotCapacityForAnalyst = (
   analyst: User,
