@@ -963,18 +963,22 @@ getAnalystMappings() {
   const ctx = this.getContext();
 
   const normalizedRule: RoutingRule = {
-    ...rule,
-    id: rule.id || `rule-${Date.now()}`,
-    groupId: rule.groupId || ctx.groupId || this.getActiveGroupId(),
-    city: this.safeNormalize(rule.city),
-    uf: this.safeNormalize(rule.uf),
-    analystId: rule.analystId || undefined,
-    company: rule.company ? this.safeNormalize(rule.company) : undefined,
-    baseId: rule.baseId,
-    priority: Number(rule.priority) || 1,
-    active: rule.active ?? true,
-    notes: rule.notes || ''
-  };
+  ...rule,
+  id: rule.id || `rule-${Date.now()}`,
+  groupId: rule.groupId || ctx.groupId || this.getActiveGroupId(),
+  city: this.safeNormalize(rule.city),
+  uf: this.safeNormalize(rule.uf),
+
+  coveredCities: (rule.coveredCities || []).map(c => this.safeNormalize(c)),
+  coveredUfs: (rule.coveredUfs || []).map(uf => this.safeNormalize(uf)),
+
+  analystId: rule.analystId || undefined,
+  company: rule.company ? this.safeNormalize(rule.company) : undefined,
+  baseId: rule.baseId,
+  priority: Number(rule.priority) || 1,
+  active: rule.active ?? true,
+  notes: rule.notes || ''
+};
 
   const idx = this.routingRules.findIndex(
     r => r.id === normalizedRule.id && r.groupId === normalizedRule.groupId
