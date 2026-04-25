@@ -1202,16 +1202,12 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
 
   const validRules = this.routingRules
     .filter(r => r.active)
-    const validRules = this.routingRules
-  .filter(r => r.active)
-  .filter(r => {
-    const mainCity = this.safeNormalize(r.city);
-    const coveredCities = (r.coveredCities || []).map(c => this.safeNormalize(c));
+    .filter(r => {
+      const mainCity = this.safeNormalize(r.city);
+      const coveredCities = (r.coveredCities || []).map(c => this.safeNormalize(c));
 
-    return mainCity === cityNorm || coveredCities.includes(cityNorm);
-  })
-  .filter(r => this.safeNormalize(r.uf) === ufNorm)
-  .sort((a, b) => (a.priority || 999) - (b.priority || 999));
+      return mainCity === cityNorm || coveredCities.includes(cityNorm);
+    })
     .filter(r => this.safeNormalize(r.uf) === ufNorm)
     .sort((a, b) => (a.priority || 999) - (b.priority || 999));
 
@@ -1237,7 +1233,8 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
     return { base: null, rule: null };
   }
 
-  const base = this.integrationBases.find(b => b.id === match.baseId && b.active) || null;
+  const base =
+    this.integrationBases.find(b => b.id === match.baseId && b.active) || null;
 
   return { base, rule: match };
 }
