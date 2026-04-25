@@ -169,7 +169,7 @@ const formatHeaderTicketTime = (value?: string) => {
             </div>
           )}
 
-          {user.role === UserRole.ADMIN && (
+          {(user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) && (
   <div className="pt-4 border-t border-white/10 mt-4 space-y-1.5">
     <button
       onClick={() => setActiveTab('bases-integration')}
@@ -183,19 +183,21 @@ const formatHeaderTicketTime = (value?: string) => {
       BASES & INTEGRAÇÃO
     </button>
 
-    <button
-      onClick={() => setActiveTab('admin')}
-      className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
-        activeTab === 'admin'
-          ? 'bg-emerald-600 text-white shadow-lg'
-          : 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
-      }`}
-    >
-      <span className="mr-3 text-lg opacity-80">🛡️</span>
-      ADMINISTRAÇÃO
-    </button>
+    {user.role === UserRole.ADMIN && (
+      <button
+        onClick={() => setActiveTab('admin')}
+        className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+          activeTab === 'admin'
+            ? 'bg-emerald-600 text-white shadow-lg'
+            : 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
+        }`}
+      >
+        <span className="mr-3 text-lg opacity-80">🛡️</span>
+        ADMINISTRAÇÃO
+      </button>
+    )}
   </div>
-)}     
+)}
 </nav>
         <div className="p-6 border-t border-white/5 bg-black/20">
           <div className="space-y-4">
