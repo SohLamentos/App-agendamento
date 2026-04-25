@@ -1717,7 +1717,8 @@ for (const tech of techniciansPool) {
   company: tech.company
 });
 
-const requiresPresential = !!routingMatch.base;
+  
+const requiresPresential = routingMatch.hasCityCoverage;
 const targetType = requiresPresential ? ExpertiseType.PRESENTIAL : ExpertiseType.VIRTUAL;
 const lotKey = getLotKey(tech, targetType);
 
@@ -1734,19 +1735,30 @@ const lots = Array.from(lotsMap.entries()).map(([lotKey, techs]) => ({
 }));
 
     
-    for (const lot of lots) {
+   for (const lot of lots) {
   const lotTechs = lot.techs;
   const tech = lotTechs[0];
-  
 
-    const routingMatch = this.resolveBaseForScheduling({
-  city: tech.city,
-  uf: tech.state,
-  company: tech.company
-});
+  const routingMatch = this.resolveBaseForScheduling({
+    city: tech.city,
+    uf: tech.state,
+    company: tech.company
+  });
 
-const requiresPresential = !!routingMatch.base;
-const targetType = requiresPresential ? ExpertiseType.PRESENTIAL : ExpertiseType.VIRTUAL;
+  const requiresPresential = routingMatch.hasCityCoverage;
+  const targetType = requiresPresential ? ExpertiseType.PRESENTIAL : ExpertiseType.VIRTUAL;
+
+  if (requiresPresential && !routingMatch.base) {
+    for (const lotTech of lotTechs) {
+      lotTech.status_principal = "BACKLOG AGUARDANDO";
+      lotTech.backlog_score_aplicado = true;
+      lotTech.backlog_motivo = "CIDADE PRESENCIAL COM BASE ATIVA, MAS SEM REGRA PARA EMPRESA/ANALISTA";
+    }
+
+    addReason("CIDADE PRESENCIAL SEM REGRA PARA EMPRESA/ANALISTA");
+    summary.backlog += lotTechs.length;
+    continue;
+  }
 
     const limitPerShift =
       targetType === ExpertiseType.VIRTUAL
@@ -1899,6 +1911,19 @@ const plannedDatesToUse = chosenSimulation?.result.plannedDates || [];
         s.shift === shift &&
         s.status !== ScheduleStatus.CANCELLED
     );
+    const lotBaseId = lotRoutingMatch.base?.id;
+
+const hasDifferentBaseOnShift = shiftSchedules.some(
+  s =>
+    s.type === ExpertiseType.PRESENTIAL &&
+    s.baseId &&
+    lotBaseId &&
+    s.baseId !== lotBaseId
+);
+
+if (targetType === ExpertiseType.PRESENTIAL && hasDifferentBaseOnShift) {
+  continue;
+}
 
     while (shiftSchedules.length < limitPerShift && scheduledEntries.length < lotTechs.length) {
       const nextTech = lotTechs[scheduledEntries.length];
