@@ -1183,6 +1183,33 @@ const getScheduledExportTime = (tech: Technician) => {
 
   return 'N/D';
 };
+
+const importStatusSummary = useMemo(() => {
+  if (!importResult?.details) return null;
+
+  const summary = {
+    FILA: 0,
+    NOSHOW: 0,
+    'SEM EAD': 0,
+    'REPROVADO EAD': 0,
+    'REPROVADO VIRTUAL': 0,
+    INABILITADO: 0
+  };
+
+  importResult.details.forEach((item: any) => {
+    const result = String(item.resultado || '').toUpperCase().trim();
+
+    if (result.includes('FILA')) summary.FILA++;
+    else if (result.includes('NOSHOW')) summary.NOSHOW++;
+    else if (result.includes('SEM EAD')) summary['SEM EAD']++;
+    else if (result.includes('REPROVADO EAD')) summary['REPROVADO EAD']++;
+    else if (result.includes('REPROVADO VIRTUAL')) summary['REPROVADO VIRTUAL']++;
+    else if (result.includes('INABILITADO')) summary.INABILITADO++;
+  });
+
+  return summary;
+}, [importResult]);
+  
   
  return (
   <div className="space-y-8 animate-in fade-in duration-500 relative">
@@ -1690,12 +1717,21 @@ const analystName = getAnalystName(sch);
 
               <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Corrija e tente novamente.</p>
 
-              <button 
-                onClick={() => setIsHeaderErrorModalOpen(false)}
-                className="w-full py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl"
-              >
-                FECHAR
-              </button>
+              <div className="flex gap-4 pt-2">
+  <button 
+    onClick={() => setIsFinalSummaryOpen(false)}
+    className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+  >
+    CANCELAR
+  </button>
+
+  <button 
+    onClick={() => setIsFinalSummaryOpen(false)}
+    className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl"
+  >
+    CONFIRMAR
+  </button>
+</div>
             </div>
           </div>
         </div>
@@ -1774,28 +1810,49 @@ const analystName = getAnalystName(sch);
   </div>
 </div>
 
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm">
-                  <p className="text-[10px] font-black text-emerald-600 uppercase">Inseridos</p>
-                  <p className="text-2xl font-black text-emerald-700">{importResult.inserted}</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Novos nesta turma</p>
-                </div>
-                <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm">
-                  <p className="text-[10px] font-black text-amber-600 uppercase">Duplicados na Turma</p>
-                  <p className="text-2xl font-black text-amber-700">{importResult.duplicatedInClass}</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Já existentes na mesma turma</p>
-                </div>
-                <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm">
-                  <p className="text-[10px] font-black text-blue-600 uppercase">Novos em Outra Turma</p>
-                  <p className="text-2xl font-black text-blue-700">{importResult.newInOtherClass}</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">CPF existe em turma distinta</p>
-                </div>
-                <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm">
-                  <p className="text-[10px] font-black text-slate-600 uppercase">Atualizados</p>
-                  <p className="text-2xl font-black text-slate-700">{importResult.updated}</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Dados básicos completados</p>
-                </div>
-              </div>
+              <div className="space-y-4">
+  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+    Distribuição por Resultado da Importação
+  </p>
+
+  <div className="grid grid-cols-2 gap-4 text-center">
+    <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl shadow-sm">
+      <p className="text-[10px] font-black text-emerald-600 uppercase">FILA</p>
+      <p className="text-2xl font-black text-emerald-700">{importStatusSummary?.FILA || 0}</p>
+      <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Entram na fila</p>
+    </div>
+
+    <div className="bg-rose-50 border border-rose-100 p-5 rounded-2xl shadow-sm">
+      <p className="text-[10px] font-black text-rose-600 uppercase">NOSHOW</p>
+      <p className="text-2xl font-black text-rose-700">{importStatusSummary?.NOSHOW || 0}</p>
+      <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Reprovados por ausência</p>
+    </div>
+
+    <div className="bg-amber-50 border border-amber-100 p-5 rounded-2xl shadow-sm">
+      <p className="text-[10px] font-black text-amber-600 uppercase">SEM EAD</p>
+      <p className="text-2xl font-black text-amber-700">{importStatusSummary?.['SEM EAD'] || 0}</p>
+      <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Pendência EAD</p>
+    </div>
+
+    <div className="bg-orange-50 border border-orange-100 p-5 rounded-2xl shadow-sm">
+      <p className="text-[10px] font-black text-orange-600 uppercase">REPROVADO EAD</p>
+      <p className="text-2xl font-black text-orange-700">{importStatusSummary?.['REPROVADO EAD'] || 0}</p>
+      <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Reprovação EAD</p>
+    </div>
+
+    <div className="bg-blue-50 border border-blue-100 p-5 rounded-2xl shadow-sm">
+      <p className="text-[10px] font-black text-blue-600 uppercase">REPROVADO VIRTUAL</p>
+      <p className="text-2xl font-black text-blue-700">{importStatusSummary?.['REPROVADO VIRTUAL'] || 0}</p>
+      <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Reprovação virtual</p>
+    </div>
+
+    <div className="bg-slate-100 border border-slate-200 p-5 rounded-2xl shadow-sm">
+      <p className="text-[10px] font-black text-slate-600 uppercase">INABILITADO</p>
+      <p className="text-2xl font-black text-slate-800">{importStatusSummary?.INABILITADO || 0}</p>
+      <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Não realizar</p>
+    </div>
+  </div>
+</div>
 
               <div className="flex gap-4">
                 <button onClick={() => setIsFinalSummaryOpen(false)} className="flex-1 py-5 border-2 border-slate-100 text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">Ver Fila</button>
