@@ -852,22 +852,15 @@ let relatedSchedules = sameAnalystSchedules.filter((s: any) => {
   return false;
 });
 
+  relatedSchedules = relatedSchedules.sort((a: any, b: any) => {
+  const dateDiff =
+    new Date(a?.datetime ?? '').getTime() - new Date(b?.datetime ?? '').getTime();
+
+  if (dateDiff !== 0) return dateDiff;
+  return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
+});
 if (!relatedSchedules.length) {
-  const sortedSchedules = [...sameAnalystSchedules].sort((a: any, b: any) => {
-    const dateDiff =
-      new Date(a?.datetime ?? '').getTime() - new Date(b?.datetime ?? '').getTime();
-
-    if (dateDiff !== 0) return dateDiff;
-    return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
-  });
-
-  const maxPerShift = modality.toUpperCase().includes('PRES') ? 3 : 2;
-
-  if (shift === 'MORNING') {
-    relatedSchedules = sortedSchedules.slice(0, maxPerShift);
-  } else {
-    relatedSchedules = sortedSchedules.slice(maxPerShift, maxPerShift * 2);
-  }
+  return [];
 }
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
