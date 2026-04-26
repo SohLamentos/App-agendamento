@@ -50,16 +50,18 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
     return analysts
       .map(a => {
         const metrics = dataService.getAnalystDemandMetrics(a.id);
-        const adj = activeAdjustments.find(ad => ad.analystId === a.id);
+        const totalPenalty = activeAdjustments
+  .filter(ad => ad.analystId === a.id)
+  .reduce((sum, ad) => sum + (ad.penalty || 0), 0);
 
-        return {
-          id: a.id,
-          name: a.fullName.split(' ')[0],
-          fullName: a.fullName,
-          metrics,
-          scoreFinal: metrics.demandIndex + (adj ? adj.penalty : 0),
-          penalty: adj ? adj.penalty : 0
-        };
+return {
+  id: a.id,
+  name: a.fullName.split(' ')[0],
+  fullName: a.fullName,
+  metrics,
+  scoreFinal: metrics.demandIndex + totalPenalty,
+  penalty: totalPenalty
+};
       })
       .sort((a, b) => b.scoreFinal - a.scoreFinal);
   }, [analysts, activeAdjustments]);
