@@ -1247,30 +1247,52 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
   analystId?: string;
   company?: string;
 }): { base: IntegrationBase | null; rule: RoutingRule | null; hasCityCoverage: boolean } {
-  const cityNorm = this.safeNormalize(params.city || '');
+  const cleanCity = (value?: string) =>
+    this.safeNormalize((value || '').split('/')[0].trim());
+
+  const cityNorm = cleanCity(params.city);
   const ufNorm = this.safeNormalize(params.uf || '');
   const companyNorm = this.safeNormalize(params.company || '');
+
+  const isAnyCompany = (company?: string) => {
+    const c = this.safeNormalize(company || '');
+    return (
+      !c ||
+      c === 'QUALQUER EMPRESA' ||
+      c === 'QUALQUER_EMPRESA' ||
+      c === 'TODAS' ||
+      c === 'TODAS EMPRESAS'
+    );
+  };
+
+  const ruleMatchesCompany = (rule: RoutingRule) => {
+    const ruleCompany = this.safeNormalize(rule.company || '');
+    return isAnyCompany(rule.company) || ruleCompany === companyNorm;
+  };
 
   const cityRules = this.routingRules
     .filter(r => r.active)
     .filter(r => {
       const base = this.integrationBases.find(
-        b => b.id === r.baseId && b.active
-      );
-
+  b =>
+    this.safeNormalize(b.id) === this.safeNormalize(r.baseId) &&
+    b.active
+);
       return !!base;
     })
     .filter(r => {
-      const coveredCities = (r.coveredCities || [r.city]).map(c =>
-        this.safeNormalize(c)
-      );
+      const coveredCities = (r.coveredCities && r.coveredCities.length > 0
+        ? r.coveredCities
+        : [r.city]
+      ).map(c => cleanCity(c));
 
-      const coveredUfs = (r.coveredUfs || [r.uf]).map(uf =>
-        this.safeNormalize(uf)
-      );
+      const coveredUfs = (r.coveredUfs && r.coveredUfs.length > 0
+        ? r.coveredUfs
+        : [r.uf]
+      ).map(uf => this.safeNormalize(uf));
 
       return coveredCities.some((city, index) => {
-        const ruleUf = coveredUfs[index] || this.safeNormalize(r.uf);
+        const ruleUf = coveredUfs[index] || this.safeNormalize(r.uf || '');
         return city === cityNorm && ruleUf === ufNorm;
       });
     })
@@ -1278,43 +1300,21 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
 
   const hasCityCoverage = cityRules.length > 0;
 
-  const isAnyCompany = (company?: string) => {
-  const c = this.safeNormalize(company || '');
-  return !c || c === 'QUALQUER EMPRESA' || c === 'QUALQUER_EMPRESA';
-};
-
-const ruleMatchesCompany = (rule: RoutingRule) => {
-  const ruleCompany = this.safeNormalize(rule.company || '');
-  return isAnyCompany(rule.company) || ruleCompany === companyNorm;
+  const analystMatches = (rule: RoutingRule) => {
+  if (!params.analystId) return true;
+  return !rule.analystId || rule.analystId === params.analystId;
 };
 
 const match =
   cityRules.find(r =>
-    r.analystId === params.analystId &&
+    analystMatches(r) &&
     ruleMatchesCompany(r)
   ) ||
   cityRules.find(r =>
-    !r.analystId &&
-    ruleMatchesCompany(r)
-  ) ||
-  cityRules.find(r =>
-    r.analystId === params.analystId &&
-    isAnyCompany(r.company)
-  ) ||
-  cityRules.find(r =>
-    !r.analystId &&
+    analystMatches(r) &&
     isAnyCompany(r.company)
   ) ||
   null;
-    cityRules.find(r =>
-      r.analystId === params.analystId &&
-      !r.company
-    ) ||
-    cityRules.find(r =>
-      !r.analystId &&
-      !r.company
-    ) ||
-    null;
 
   if (!match) {
     return {
@@ -1325,7 +1325,11 @@ const match =
   }
 
   const base =
-    this.integrationBases.find(b => b.id === match.baseId && b.active) || null;
+  this.integrationBases.find(
+    b =>
+      this.safeNormalize(b.id) === this.safeNormalize(match.baseId) &&
+      b.active
+  ) || null;
 
   return {
     base,
@@ -1864,11 +1868,16 @@ const lots = Array.from(lotsMap.entries()).map(([lotKey, techs]) => ({
         : (groupRule.presencialPerShift || 3);
 
     let allowedAnalysts = requiresPresential
-  ? analystsPool.filter(a =>
-      routingMatch.rule?.analystId
-        ? a.id === routingMatch.rule.analystId
-        : true
-    )
+  ? analystsPool.filter(a => {
+      const analystRoute = this.resolveBaseForScheduling({
+        city: tech.city,
+        uf: tech.state,
+        analystId: a.id,
+        company: tech.company
+      });
+
+      return !!analystRoute.base && !!analystRoute.rule;
+    })
   : analystsPool;
 
     allowedAnalysts = sortAnalystsForScenario(allowedAnalysts, requiresPresential);
