@@ -425,9 +425,11 @@ return renderCard(displayTitle, color);
     'INST GPON': 'ETN INST GPON',
     'GPON VETERANO': 'ETN GPON VETERANO',
     'AT': 'ETN AT',
+    'NR': 'ETN NR'
     'MDU HFC': 'ETN MDU HFC',
     'REDE EXTERNA': 'ETN REDE EXTERNA',
-    'NR': 'ETN NR'
+        'HFC PARA GPON': 'ETN HFC PARA GPON',
+
   };
 
   const base = baseMap[type] || 'ETN TREINAMENTO';
