@@ -1665,6 +1665,19 @@ const simulateLotCapacityForAnalyst = (
 
     for (let dayIndex = startIndex; dayIndex < businessDaysToUse.length; dayIndex++) {
       const dateIso = businessDaysToUse[dayIndex];
+      if (capacity > 0 && plannedDates.length > 0) {
+  const lastDate = plannedDates[plannedDates.length - 1];
+
+  const diffDays =
+    (new Date(dateIso + 'T00:00:00').getTime() -
+      new Date(lastDate + 'T00:00:00').getTime()) /
+    (1000 * 60 * 60 * 24);
+
+  if (diffDays > 1) {
+    brokeContinuity = true;
+    break;
+  }
+}
 
       const freeSlots = getAvailableSlotsForAnalystOnDate(
         analyst.id,
