@@ -8,28 +8,29 @@ interface Props {
 
 const ScoreBoard: React.FC<Props> = ({ user }) => {
   const [analysts, setAnalysts] = useState(
-    dataService
-      .getUsers()
-      .filter(
-        u =>
-          u.role === UserRole.ANALYST &&
-          (user.role === UserRole.ADMIN || u.groupId === user.groupId)
-      )
+    dataService.getUsers().filter(
+      u =>
+        u.role === UserRole.ANALYST &&
+        (user.role === UserRole.ADMIN || u.groupId === user.groupId)
+    )
   );
 
   const [scoreAdjustments, setScoreAdjustments] = useState<VirtualScoreAdjustment[]>(
     dataService.getScoreAdjustments()
   );
 
+  const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [selectedAnalystId, setSelectedAnalystId] = useState('');
+  const [adjustmentValue, setAdjustmentValue] = useState(50);
+  const [adjustmentReason, setAdjustmentReason] = useState('');
+
   const refresh = () => {
     setAnalysts(
-      dataService
-        .getUsers()
-        .filter(
-          u =>
-            u.role === UserRole.ANALYST &&
-            (user.role === UserRole.ADMIN || u.groupId === user.groupId)
-        )
+      dataService.getUsers().filter(
+        u =>
+          u.role === UserRole.ANALYST &&
+          (user.role === UserRole.ADMIN || u.groupId === user.groupId)
+      )
     );
     setScoreAdjustments(dataService.getScoreAdjustments());
   };
@@ -50,21 +51,43 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
     return analysts
       .map(a => {
         const metrics = dataService.getAnalystDemandMetrics(a.id);
-        const totalPenalty = activeAdjustments
-  .filter(ad => ad.analystId === a.id)
-  .reduce((sum, ad) => sum + (ad.penalty || 0), 0);
 
-return {
-  id: a.id,
-  name: a.fullName.split(' ')[0],
-  fullName: a.fullName,
-  metrics,
-  scoreFinal: metrics.demandIndex + totalPenalty,
-  penalty: totalPenalty
-};
+        const totalPenalty = activeAdjustments
+          .filter(ad => ad.analystId === a.id)
+          .reduce((sum, ad) => sum + (ad.penalty || 0), 0);
+
+        return {
+          id: a.id,
+          name: a.fullName.split(' ')[0],
+          fullName: a.fullName,
+          metrics,
+          scoreFinal: metrics.demandIndex + totalPenalty,
+          penalty: totalPenalty
+        };
       })
       .sort((a, b) => b.scoreFinal - a.scoreFinal);
   }, [analysts, activeAdjustments]);
+
+  const handleCreateAdjustment = () => {
+    if (!selectedAnalystId) {
+      alert('Selecione um analista.');
+      return;
+    }
+
+    dataService.saveScoreAdjustment({
+      groupId: user.groupId,
+      analystId: selectedAnalystId,
+      penalty: Number(adjustmentValue) || 0,
+      reason: adjustmentReason || `Ajuste manual de prioridade +${adjustmentValue}`,
+      active: true
+    });
+
+    setIsAdjustmentModalOpen(false);
+    setSelectedAnalystId('');
+    setAdjustmentValue(50);
+    setAdjustmentReason('');
+    refresh();
+  };
 
   const addPriority = (analystId: string, value: number) => {
     dataService.saveScoreAdjustment({
@@ -97,9 +120,17 @@ return {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsAdjustmentModalOpen(true)}
+              className="bg-claro-red text-white px-5 py-2 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg hover:bg-claro-redHover transition-all"
+            >
+              Novo Ajuste de Score
+            </button>
+
             <span className="flex items-center gap-1.5 text-[8px] font-black text-white bg-claro-red px-3 py-2 rounded-full uppercase tracking-widest">
               ALTA CARGA
             </span>
+
             <span className="flex items-center gap-1.5 text-[8px] font-black text-slate-900 bg-slate-100 px-3 py-2 rounded-full uppercase tracking-widest">
               CAPACIDADE LIVRE
             </span>
@@ -203,6 +234,82 @@ return {
           ))}
         </div>
       </div>
+
+      {isAdjustmentModalOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-slate-900 p-6 text-white">
+              <h3 className="text-lg font-black uppercase">
+                Novo Ajuste de Score
+              </h3>
+              <p className="text-[10px] font-bold uppercase opacity-60 mt-1">
+                Prioridade manual do analista
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase">
+                  Analista
+                </label>
+                <select
+                  value={selectedAnalystId}
+                  onChange={(e) => setSelectedAnalystId(e.target.value)}
+                  className="w-full mt-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-xs font-bold uppercase outline-none focus:border-claro-red"
+                >
+                  <option value="">SELECIONE</option>
+                  {analysts.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.fullName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase">
+                  Prioridade
+                </label>
+                <input
+                  type="number"
+                  value={adjustmentValue}
+                  onChange={(e) => setAdjustmentValue(Number(e.target.value))}
+                  className="w-full mt-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-xs font-bold uppercase outline-none focus:border-claro-red"
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase">
+                  Motivo
+                </label>
+                <input
+                  type="text"
+                  value={adjustmentReason}
+                  onChange={(e) => setAdjustmentReason(e.target.value)}
+                  placeholder="EX: DEMANDA PRESENCIAL FUTURA"
+                  className="w-full mt-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-xs font-bold uppercase outline-none focus:border-claro-red"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-6 pt-0">
+              <button
+                onClick={() => setIsAdjustmentModalOpen(false)}
+                className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-500 text-[10px] font-black uppercase"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={handleCreateAdjustment}
+                className="flex-1 py-3 rounded-2xl bg-claro-red text-white text-[10px] font-black uppercase"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
