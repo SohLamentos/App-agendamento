@@ -26,6 +26,14 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   const [selectedTechIds, setSelectedTechIds] = useState<Set<string>>(new Set());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importStatusSummary, setImportStatusSummary] = useState({
+  FILA: 0,
+  NOSHOW: 0,
+  'SEM EAD': 0,
+  'REPROVADO EAD': 0,
+  'REPROVADO VIRTUAL': 0,
+  INABILITADO: 0
+});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const requesterFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -800,6 +808,49 @@ const generatedClassNumber = `${formClass.classOwnerName.trim()}-${formClass.ext
         setIsHeaderErrorModalOpen(true);
         return;
       }
+      const headers = (rawData[0] || []).map(h =>
+  String(h || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase()
+);
+
+const outcomeIdx = headers.findIndex(h =>
+  ['RESULTADO IMPORTACAO', 'RESULTADO', 'STATUS'].includes(h)
+);
+
+const summary = {
+  FILA: 0,
+  NOSHOW: 0,
+  'SEM EAD': 0,
+  'REPROVADO EAD': 0,
+  'REPROVADO VIRTUAL': 0,
+  INABILITADO: 0
+};
+
+rawData.slice(1).forEach(row => {
+  if (!row || row.every(cell => String(cell ?? '').trim() === '')) return;
+
+  const outcome =
+    outcomeIdx >= 0
+      ? String(row[outcomeIdx] || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .trim()
+          .toUpperCase()
+      : '';
+
+  if (!outcome || outcome === 'FILA') summary.FILA++;
+  else if (outcome === 'NOSHOW' || outcome === 'NO SHOW') summary.NOSHOW++;
+  else if (outcome === 'SEM EAD') summary['SEM EAD']++;
+  else if (outcome === 'REPROVADO EAD') summary['REPROVADO EAD']++;
+  else if (outcome === 'REPROVADO VIRTUAL') summary['REPROVADO VIRTUAL']++;
+  else if (outcome === 'INABILITADO' || outcome === 'NAO REALIZAR' || outcome === 'NÃO REALIZAR') summary.INABILITADO++;
+  else summary.FILA++;
+});
+
+setImportStatusSummary(summary);
 
       const subcategoryValue =
         formClass.subcategory === 'Outros'
@@ -1183,33 +1234,6 @@ const getScheduledExportTime = (tech: Technician) => {
 
   return 'N/D';
 };
-
-const importStatusSummary = useMemo(() => {
-  if (!importResult?.details) return null;
-
-  const summary = {
-    FILA: 0,
-    NOSHOW: 0,
-    'SEM EAD': 0,
-    'REPROVADO EAD': 0,
-    'REPROVADO VIRTUAL': 0,
-    INABILITADO: 0
-  };
-
-  importResult.details.forEach((item: any) => {
-    const result = String(item.resultado || '').toUpperCase().trim();
-
-    if (result.includes('FILA')) summary.FILA++;
-    else if (result.includes('NOSHOW')) summary.NOSHOW++;
-    else if (result.includes('SEM EAD')) summary['SEM EAD']++;
-    else if (result.includes('REPROVADO EAD')) summary['REPROVADO EAD']++;
-    else if (result.includes('REPROVADO VIRTUAL')) summary['REPROVADO VIRTUAL']++;
-    else if (result.includes('INABILITADO')) summary.INABILITADO++;
-  });
-
-  return summary;
-}, [importResult]);
-  
   
  return (
   <div className="space-y-8 animate-in fade-in duration-500 relative">
