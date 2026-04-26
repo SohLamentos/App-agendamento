@@ -126,7 +126,7 @@ const [improvisoReason, setImprovisoReason] = useState('');
   'INST HFC',
   'INST GPON',
   'GPON VETERANO',
-  'NR'
+  'NR',
   'AT',
   'MDU HFC',
   'REDE EXTERNA',
@@ -147,7 +147,7 @@ const STANDARD_EVENT_COLORS = {
     'GPON VETERANO': '#C2410C',   // laranja queimado
     'MDU HFC': '#BE185D',         // rosa escuro
     'REDE EXTERNA': '#15803D',    // verde
-    'NR': '#334155'               // azul acinzentado
+    'NR': '#334155',               // azul acinzentado
     'HFC PARA GPON': '#9333EA',
   },
   OTHER: {
@@ -427,7 +427,7 @@ return renderCard(displayTitle, color);
     'INST HFC': 'ETN INST HFC',
     'INST GPON': 'ETN INST GPON',
     'GPON VETERANO': 'ETN GPON VETERANO',
-    'NR': 'ETN NR'
+    'NR': 'ETN NR',
     'AT': 'ETN AT',
         'MDU HFC': 'ETN MDU HFC',
     'REDE EXTERNA': 'ETN REDE EXTERNA',
