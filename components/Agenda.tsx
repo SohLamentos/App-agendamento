@@ -835,18 +835,33 @@ const sameAnalystSchedules = sameDaySchedules.filter((s: any) => {
   return String(s?.analystId ?? '') === String(analystId ?? '');
 });
 
-let relatedSchedules = sameAnalystSchedules.filter((s: any) => {
-  const scheduleShift = String(s?.shift ?? '').toUpperCase();
-  const targetShift = String(shift ?? '').toUpperCase();
+const normalizeShiftText = (value: any) =>
+  String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
 
-  if (scheduleShift === targetShift) return true;
+let relatedSchedules = sameAnalystSchedules.filter((s: any) => {
+  const scheduleShift = normalizeShiftText(s?.shift);
+  const targetShift = normalizeShiftText(shift);
 
   if (targetShift === 'MORNING') {
-    return scheduleShift.includes('MORNING') || scheduleShift.includes('MANHA');
+    return (
+      scheduleShift === 'MORNING' ||
+      scheduleShift === 'MANHA' ||
+      scheduleShift.includes('MORNING') ||
+      scheduleShift.includes('MANHA')
+    );
   }
 
   if (targetShift === 'AFTERNOON') {
-    return scheduleShift.includes('AFTERNOON') || scheduleShift.includes('TARDE');
+    return (
+      scheduleShift === 'AFTERNOON' ||
+      scheduleShift === 'TARDE' ||
+      scheduleShift.includes('AFTERNOON') ||
+      scheduleShift.includes('TARDE')
+    );
   }
 
   return false;
