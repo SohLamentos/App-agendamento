@@ -21,20 +21,20 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
     dataService.getScoreAdjustments()
   );
 
-  useEffect(() => {
-    const refresh = () => {
-      setAnalysts(
-        dataService
-          .getUsers()
-          .filter(
-            u =>
-              u.role === UserRole.ANALYST &&
-              (user.role === UserRole.ADMIN || u.groupId === user.groupId)
-          )
-      );
-      setScoreAdjustments(dataService.getScoreAdjustments());
-    };
+  const refresh = () => {
+    setAnalysts(
+      dataService
+        .getUsers()
+        .filter(
+          u =>
+            u.role === UserRole.ANALYST &&
+            (user.role === UserRole.ADMIN || u.groupId === user.groupId)
+        )
+    );
+    setScoreAdjustments(dataService.getScoreAdjustments());
+  };
 
+  useEffect(() => {
     window.addEventListener('data-updated', refresh);
     return () => window.removeEventListener('data-updated', refresh);
   }, [user]);
@@ -63,6 +63,23 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
       })
       .sort((a, b) => b.scoreFinal - a.scoreFinal);
   }, [analysts, activeAdjustments]);
+
+  const addPriority = (analystId: string, value: number) => {
+    dataService.saveScoreAdjustment({
+      groupId: user.groupId,
+      analystId,
+      penalty: value,
+      reason: `Ajuste manual de prioridade +${value}`,
+      active: true
+    });
+
+    refresh();
+  };
+
+  const resetPriority = (analystId: string) => {
+    dataService.resetScoreAdjustmentsByAnalyst(analystId);
+    refresh();
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -156,6 +173,29 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
                   }`}
                   style={{ width: `${Math.min(100, (data.scoreFinal / 150) * 100)}%` }}
                 />
+              </div>
+
+              <div className="mt-5 grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => addPriority(data.id, 50)}
+                  className="bg-claro-red text-white rounded-xl py-2 text-[8px] font-black uppercase tracking-widest hover:bg-claro-redHover transition-all"
+                >
+                  +50
+                </button>
+
+                <button
+                  onClick={() => addPriority(data.id, 100)}
+                  className="bg-slate-900 text-white rounded-xl py-2 text-[8px] font-black uppercase tracking-widest hover:bg-black transition-all"
+                >
+                  +100
+                </button>
+
+                <button
+                  onClick={() => resetPriority(data.id)}
+                  className="bg-slate-100 text-slate-700 rounded-xl py-2 text-[8px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Zerar
+                </button>
               </div>
             </div>
           ))}
