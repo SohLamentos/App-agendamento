@@ -126,10 +126,12 @@ const [improvisoReason, setImprovisoReason] = useState('');
   'INST HFC',
   'INST GPON',
   'GPON VETERANO',
+  'NR'
   'AT',
   'MDU HFC',
   'REDE EXTERNA',
-  'NR'
+    'HFC PARA GPON',
+  
 ] as const;
 
 const LESSON_OPTIONS = ['1','2','3','4','5','6','7','8','9'];
@@ -146,6 +148,7 @@ const STANDARD_EVENT_COLORS = {
     'MDU HFC': '#BE185D',         // rosa escuro
     'REDE EXTERNA': '#15803D',    // verde
     'NR': '#334155'               // azul acinzentado
+    'HFC PARA GPON': '#9333EA',
   },
   OTHER: {
     'FOLGA': '#6B7280',           // cinza
@@ -424,11 +427,11 @@ return renderCard(displayTitle, color);
     'INST HFC': 'ETN INST HFC',
     'INST GPON': 'ETN INST GPON',
     'GPON VETERANO': 'ETN GPON VETERANO',
-    'AT': 'ETN AT',
     'NR': 'ETN NR'
-    'MDU HFC': 'ETN MDU HFC',
+    'AT': 'ETN AT',
+        'MDU HFC': 'ETN MDU HFC',
     'REDE EXTERNA': 'ETN REDE EXTERNA',
-        'HFC PARA GPON': 'ETN HFC PARA GPON',
+    'HFC PARA GPON': 'ETN HFC PARA GPON',
 
   };
 
