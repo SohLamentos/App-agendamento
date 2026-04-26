@@ -33,12 +33,14 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
   const [isClassWizardOpen, setIsClassWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [formClass, setFormClass] = useState({
-  type: 'GPON' as 'GPON' | 'HFC' | 'OUTROS',
+  type: 'GPON',
   requiresCert: true,
   classNumber: '',
+  classOwnerName: '',
+  externalClassId: '',
   subcategory: 'Capacitação Inicial',
   customSubcategory: '',
-  audience: 'ANALISTA' as 'ANALISTA' | 'MULTIPLICADOR'
+  audience: 'ANALISTA'
 });
   const [isOutrosCertWarningOpen, setIsOutrosCertWarningOpen] = useState(false);
   const [isNoCertClassWarningOpen, setIsNoCertClassWarningOpen] = useState(false);
@@ -688,7 +690,9 @@ useEffect(() => {
     setFormClass({ 
   type: 'GPON', 
   requiresCert: true, 
-  classNumber: '', 
+  classNumber: '',
+  classOwnerName: '',
+  externalClassId: '',
   subcategory: 'Capacitação Inicial',
   customSubcategory: '',
   audience: 'ANALISTA'
@@ -698,10 +702,17 @@ useEffect(() => {
   };
 
   const handleStep1Next = () => {
-    if (!formClass.classNumber) {
-      setToast({ message: 'O Número da Turma é obrigatório.', type: 'error' });
-      return;
-    }
+    if (!formClass.classOwnerName?.trim()) {
+  setToast({ message: 'O nome do Analista ou Multiplicador é obrigatório.', type: 'error' });
+  return;
+}
+
+if (!formClass.externalClassId?.trim()) {
+  setToast({ message: 'O ID da Turma é obrigatório.', type: 'error' });
+  return;
+}
+
+const generatedClassNumber = `${formClass.classOwnerName.trim()}-${formClass.externalClassId.trim()}`;
 
     if (formClass.subcategory === 'Outros' && !formClass.customSubcategory.trim()) {
       setToast({ message: 'Por favor, descreva a subcategoria personalizada.', type: 'error' });
@@ -717,6 +728,10 @@ useEffect(() => {
       setIsNoCertClassWarningOpen(true);
       return;
     }
+    setFormClass(prev => ({
+  ...prev,
+  classNumber: generatedClassNumber
+}));
 
     setWizardStep(2);
   };
@@ -1543,14 +1558,49 @@ const analystName = getAnalystName(sch);
 </div>
 
 <div className="space-y-1.5">
-  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome + ID da Turma</label>
-  <input 
-    type="text" 
-    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3 text-xs font-bold uppercase outline-none focus:border-claro-red"
-    placeholder="EX: THIAGO-1303"
-    value={formClass.classNumber}
-    onChange={e => setFormClass({...formClass, classNumber: e.target.value})}
-  />
+  <div className="grid grid-cols-2 gap-4">
+
+  {/* NOME ANALISTA / MULTIPLICADOR */}
+  <div className="space-y-1.5">
+    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+      Nome (Analista / Multiplicador)
+    </label>
+    <input
+      type="text"
+      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3 text-xs font-bold uppercase outline-none focus:border-claro-red"
+      placeholder="EX: THIAGO"
+      value={formClass.classOwnerName || ''}
+      onChange={e => {
+        const onlyLetters = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
+        setFormClass({
+          ...formClass,
+          classOwnerName: onlyLetters.toUpperCase()
+        });
+      }}
+    />
+  </div>
+
+  {/* ID DA TURMA */}
+  <div className="space-y-1.5">
+    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+      ID da Turma
+    </label>
+    <input
+      type="text"
+      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3 text-xs font-bold uppercase outline-none focus:border-claro-red"
+      placeholder="EX: 1303"
+      value={formClass.externalClassId || ''}
+      onChange={e => {
+        const onlyNumbers = e.target.value.replace(/\D/g, '');
+        setFormClass({
+          ...formClass,
+          externalClassId: onlyNumbers
+        });
+      }}
+    />
+  </div>
+
+</div>
 </div>
 
                 <div className="flex gap-4 pt-4">
