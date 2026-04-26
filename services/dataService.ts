@@ -107,6 +107,9 @@ const normalizeUF = (value?: string): string => {
 };
 
 class DataService {
+  private persistQueue: Promise<void> = Promise.resolve();
+  private persistVersion: number = 0;
+
   private users: User[];
   private groups: Group[];
   private groupRules: GroupRule[];
@@ -312,44 +315,47 @@ localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings
   localStorage.setItem('certitech_test_mode_v15', this.testModeActive ? 'true' : 'false');
   localStorage.setItem('g_score_adjustments_v15', JSON.stringify(this.scoreAdjustments));
   localStorage.setItem('g_integration_bases_v1', JSON.stringify(this.integrationBases));
-localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
-localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings));
+  localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
+  localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings));
 
   const payload = this.buildFullPayload();
-
   const groupId = this.getActiveGroupId();
+  const currentUser = this.getCurrentUser();
+  const version = ++this.persistVersion;
 
-loadAppState(groupId)
-  .then((currentCloudState) => {
-    const currentUser = this.getCurrentUser();
+  this.persistQueue = this.persistQueue
+    .catch(() => undefined)
+    .then(async () => {
+      if (version !== this.persistVersion) return;
 
-    if (currentCloudState?.data) {
-      return saveAppStateHistory({
-        groupId: groupId,
-        data: {
-          ...currentCloudState.data,
-          _backupMeta: {
-            createdAt: new Date().toISOString(),
+      try {
+        const currentCloudState = await loadAppState(groupId);
+
+        if (version !== this.persistVersion) return;
+
+        if (currentCloudState?.data) {
+          await saveAppStateHistory({
+            groupId,
+            data: {
+              ...currentCloudState.data,
+              _backupMeta: {
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser?.fullName || 'SYSTEM',
+                reason: 'AUTO_BACKUP'
+              }
+            },
             createdBy: currentUser?.fullName || 'SYSTEM',
-            reason: 'AUTO_BACKUP'
-          }
-        },
-        createdBy: currentUser?.fullName || 'SYSTEM',
-        reason: 'AUTO_BACKUP',
-      });
-    }
+            reason: 'AUTO_BACKUP',
+          });
+        }
 
-    return null;
-  })
-  .catch((error) => {
-    console.error('Erro ao salvar histórico no Supabase:', error);
-    return null;
-  })
-  .finally(() => {
-    saveAppState(groupId, payload).catch((error) => {
-      console.error('Erro ao salvar no Supabase:', error);
+        if (version !== this.persistVersion) return;
+
+        await saveAppState(groupId, payload);
+      } catch (error) {
+        console.error('Erro ao persistir no Supabase:', error);
+      }
     });
-  });
 }
 
   private async createHistoryBackup(reason: string) {
