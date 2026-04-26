@@ -3098,6 +3098,8 @@ public getUnconfiguredCities() {
   classNumber: string;
   subcategory: string;
   audience: 'ANALISTA' | 'MULTIPLICADOR';
+  classOwnerName?: string;
+  externalClassId?: string;
 })
   {
     const ctx = this.getContext();
@@ -3120,7 +3122,10 @@ public getUnconfiguredCities() {
       status: TrainingStatus.PLANNED,
       observations: '',
       createdAt: new Date().toISOString(),
-      createdBy: currentUser.fullName
+      createdBy: currentUser.fullName,
+      
+      classOwnerName: (params as any).classOwnerName || '',
+externalClassId: (params as any).externalClassId || '',
     };
 
     this.trainingClasses.push(newClass);
