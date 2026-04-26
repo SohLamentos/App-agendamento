@@ -1996,6 +1996,37 @@ if (!lotOwner) {
 const scheduledEntries: Array<{ tech: Technician; schedule: CertificationSchedule }> = [];
 
 const plannedDatesToUse = chosenSimulation?.result.plannedDates || [];
+  const isConsecutiveCalendarSequence = (dates: string[]) => {
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i - 1] + 'T00:00:00');
+    const curr = new Date(dates[i] + 'T00:00:00');
+
+    const diffDays =
+      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+
+    if (diffDays !== 1) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+if (
+  targetType === ExpertiseType.PRESENTIAL &&
+  plannedDatesToUse.length > 1 &&
+  !isConsecutiveCalendarSequence(plannedDatesToUse)
+) {
+  for (const lotTech of lotTechs) {
+    lotTech.status_principal = "BACKLOG AGUARDANDO";
+    lotTech.backlog_score_aplicado = true;
+    lotTech.backlog_motivo = "LOTE PRESENCIAL QUEBRARIA CONTINUIDADE REAL ENTRE DIAS";
+  }
+
+  addReason("LOTE PRESENCIAL QUEBRARIA CONTINUIDADE REAL ENTRE DIAS");
+  summary.backlog += lotTechs.length;
+  continue;
+}
   for (const dateIso of plannedDatesToUse) {
   const daySchedules = this.schedules.filter(
     s =>
