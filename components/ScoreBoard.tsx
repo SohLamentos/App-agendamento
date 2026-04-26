@@ -105,6 +105,23 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
     dataService.resetScoreAdjustmentsByAnalyst(analystId);
     refresh();
   };
+  const handleResetSelectedAdjustment = () => {
+  if (!selectedAnalystId) {
+    alert('Selecione um analista para zerar o score.');
+    return;
+  }
+
+  const confirmed = window.confirm('Deseja zerar todos os ajustes de score deste analista?');
+  if (!confirmed) return;
+
+  dataService.resetScoreAdjustmentsByAnalyst(selectedAnalystId);
+
+  setIsAdjustmentModalOpen(false);
+  setSelectedAnalystId('');
+  setAdjustmentValue(50);
+  setAdjustmentReason('');
+  refresh();
+};
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -292,21 +309,33 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
               </div>
             </div>
 
-            <div className="flex gap-3 p-6 pt-0">
-              <button
-                onClick={() => setIsAdjustmentModalOpen(false)}
-                className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-500 text-[10px] font-black uppercase"
-              >
-                Cancelar
-              </button>
+            <div className="grid grid-cols-3 gap-3 p-6 pt-0">
+  <button
+    onClick={() => setIsAdjustmentModalOpen(false)}
+    className="py-3 rounded-2xl bg-slate-100 text-slate-500 text-[10px] font-black uppercase"
+  >
+    Cancelar
+  </button>
 
-              <button
-                onClick={handleCreateAdjustment}
-                className="flex-1 py-3 rounded-2xl bg-claro-red text-white text-[10px] font-black uppercase"
-              >
-                Salvar
-              </button>
-            </div>
+  <button
+    onClick={handleResetSelectedAdjustment}
+    disabled={!selectedAnalystId}
+    className={`py-3 rounded-2xl text-[10px] font-black uppercase transition-all ${
+      selectedAnalystId
+        ? 'bg-slate-900 text-white hover:bg-black'
+        : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+    }`}
+  >
+    Zerar
+  </button>
+
+  <button
+    onClick={handleCreateAdjustment}
+    className="py-3 rounded-2xl bg-claro-red text-white text-[10px] font-black uppercase"
+  >
+    Salvar
+  </button>
+</div>
           </div>
         </div>
       )}
