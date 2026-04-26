@@ -207,6 +207,10 @@ const refreshData = () => {
         analystName,
         technician: tech.name || 'N/D',
         turma,
+        externalClassId:
+  (classRef as any)?.externalClassId ||
+  String(turma || '').split('-').pop() ||
+  '',
         publico,
         solicitante,
         company,
@@ -272,6 +276,7 @@ const refreshData = () => {
           'technicianId',
           'cpf',
           'trainingClassId',
+          'externalClassId',
           'analystId',
           'analystName',
           'scheduleId',
@@ -309,6 +314,7 @@ const refreshData = () => {
             item.technicianId,
             item.cpf,
             item.trainingClassId,
+            item.externalClassId,
             item.analystId,
             item.analystName,
             item.scheduleId,
