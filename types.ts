@@ -173,6 +173,8 @@ export interface TrainingClass {
   observations?: string;
   createdAt: string;
   createdBy: string;
+  classOwnerName?: string;
+externalClassId?: string;
 }
 
 export interface Technician {
