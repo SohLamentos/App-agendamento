@@ -1278,15 +1278,34 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
 
   const hasCityCoverage = cityRules.length > 0;
 
-  const match =
-    cityRules.find(r =>
-      r.analystId === params.analystId &&
-      this.safeNormalize(r.company || '') === companyNorm
-    ) ||
-    cityRules.find(r =>
-      !r.analystId &&
-      this.safeNormalize(r.company || '') === companyNorm
-    ) ||
+  const isAnyCompany = (company?: string) => {
+  const c = this.safeNormalize(company || '');
+  return !c || c === 'QUALQUER EMPRESA' || c === 'QUALQUER_EMPRESA';
+};
+
+const ruleMatchesCompany = (rule: RoutingRule) => {
+  const ruleCompany = this.safeNormalize(rule.company || '');
+  return isAnyCompany(rule.company) || ruleCompany === companyNorm;
+};
+
+const match =
+  cityRules.find(r =>
+    r.analystId === params.analystId &&
+    ruleMatchesCompany(r)
+  ) ||
+  cityRules.find(r =>
+    !r.analystId &&
+    ruleMatchesCompany(r)
+  ) ||
+  cityRules.find(r =>
+    r.analystId === params.analystId &&
+    isAnyCompany(r.company)
+  ) ||
+  cityRules.find(r =>
+    !r.analystId &&
+    isAnyCompany(r.company)
+  ) ||
+  null;
     cityRules.find(r =>
       r.analystId === params.analystId &&
       !r.company
