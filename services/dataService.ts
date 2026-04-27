@@ -1597,10 +1597,8 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
   let totalFreeSlots = 0;
 
   for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
-
   const blocked = isShiftBlockedForAnalyst(analystId, dateIso, shift);
 
-  // 🔥 BUSCAR APOIO CQ (UMA ÚNICA VEZ)
   const cqSupportEvents = this.events.filter(
     e =>
       e.involvedUserIds.includes(analystId) &&
@@ -1617,8 +1615,11 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
     cqExtraSlots += extra / 2;
   });
 
-  // 🔥 REGRA PRINCIPAL
-  if (blocked && cqExtraSlots <= 0) continue;
+  // REGRA: evento/treinamento bloqueia o turno inteiro.
+  // Só libera vagas extras se for APOIO CQ.
+  if (blocked && cqExtraSlots <= 0) {
+    continue;
+  }
 
   const shiftSchedules = daySchedules.filter(s => s.shift === shift);
 
