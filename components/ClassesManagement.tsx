@@ -1231,8 +1231,71 @@ const getScheduledExportTime = (tech: Technician) => {
       if (position === 2) return '15:30';
     }
   }
+  
 
   return 'N/D';
+};
+
+  const executeManualSchedule = (forced = false) => {
+  if (!manualTechId || !manualAnalystId || !manualDate) {
+    setToast({ message: 'Preencha técnico, analista e data.', type: 'error' });
+    return;
+  }
+
+  const result = dataService.manualScheduleReinforced({
+    techId: manualTechId,
+    analystId: manualAnalystId,
+    dateIso: manualDate,
+    shift: manualShift,
+    type: manualType,
+    forced,
+    brokenRules: validationResult?.brokenRules || []
+  });
+
+  if (result.success) {
+    refreshData();
+    setIsManualModalOpen(false);
+    setIsForceConfirmOpen(false);
+    setValidationResult(null);
+    setManualTechId('');
+    setManualAnalystId('');
+    setManualDate('');
+    setManualType(ExpertiseType.VIRTUAL);
+    setManualShift(Shift.MORNING);
+
+    setToast({
+      message: forced
+        ? 'Agendamento manual forçado realizado com sucesso.'
+        : 'Agendamento manual realizado com sucesso.',
+      type: 'success'
+    });
+  } else {
+    setToast({ message: 'Falha ao realizar agendamento manual.', type: 'error' });
+  }
+};
+
+const handleManualScheduleSubmit = () => {
+  if (!manualTechId || !manualAnalystId || !manualDate) {
+    setToast({ message: 'Preencha técnico, analista e data.', type: 'error' });
+    return;
+  }
+
+  const result = dataService.validateManualSchedule(
+    manualTechId,
+    manualAnalystId,
+    manualDate,
+    manualShift,
+    manualType
+  );
+
+  setValidationResult(result);
+
+  if (result.needsForce) {
+    setIsForceConfirmOpen(true);
+    return;
+  }
+
+  executeManualSchedule(false);
 };
   
  return (
