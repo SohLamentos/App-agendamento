@@ -413,22 +413,22 @@ return renderCard(displayTitle, color);
             
             
 
-    <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden">
       {afternoonBlock
         ? renderCard(
             afternoonBlock.title
               .replace('OUTROS - ', '')
               .replace('IMPREVISTO - ', ''),
             afternoonBlock.color || (
-  afternoonBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
-  afternoonBlock.title.includes('FOLGA') ? COLORS.FOLGA :
-  afternoonBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
-  afternoonBlock.title.includes('OUTROS') ? COLORS.OUTROS :
-  (afternoonBlock.title.includes('ETN ') || afternoonBlock.title.includes('TREINAMENTO')) ? COLORS.OUTROS :
-  COLORS.BLOQUEIO
-)
+              afternoonBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
+              afternoonBlock.title.includes('FOLGA') ? COLORS.FOLGA :
+              afternoonBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
+              afternoonBlock.title.includes('OUTROS') ? COLORS.OUTROS :
+              (afternoonBlock.title.includes('ETN ') || afternoonBlock.title.includes('TREINAMENTO')) ? COLORS.OUTROS :
+              COLORS.BLOQUEIO
+            )
           )
-                : afternoonSchs.length > 0
+        : afternoonSchs.length > 0
           ? (
             <div
               draggable={movementMode}
