@@ -1241,6 +1241,47 @@ const closeAgendaTooltip = () => {
     hasPresential
   };
 };
+  const confirmPendingMove = () => {
+  if (!pendingMove) return;
+
+  const schedule = schedules.find((s: any) => s.id === pendingMove.scheduleId);
+
+  if (!schedule) {
+    setToast({
+      message: 'Agendamento não encontrado para movimentação.',
+      type: 'error'
+    });
+    setPendingMove(null);
+    return;
+  }
+
+  const targetDate = pendingMove.toDateIso;
+  const originalTime = String(schedule.datetime || '').split('T')[1] || '09:00:00Z';
+
+  const updatedSchedule = {
+    ...schedule,
+    analystId: pendingMove.toAnalystId,
+    datetime: `${targetDate}T${originalTime}`,
+    updatedAt: new Date().toISOString()
+  };
+
+  const updatedSchedules = schedules.map((s: any) =>
+    s.id === pendingMove.scheduleId ? updatedSchedule : s
+  );
+
+  dataService.setSchedules(updatedSchedules);
+
+  setSchedules(updatedSchedules);
+  setHoverTooltip(null);
+  setPendingMove(null);
+
+  window.dispatchEvent(new Event('data-updated'));
+
+  setToast({
+    message: 'Movimentação salva com sucesso.',
+    type: 'success'
+  });
+};
 
 return (
 
@@ -2007,14 +2048,7 @@ onDrop={(e) => {
         </button>
 
         <button
-          onClick={() => {
-            setToast({
-              message: 'Movimentação capturada com sucesso.',
-              type: 'success'
-            });
-
-            setPendingMove(null);
-          }}
+          onClick={confirmPendingMove}
           className="flex-1 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-black uppercase"
         >
           Confirmar
