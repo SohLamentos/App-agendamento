@@ -850,25 +850,49 @@ let relatedSchedules = sameAnalystSchedules.filter((s: any) => {
   const scheduleShift = normalizeShiftText(s?.shift);
   const targetShift = normalizeShiftText(shift);
 
-  if (targetShift === 'MORNING') {
-    return (
-      scheduleShift === 'MORNING' ||
-      scheduleShift === 'MANHA' ||
-      scheduleShift.includes('MORNING') ||
-      scheduleShift.includes('MANHA')
-    );
+  const matchesShift =
+    targetShift === 'MORNING'
+      ? (
+          scheduleShift === 'MORNING' ||
+          scheduleShift === 'MANHA' ||
+          scheduleShift.includes('MORNING') ||
+          scheduleShift.includes('MANHA')
+        )
+      : (
+          scheduleShift === 'AFTERNOON' ||
+          scheduleShift === 'TARDE' ||
+          scheduleShift.includes('AFTERNOON') ||
+          scheduleShift.includes('TARDE')
+        );
+
+  if (!matchesShift) return false;
+
+  const scheduleTechnology = String(
+    s?.technology || ''
+  ).toUpperCase().trim();
+
+  const targetTechnology = String(
+    technology || ''
+  ).toUpperCase().trim();
+
+  if (scheduleTechnology !== targetTechnology) {
+    return false;
   }
 
-  if (targetShift === 'AFTERNOON') {
-    return (
-      scheduleShift === 'AFTERNOON' ||
-      scheduleShift === 'TARDE' ||
-      scheduleShift.includes('AFTERNOON') ||
-      scheduleShift.includes('TARDE')
-    );
+  const scheduleModality =
+    s?.type === ExpertiseType.VIRTUAL
+      ? 'VIRTUAL'
+      : 'PRESENCIAL';
+
+  const targetModality = String(modality || '')
+    .toUpperCase()
+    .trim();
+
+  if (scheduleModality !== targetModality) {
+    return false;
   }
 
-  return false;
+  return true;
 });
 
   relatedSchedules = relatedSchedules.sort((a: any, b: any) => {
@@ -1694,7 +1718,7 @@ return (
 
             {hoverTooltip?.visible && (
         <div
-          className="fixed z-[9999] pointer-events-none bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[280px] max-w-[360px] border border-white/10"
+          className="fixed z-[9999] pointer-events-none bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[300px] max-w-[380px] max-h-[420px] overflow-y-auto border border-white/10"
           style={{
             left: hoverTooltip.x,
             top: hoverTooltip.y
