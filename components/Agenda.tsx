@@ -90,6 +90,7 @@ const getRegion = (user: any) => {
   const [schedules, setSchedules] = useState(dataService.getSchedules());
   const [isTestMode, setIsTestMode] = useState(dataService.isTestMode());
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [movementMode, setMovementMode] = useState(false);
   const [technicians, setTechnicians] = useState(dataService.getTechnicians());
 
 const [hoverTooltip, setHoverTooltip] = useState<{
@@ -1302,6 +1303,20 @@ return (
       onClick={() => setIsRangeModalOpen(true)}
       className="bg-claro-red text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest"
     >
+      <button
+  onClick={() => {
+    setMovementMode(prev => !prev);
+    setSelection(null);
+    setHoverTooltip(null);
+  }}
+  className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest ${
+    movementMode
+      ? 'bg-emerald-600 text-white'
+      : 'bg-slate-900 text-white'
+  }`}
+>
+  {movementMode ? 'Movimentação Ativa' : 'Modo Movimentação'}
+</button>
       Bloqueio Lote
     </button>
   )}
@@ -1311,6 +1326,13 @@ return (
       {isTestMode && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] bg-amber-500 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">Visualizando Ambiente de Teste</div>
         )}
+
+  {movementMode && (
+  <div className="sticky top-0 z-[60] bg-emerald-600 text-white px-6 py-3 text-[10px] font-black uppercase tracking-widest shadow-lg">
+    Modo movimentação ativo — próximo passo: arrastar técnicos entre células com validação.
+  </div>
+)}
+  
         <table className="w-full border-collapse table-fixed min-w-[1400px]">
           <thead>
   <tr className="bg-slate-900 text-white shadow-xl">
@@ -1341,8 +1363,17 @@ return (
                   {weekDates.map((date, idx) => (
                     <td 
                       key={idx} 
-                      onClick={(e) => setSelection({ userId: analyst.id, dateIso: date.iso, rect: e.currentTarget.getBoundingClientRect() })} 
-                      className="p-0 border-r border-slate-200/50 cursor-pointer overflow-hidden relative group h-16"
+                      onClick={(e) => {
+  if (movementMode) return;
+  setSelection({
+    userId: analyst.id,
+    dateIso: date.iso,
+    rect: e.currentTarget.getBoundingClientRect()
+  });
+}}
+                      className={`p-0 border-r border-slate-200/50 overflow-hidden relative group h-16 ${
+  movementMode ? 'cursor-crosshair ring-1 ring-emerald-300/40' : 'cursor-pointer'
+}`}
                     >
                       <div className="absolute inset-0 group-hover:bg-black/5 transition-colors pointer-events-none z-10"></div>
                       <div className="h-full w-full relative">
