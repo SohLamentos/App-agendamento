@@ -1254,10 +1254,17 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
   company?: string;
 }): { base: IntegrationBase | null; rule: RoutingRule | null; hasCityCoverage: boolean } {
   const cleanCity = (value?: string) =>
-    this.safeNormalize((value || '').split('/')[0].trim());
+  this.safeNormalize(
+    (value || '')
+      .split('/')[0]
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 
   const cityNorm = cleanCity(params.city);
-  const ufNorm = this.safeNormalize(params.uf || '');
+  const ufNorm = this.safeNormalize(
+  params.uf || ((params.city || '').includes('/') ? (params.city || '').split('/')[1] : '')
+);
   const companyNorm = this.safeNormalize(params.company || '');
 
   const isAnyCompany = (company?: string) => {
@@ -1461,7 +1468,7 @@ const activeAdjustments = this.scoreAdjustments.filter(
 );
 
   const getLotKey = (tech: Technician, targetType: ExpertiseType) => {
-  const city = this.safeNormalize(tech.city || '');
+  const city = this.safeNormalize((tech.city || '').split('/')[0].trim());
   const state = this.safeNormalize(tech.state || '');
   const classId = this.safeNormalize(tech.trainingClassId || 'SEM_TURMA');
   const company = this.safeNormalize(tech.company || '');
@@ -1474,8 +1481,10 @@ const activeAdjustments = this.scoreAdjustments.filter(
     });
 
     const baseKey = routingMatch.base?.id || 'SEM_BASE';
+    const ruleKey = routingMatch.rule?.id || 'SEM_REGRA';
+    const analystKey = routingMatch.rule?.analystId || 'SEM_ANALISTA';
 
-    return `${targetType}__${baseKey}__${city}__${state}__${classId}`;
+    return `${targetType}__${baseKey}__${ruleKey}__${analystKey}__${company}__${city}__${state}__${classId}`;
   }
 
   return `${targetType}__${company}__${city}__${state}__${classId}`;
@@ -1934,6 +1943,8 @@ const lotRoutingMatch = this.resolveBaseForScheduling({
   company: tech.company
 });
 
+  
+  
 const simulations = allowedAnalysts.map((analyst, index) => ({
   analyst,
   orderIndex: index,
@@ -2196,17 +2207,52 @@ continue;
 
   let lotOwner: User | null = null;
 
-  const simulations = allowedAnalysts.map((analyst, index) => ({
+      const virtualAffinityKey = `${this.safeNormalize(tech.company || '')}__${this.safeNormalize((tech.city || '').split('/')[0].trim())}__${this.safeNormalize(tech.state || '')}`;
+
+const getExistingVirtualOwnerForDate = (dateIso: string): string | null => {
+  const existing = this.schedules.find(s => {
+    if (s.status === ScheduleStatus.CANCELLED) return false;
+    if (s.type !== ExpertiseType.VIRTUAL) return false;
+    if (!s.datetime.startsWith(dateIso)) return false;
+
+    const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
+    if (!scheduledTech) return false;
+
+    const existingKey = `${this.safeNormalize(scheduledTech.company || '')}__${this.safeNormalize((scheduledTech.city || '').split('/')[0].trim())}__${this.safeNormalize(scheduledTech.state || '')}`;
+
+    return existingKey === virtualAffinityKey;
+  });
+
+  return existing?.analystId || null;
+}; 
+
+  let forcedAnalystIdByAffinity: string | null = null;
+
+for (const dateIso of businessDays) {
+  const existingOwner = getExistingVirtualOwnerForDate(dateIso);
+  if (existingOwner) {
+    forcedAnalystIdByAffinity = existingOwner;
+    break;
+  }
+}
+
+const analystsToSimulate = forcedAnalystIdByAffinity
+  ? allowedAnalysts.filter(a => a.id === forcedAnalystIdByAffinity)
+  : allowedAnalysts;
+
+const simulations = analystsToSimulate.map((analyst, index) => ({
+  analyst,
+  orderIndex: index,
+  result: simulateVirtualLotCapacityForAnalyst(
     analyst,
-    orderIndex: index,
-    result: simulateVirtualLotCapacityForAnalyst(
-      analyst,
-      targetType,
-      businessDays,
-      limitPerShift,
-      lotSize
-    )
-  }));
+    targetType,
+    businessDays,
+    limitPerShift,
+    lotSize
+  )
+}));
+      
+      const virtualAffinityKey = `${this.safeNormalize(tech.company || '')}__${this.safeNormalize((tech.city || '').split('/')[0].trim())}__${this.safeNormalize(tech.state || '')}`;
 
   const safeDate = (value: string | null | undefined) => value || '9999-12-31';
 
@@ -2465,6 +2511,12 @@ window.dispatchEvent(new Event('data-updated'));
     const tech = this.technicians.find(t => t.id === techId);
     const analyst = this.users.find(u => u.id === analystId);
     const cityConfig = this.cities.find(c => this.safeNormalize(c.name) === this.safeNormalize(tech?.city));
+    const routingMatch = tech ? this.resolveBaseForScheduling({
+  city: tech.city,
+  uf: tech.state,
+  company: tech.company,
+  analystId
+}) : null;
     const isBlocked = this.events.some(e => e.involvedUserIds.includes(analystId) && e.startDatetime.startsWith(dateIso) && (e.shift === Shift.FULL_DAY || e.shift === shift));
     const hasFullDayEvent = this.events.some(
   e =>
@@ -2484,9 +2536,13 @@ if (hasFullDayEvent) {
     const limit = type === ExpertiseType.VIRTUAL ? 2 : 3;
     const currentCount = daySchedules.filter(s => s.shift === shift).length;
     if (currentCount >= limit) brokenRules.push(`Capacidade esgotada para este turno (${currentCount}/${limit}).`);
-    if (type === ExpertiseType.PRESENTIAL && cityConfig && !cityConfig.responsibleAnalystIds.includes(analyst?.analystProfileId || '')) {
-      brokenRules.push(`O analista escolhido não é responsável por esta cidade (${tech?.city}).`);
-    }
+    if (type === ExpertiseType.PRESENTIAL) {
+  if (!routingMatch?.hasCityCoverage) {
+    brokenRules.push(`Cidade não possui regra/base presencial ativa (${tech?.city}/${tech?.state}).`);
+  } else if (!routingMatch?.base || !routingMatch?.rule) {
+    brokenRules.push(`Não existe regra/base presencial válida para esta empresa/analista (${tech?.company || 'sem empresa'}).`);
+  }
+}
     return { canSchedule: brokenRules.length === 0, brokenRules, needsForce: brokenRules.length > 0 };
   }
 
