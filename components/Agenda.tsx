@@ -1210,6 +1210,37 @@ const closeAgendaTooltip = () => {
     hoverTooltip.modality
   );
 };
+  const validateMovementTarget = (
+  analystId: string,
+  dateIso: string
+) => {
+  const daySchedules = schedules.filter(
+    s =>
+      s.analystId === analystId &&
+      s.datetime.startsWith(dateIso) &&
+      s.status !== ScheduleStatus.CANCELLED
+  );
+
+  const hasVirtual = daySchedules.some(
+    s => s.type === ExpertiseType.VIRTUAL
+  );
+
+  const hasPresential = daySchedules.some(
+    s => s.type === ExpertiseType.PRESENTIAL
+  );
+
+  const blocked = events.some(
+    e =>
+      e.involvedUserIds.includes(analystId) &&
+      e.startDatetime.startsWith(dateIso)
+  );
+
+  return {
+    blocked,
+    hasVirtual,
+    hasPresential
+  };
+};
 
 return (
 
@@ -1454,8 +1485,21 @@ onDrop={(e) => {
     toDateIso: date.iso
   });
 }}
-                      className={`p-0 border-r border-slate-200/50 overflow-hidden relative group h-16 ${
-  movementMode ? 'cursor-crosshair ring-1 ring-emerald-300/40' : 'cursor-pointer'
+                      className={`p-0 border-r overflow-hidden relative group h-16 transition-all ${
+  movementMode
+    ? (() => {
+        const validation = validateMovementTarget(
+          analyst.id,
+          date.iso
+        );
+
+        if (validation.blocked) {
+          return 'bg-rose-100 border-rose-300 cursor-not-allowed';
+        }
+
+        return 'bg-emerald-50 border-emerald-200 cursor-crosshair';
+      })()
+    : 'border-slate-200/50 cursor-pointer'
 }`}
                     >
                       <div className="absolute inset-0 group-hover:bg-black/5 transition-colors pointer-events-none z-10"></div>
@@ -1921,7 +1965,36 @@ onDrop={(e) => {
         </p>
 
         <p>
-          <b>Destino:</b> {pendingMove.toAnalystId} — {pendingMove.toDateIso}
+          <b>Destino:</b>
+          {(() => {
+  const validation = validateMovementTarget(
+    pendingMove.toAnalystId,
+    pendingMove.toDateIso
+  );
+
+  return (
+    <div className="space-y-2 pt-3">
+      {validation.blocked && (
+        <div className="bg-rose-100 text-rose-700 px-3 py-2 rounded-xl text-xs font-black uppercase">
+          Analista possui bloqueio neste dia
+        </div>
+      )}
+
+      {validation.hasVirtual && (
+        <div className="bg-amber-100 text-amber-700 px-3 py-2 rounded-xl text-xs font-black uppercase">
+          Já existe virtual neste dia
+        </div>
+      )}
+
+      {validation.hasPresential && (
+        <div className="bg-sky-100 text-sky-700 px-3 py-2 rounded-xl text-xs font-black uppercase">
+          Já existe presencial neste dia
+        </div>
+      )}
+    </div>
+  );
+})()}
+          {pendingMove.toAnalystId} — {pendingMove.toDateIso}
         </p>
       </div>
 
