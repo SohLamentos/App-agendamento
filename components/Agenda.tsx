@@ -96,14 +96,11 @@ const [hoverTooltip, setHoverTooltip] = useState<{
   visible: boolean;
   x: number;
   y: number;
-  title: string;
+  analystId: string;
+  dateIso: string;
+  shift: 'MORNING' | 'AFTERNOON';
+  technology: string;
   modality: string;
-  items: Array<{
-  time: string;
-  technician: string;
-  city: string;
-  partner: string;
-}>;
 } | null>(null);
   
   const [isImprovisoModal, setIsImprovisoModal] = useState(false);
@@ -184,7 +181,9 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
   setSchedules(dataService.getSchedules());
   setTechnicians(dataService.getTechnicians());
   setIsTestMode(dataService.isTestMode());
+  setHoverTooltip(null);
 };
+    
     window.addEventListener('data-updated', handleUpdate);
     return () => window.removeEventListener('data-updated', handleUpdate);
   }, []);
@@ -989,16 +988,8 @@ const openAgendaTooltip = (
     modality: string;
   }
 ) => {
-  const items = buildAgendaTooltipData(
-    params.analystId,
-    params.dateIso,
-    params.shift,
-    params.technology,
-    params.modality
-  );
-
   const tooltipWidth = 340;
-  const tooltipHeight = 220;
+  const tooltipHeight = 360;
   const offset = 16;
 
   let x = e.clientX + offset;
@@ -1015,38 +1006,21 @@ const openAgendaTooltip = (
   if (x < 12) x = 12;
   if (y < 12) y = 12;
 
-  if (!items.length) {
-    setHoverTooltip({
-      visible: true,
-      x,
-      y,
-      title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
-      modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
-      items: [
-  {
-    time: 'N/D',
-    technician: 'SEM DADOS',
-    city: 'VERIFICAR VÍNCULO',
-    partner: 'N/D',
-  },
-],
-    });
-    return;
-  }
-
   setHoverTooltip({
-  visible: true,
-  x,
-  y,
-  title: `${params.technology} ${params.shift === 'MORNING' ? 'MANHÃ' : 'TARDE'}`,
-  modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL',
-  items
-});
+    visible: true,
+    x,
+    y,
+    analystId: params.analystId,
+    dateIso: params.dateIso,
+    shift: params.shift,
+    technology: params.technology,
+    modality: params.modality.toUpperCase().includes('PRES') ? 'PRESENCIAL' : 'VIRTUAL'
+  });
 };
 
 const moveAgendaTooltip = (e: React.MouseEvent) => {
   const tooltipWidth = 340;
-  const tooltipHeight = 220;
+  const tooltipHeight = 360;
   const offset = 16;
 
   let x = e.clientX + offset;
@@ -1076,6 +1050,17 @@ const moveAgendaTooltip = (e: React.MouseEvent) => {
 
 const closeAgendaTooltip = () => {
   setHoverTooltip(null);
+};
+  const getLiveTooltipItems = () => {
+  if (!hoverTooltip) return [];
+
+  return buildAgendaTooltipData(
+    hoverTooltip.analystId,
+    hoverTooltip.dateIso,
+    hoverTooltip.shift,
+    hoverTooltip.technology,
+    hoverTooltip.modality
+  );
 };
 
 return (
@@ -1725,27 +1710,37 @@ return (
               </div>
             </div>
 
-            <div className="border-t border-white/10 pt-3 space-y-2">
-              {hoverTooltip.items.map((item, index) => (
-                <div key={index} className="bg-white/5 rounded-xl px-3 py-2">
-                  <div className="text-[11px] font-black uppercase tracking-wide">
-                    {item.time} — {item.technician}
-                  </div>
-                  <div className="flex items-center justify-between gap-3 mt-1">
-  <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
-    {item.city}
-  </div>
+                       <div className="border-t border-white/10 pt-3 space-y-2">
+              {getLiveTooltipItems().length > 0 ? (
+                getLiveTooltipItems().map((item, index) => (
+                  <div key={index} className="bg-white/5 rounded-xl px-3 py-2">
+                    <div className="text-[11px] font-black uppercase tracking-wide">
+                      {item.time} — {item.technician}
+                    </div>
 
-  <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
-    {item.partner}
-  </div>
-</div>
+                    <div className="flex items-center justify-between gap-3 mt-1">
+                      <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
+                        {item.city}
+                      </div>
+
+                      <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
+                        {item.partner}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-white/5 rounded-xl px-3 py-2">
+                  <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
+                    Nenhum agendamento ativo nesta célula
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
-        )}
+      )}
+
     </div>
   );
 };
