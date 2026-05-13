@@ -2224,9 +2224,9 @@ const getExistingVirtualOwnerForDate = (dateIso: string): string | null => {
   });
 
   return existing?.analystId || null;
-}; 
+};
 
-  let forcedAnalystIdByAffinity: string | null = null;
+let forcedAnalystIdByAffinity: string | null = null;
 
 for (const dateIso of businessDays) {
   const existingOwner = getExistingVirtualOwnerForDate(dateIso);
@@ -2251,10 +2251,8 @@ const simulations = analystsToSimulate.map((analyst, index) => ({
     lotSize
   )
 }));
-      
-      const virtualAffinityKey = `${this.safeNormalize(tech.company || '')}__${this.safeNormalize((tech.city || '').split('/')[0].trim())}__${this.safeNormalize(tech.state || '')}`;
 
-  const safeDate = (value: string | null | undefined) => value || '9999-12-31';
+const safeDate = (value: string | null | undefined) => value || '9999-12-31';
 
   const fullCandidates = simulations
     .filter(x => x.result.canComplete && x.result.plannedDates.length > 0)
