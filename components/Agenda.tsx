@@ -243,7 +243,43 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
 };
   const getCellContent = (userId: string, dateIso: string) => {
     const dayBlocks = events.filter(e => e.involvedUserIds.includes(userId) && e.startDatetime.startsWith(dateIso));
-    const daySchs = schedules.filter(s => s.analystId === userId && s.datetime.startsWith(dateIso) && s.status !== ScheduleStatus.CANCELLED);
+    const daySchs = schedules.filter((s: any) => {
+  if (s.analystId !== userId) return false;
+  if (!s.datetime?.startsWith(dateIso)) return false;
+  if (s.status === ScheduleStatus.CANCELLED) return false;
+  if (s.status === 'CANCELLED') return false;
+  if (s.status === 'CANCELADO') return false;
+  if (s.status === 'CANCELADOS (ANALISTA)') return false;
+
+  const scheduleId = String(s?.id ?? '');
+  const technicianId = String(s?.technicianId ?? '');
+
+  const matchedTech = technicians.find((t: any) => {
+    const tId = String(t?.id ?? '');
+    const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
+    const certificationScheduleId = String(t?.certificationScheduleId ?? '');
+
+    return (
+      (technicianId && tId === technicianId) ||
+      (scheduleId && scheduledCertificationId === scheduleId) ||
+      (scheduleId && certificationScheduleId === scheduleId)
+    );
+  });
+
+  if (!matchedTech) return true;
+
+  const currentScheduleId = String(
+    matchedTech?.scheduledCertificationId ||
+    matchedTech?.certificationScheduleId ||
+    ''
+  );
+
+  if (currentScheduleId && currentScheduleId !== scheduleId) {
+    return false;
+  }
+
+  return true;
+});
 
    const renderCard = (
   title: string,
@@ -832,6 +868,11 @@ const buildAgendaTooltipData = (
 
 const sameDaySchedules = schedules.filter((s: any) => {
   if (!s?.datetime) return false;
+  if (s.status === ScheduleStatus.CANCELLED) return false;
+  if (s.status === 'CANCELLED') return false;
+  if (s.status === 'CANCELADO') return false;
+  if (s.status === 'CANCELADOS (ANALISTA)') return false;
+
   return s.datetime.split('T')[0] === dateIso;
 });
 
@@ -905,6 +946,37 @@ let relatedSchedules = sameAnalystSchedules.filter((s: any) => {
 if (!relatedSchedules.length) {
   return [];
 }
+
+relatedSchedules = relatedSchedules.filter((schedule: any) => {
+  const scheduleId = String(schedule?.id ?? '');
+  const technicianId = String(schedule?.technicianId ?? '');
+
+  const matchedTech = technicians.find((t: any) => {
+    const tId = String(t?.id ?? '');
+    const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
+    const certificationScheduleId = String(t?.certificationScheduleId ?? '');
+
+    return (
+      (technicianId && tId === technicianId) ||
+      (scheduleId && scheduledCertificationId === scheduleId) ||
+      (scheduleId && certificationScheduleId === scheduleId)
+    );
+  });
+
+  if (!matchedTech) return true;
+
+  const currentScheduleId = String(
+    matchedTech?.scheduledCertificationId ||
+    matchedTech?.certificationScheduleId ||
+    ''
+  );
+
+  if (currentScheduleId && currentScheduleId !== scheduleId) {
+    return false;
+  }
+
+  return true;
+});
 
 const items = relatedSchedules.map((schedule: any, index: number) => {
   const scheduleId = String(schedule?.id ?? '');
