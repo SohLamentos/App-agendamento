@@ -91,6 +91,15 @@ const getRegion = (user: any) => {
   const [isTestMode, setIsTestMode] = useState(dataService.isTestMode());
   const [selection, setSelection] = useState<Selection | null>(null);
   const [movementMode, setMovementMode] = useState(false);
+  const [pendingMove, setPendingMove] = useState<{
+  scheduleId: string;
+  technicianName: string;
+  fromAnalystId: string;
+  fromDateIso: string;
+  fromShift: Shift;
+  toAnalystId: string;
+  toDateIso: string;
+} | null>(null);
   const [technicians, setTechnicians] = useState(dataService.getTechnicians());
 
 const [hoverTooltip, setHoverTooltip] = useState<{
@@ -361,26 +370,48 @@ return renderCard(displayTitle, color);
   COLORS.BLOQUEIO
 )
           )
-        : morningSchs.length > 0
-          ? renderCard(
-              formatScheduleTitle(morningSchs)!,
-              morningSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
-              {
-                onMouseEnter: (e) =>
-                  openAgendaTooltip(e, {
-                    analystId: userId,
-                    dateIso,
-                    shift: 'MORNING',
-                    technology: morningSchs[0].technology || 'GPON',
-                    modality:
-                      morningSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
-                  }),
-                onMouseMove: moveAgendaTooltip,
-                onMouseLeave: closeAgendaTooltip,
-              }
-            )
+                : morningSchs.length > 0
+          ? (
+            <div
+              draggable={movementMode}
+              onDragStart={(e) => {
+                if (!movementMode) return;
+
+                const firstSchedule = morningSchs[0];
+
+                e.dataTransfer.setData('scheduleId', firstSchedule.id);
+                e.dataTransfer.setData('technicianName', 'LOTE / BLOCO');
+                e.dataTransfer.setData('fromAnalystId', userId);
+                e.dataTransfer.setData('fromDateIso', dateIso);
+                e.dataTransfer.setData('fromShift', String(firstSchedule.shift));
+
+                setHoverTooltip(null);
+              }}
+              className="w-full h-full"
+            >
+              {renderCard(
+                formatScheduleTitle(morningSchs)!,
+                morningSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
+                {
+                  onMouseEnter: (e) =>
+                    openAgendaTooltip(e, {
+                      analystId: userId,
+                      dateIso,
+                      shift: 'MORNING',
+                      technology: morningSchs[0].technology || 'GPON',
+                      modality:
+                        morningSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
+                    }),
+                  onMouseMove: moveAgendaTooltip,
+                  onMouseLeave: closeAgendaTooltip,
+                }
+              )}
+            </div>
+          )
           : null}
     </div>
+            
+            
 
     <div className="flex-1 flex overflow-hidden">
       {afternoonBlock
@@ -397,24 +428,44 @@ return renderCard(displayTitle, color);
   COLORS.BLOQUEIO
 )
           )
-        : afternoonSchs.length > 0
-          ? renderCard(
-              formatScheduleTitle(afternoonSchs)!,
-              afternoonSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
-              {
-                onMouseEnter: (e) =>
-                  openAgendaTooltip(e, {
-                    analystId: userId,
-                    dateIso,
-                    shift: 'AFTERNOON',
-                    technology: afternoonSchs[0].technology || 'GPON',
-                    modality:
-                      afternoonSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
-                  }),
-                onMouseMove: moveAgendaTooltip,
-                onMouseLeave: closeAgendaTooltip,
-              }
-            )
+                : afternoonSchs.length > 0
+          ? (
+            <div
+              draggable={movementMode}
+              onDragStart={(e) => {
+                if (!movementMode) return;
+
+                const firstSchedule = afternoonSchs[0];
+
+                e.dataTransfer.setData('scheduleId', firstSchedule.id);
+                e.dataTransfer.setData('technicianName', 'LOTE / BLOCO');
+                e.dataTransfer.setData('fromAnalystId', userId);
+                e.dataTransfer.setData('fromDateIso', dateIso);
+                e.dataTransfer.setData('fromShift', String(firstSchedule.shift));
+
+                setHoverTooltip(null);
+              }}
+              className="w-full h-full"
+            >
+              {renderCard(
+                formatScheduleTitle(afternoonSchs)!,
+                afternoonSchs[0].type === ExpertiseType.VIRTUAL ? COLORS.VIRTUAL : COLORS.PRESENTIAL,
+                {
+                  onMouseEnter: (e) =>
+                    openAgendaTooltip(e, {
+                      analystId: userId,
+                      dateIso,
+                      shift: 'AFTERNOON',
+                      technology: afternoonSchs[0].technology || 'GPON',
+                      modality:
+                        afternoonSchs[0].type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENTIAL',
+                    }),
+                  onMouseMove: moveAgendaTooltip,
+                  onMouseLeave: closeAgendaTooltip,
+                }
+              )}
+            </div>
+          )
           : null}
     </div>
   </div>
@@ -1299,28 +1350,30 @@ return (
   </div>
 
   {!isTestMode && (
+  <div className="flex gap-3">
+    <button
+      onClick={() => {
+        setMovementMode(prev => !prev);
+        setSelection(null);
+        setHoverTooltip(null);
+      }}
+      className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest ${
+        movementMode
+          ? 'bg-emerald-600 text-white'
+          : 'bg-slate-900 text-white'
+      }`}
+    >
+      {movementMode ? 'Movimentação Ativa' : 'Modo Movimentação'}
+    </button>
+
     <button
       onClick={() => setIsRangeModalOpen(true)}
       className="bg-claro-red text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest"
     >
-      <button
-  onClick={() => {
-    setMovementMode(prev => !prev);
-    setSelection(null);
-    setHoverTooltip(null);
-  }}
-  className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest ${
-    movementMode
-      ? 'bg-emerald-600 text-white'
-      : 'bg-slate-900 text-white'
-  }`}
->
-  {movementMode ? 'Movimentação Ativa' : 'Modo Movimentação'}
-</button>
       Bloqueio Lote
     </button>
-  )}
-</div>      
+  </div>
+)}      
 
 <div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-y-auto overflow-x-auto flex-1 relative no-scrollbar transition-colors max-h-[calc(100vh-220px)] ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>
       {isTestMode && (
@@ -1369,6 +1422,34 @@ return (
     userId: analyst.id,
     dateIso: date.iso,
     rect: e.currentTarget.getBoundingClientRect()
+  });
+}}
+                      onDragOver={(e) => {
+  if (!movementMode) return;
+  e.preventDefault();
+}}
+
+onDrop={(e) => {
+  if (!movementMode) return;
+
+  e.preventDefault();
+
+  const scheduleId = e.dataTransfer.getData('scheduleId');
+  const technicianName = e.dataTransfer.getData('technicianName');
+  const fromAnalystId = e.dataTransfer.getData('fromAnalystId');
+  const fromDateIso = e.dataTransfer.getData('fromDateIso');
+  const fromShift = e.dataTransfer.getData('fromShift') as Shift;
+
+  if (!scheduleId) return;
+
+  setPendingMove({
+    scheduleId,
+    technicianName,
+    fromAnalystId,
+    fromDateIso,
+    fromShift,
+    toAnalystId: analyst.id,
+    toDateIso: date.iso
   });
 }}
                       className={`p-0 border-r border-slate-200/50 overflow-hidden relative group h-16 ${
@@ -1818,6 +1899,55 @@ return (
           
         </div>
       )}
+
+   {pendingMove && (
+  <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+    <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-slate-900 p-6 text-white">
+        <h3 className="text-lg font-black uppercase">
+          Confirmar movimentação
+        </h3>
+
+        <p className="text-[10px] font-bold uppercase opacity-70 mt-1">
+          Prévia operacional
+        </p>
+      </div>
+
+      <div className="p-6 space-y-3 text-sm font-bold text-slate-700">
+        <p>
+          <b>Origem:</b> {pendingMove.fromAnalystId} — {pendingMove.fromDateIso}
+        </p>
+
+        <p>
+          <b>Destino:</b> {pendingMove.toAnalystId} — {pendingMove.toDateIso}
+        </p>
+      </div>
+
+      <div className="flex gap-3 p-6 pt-0">
+        <button
+          onClick={() => setPendingMove(null)}
+          className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-500 text-xs font-black uppercase"
+        >
+          Cancelar
+        </button>
+
+        <button
+          onClick={() => {
+            setToast({
+              message: 'Movimentação capturada com sucesso.',
+              type: 'success'
+            });
+
+            setPendingMove(null);
+          }}
+          className="flex-1 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-black uppercase"
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
             {hoverTooltip?.visible && (
         <div
