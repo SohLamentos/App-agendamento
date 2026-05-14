@@ -1851,6 +1851,72 @@ setPendingMove({
         </>
       )}
 
+      {splitMove && (
+  <>
+    <div
+      className="fixed inset-0 z-[90]"
+      onClick={() => setSplitMove(null)}
+    />
+
+    <div
+      className="fixed z-[100] bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[340px] max-w-[420px] max-h-[460px] overflow-y-auto border border-white/10"
+      style={{
+        top: Math.min(splitMove.rect.bottom + 12, window.innerHeight - 480),
+        left: Math.min(splitMove.rect.left, window.innerWidth - 440)
+      }}
+    >
+      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
+        Escolha técnicos para mover
+      </div>
+
+      {buildAgendaTooltipData(
+        splitMove.sourceAnalystId,
+        splitMove.sourceDateIso,
+        splitMove.sourceShift,
+        splitMove.sourceTechnology,
+        splitMove.sourceModality
+      ).length > 0 ? (
+        buildAgendaTooltipData(
+          splitMove.sourceAnalystId,
+          splitMove.sourceDateIso,
+          splitMove.sourceShift,
+          splitMove.sourceTechnology,
+          splitMove.sourceModality
+        ).map((item: any, index: number) => (
+          <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
+            <div className="text-[11px] font-black uppercase tracking-wide">
+              {item.time} — {item.technician}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-1">
+              <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
+                {item.city}
+              </div>
+
+              <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
+                {item.partner}
+              </div>
+            </div>
+
+            <button
+              onClick={() => moveOneScheduleNow(item.scheduleId)}
+              className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
+            >
+              Mover este técnico
+            </button>
+          </div>
+        ))
+      ) : (
+        <div className="bg-white/5 rounded-xl px-3 py-2">
+          <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
+            Todos os técnicos deste bloco já foram movimentados
+          </div>
+        </div>
+      )}
+    </div>
+  </>
+)}
+
       {isImprovisoModal && selection && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
           <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-sm overflow-hidden border-t-8 border-[#6A1B9A] animate-in zoom-in duration-300">
