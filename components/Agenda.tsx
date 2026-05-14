@@ -1332,30 +1332,31 @@ const closeAgendaTooltip = () => {
       return;
     }
 
-    const updatedEvent = {
-      ...event,
-      involvedUserIds: [pendingMove.toAnalystId],
-      startDatetime: `${pendingMove.toDateIso}T00:00:00Z`,
-      endDatetime: `${pendingMove.toDateIso}T23:59:59Z`,
-      shift: event.shift || pendingMove.fromShift,
-      updatedAt: new Date().toISOString()
-    };
+    const result = dataService.updateEventById(String(pendingMove.eventId), {
+  involvedUserIds: [pendingMove.toAnalystId],
+  startDatetime: `${pendingMove.toDateIso}T00:00:00Z`,
+  endDatetime: `${pendingMove.toDateIso}T23:59:59Z`,
+  shift: event.shift || pendingMove.fromShift
+});
 
-    const updatedEvents = events.map((e: any) =>
-      String(e.id) === String(pendingMove.eventId) ? updatedEvent : e
-    );
+if (!result.success) {
+  setToast({
+    message: result.message || 'Erro ao movimentar evento.',
+    type: 'error'
+  });
+  return;
+}
 
-    dataService.setEvents(updatedEvents);
-    setEvents(dataService.getEvents());
-    setHoverTooltip(null);
-    setPendingMove(null);
+setEvents(dataService.getEvents());
+setHoverTooltip(null);
+setPendingMove(null);
 
-    setToast({
-      message: 'Evento movimentado com sucesso.',
-      type: 'success'
-    });
+setToast({
+  message: 'Evento movimentado com sucesso.',
+  type: 'success'
+});
 
-    return;
+return;
   }
 
   const schedule = schedules.find((s: any) =>
