@@ -1473,6 +1473,43 @@ const match =
     };
   }
 
+  private splitPresentialLotBySmartCapacity(total: number): number[] {
+  if (total <= 0) return [];
+
+  const baseCapacity = 6;
+  const maxCapacity = 7;
+
+  const days = Math.ceil(total / maxCapacity);
+  const result = Array(days).fill(baseCapacity);
+
+  let currentTotal = result.reduce((sum, value) => sum + value, 0);
+
+  if (currentTotal < total) {
+    let remaining = total - currentTotal;
+    let index = 0;
+
+    while (remaining > 0 && index < result.length) {
+      if (result[index] < maxCapacity) {
+        result[index] += 1;
+        remaining -= 1;
+      }
+      index += 1;
+    }
+  }
+
+  if (currentTotal > total || result.reduce((sum, value) => sum + value, 0) > total) {
+    let excess = result.reduce((sum, value) => sum + value, 0) - total;
+
+    for (let i = result.length - 1; i >= 0 && excess > 0; i--) {
+      const removable = Math.min(excess, result[i] - 1);
+      result[i] -= removable;
+      excess -= removable;
+    }
+  }
+
+  return result;
+}
+
   public runSmartSchedulingReinforced(startDateIso: string): SchedulingSummary {
   const summary: SchedulingSummary = { scheduled: 0, backlog: 0, reasons: {} };
   const addReason = (r: string) => {
@@ -2009,6 +2046,7 @@ const shouldLockLotToOneAnalyst = requiresPresential;
 if (shouldLockLotToOneAnalyst) {
   
   const lotSize = lotTechs.length;
+  
 
   let lotOwner: User | null = null;
 
@@ -2027,7 +2065,7 @@ const simulations = allowedAnalysts.map((analyst, index) => ({
     analyst,
     targetType,
     businessDays,
-    limitPerShift,
+    targetType === ExpertiseType.PRESENTIAL ? 7 / 2 : limitPerShift,
     lotSize,
     lotRoutingMatch.base?.id
   )
@@ -2089,15 +2127,26 @@ if (!lotOwner) {
 const scheduledEntries: Array<{ tech: Technician; schedule: CertificationSchedule }> = [];
 
 const plannedDatesToUse = chosenSimulation?.result.plannedDates || [];
-  const isConsecutiveCalendarSequence = (dates: string[]) => {
+
+const dailyTargets =
+  targetType === ExpertiseType.PRESENTIAL
+    ? this.splitPresentialLotBySmartCapacity(lotTechs.length)
+    : [];
+
+const isConsecutiveBusinessSequence = (dates: string[]) => {
+  const businessIndex = new Map(
+    businessDays.map((day, index) => [day, index])
+  );
+
   for (let i = 1; i < dates.length; i++) {
-    const prev = new Date(dates[i - 1] + 'T00:00:00');
-    const curr = new Date(dates[i] + 'T00:00:00');
+    const prevIndex = businessIndex.get(dates[i - 1]);
+    const currIndex = businessIndex.get(dates[i]);
 
-    const diffDays =
-      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (diffDays !== 1) {
+    if (
+      prevIndex === undefined ||
+      currIndex === undefined ||
+      currIndex !== prevIndex + 1
+    ) {
       return false;
     }
   }
@@ -2108,7 +2157,7 @@ const plannedDatesToUse = chosenSimulation?.result.plannedDates || [];
 if (
   targetType === ExpertiseType.PRESENTIAL &&
   plannedDatesToUse.length > 1 &&
-  !isConsecutiveCalendarSequence(plannedDatesToUse)
+  !isConsecutiveBusinessSequence(plannedDatesToUse)
 ) {
   for (const lotTech of lotTechs) {
     lotTech.status_principal = "BACKLOG AGUARDANDO";
@@ -2120,7 +2169,17 @@ if (
   summary.backlog += lotTechs.length;
   continue;
 }
-  for (const dateIso of plannedDatesToUse) {
+
+for (let dateIndex = 0; dateIndex < plannedDatesToUse.length; dateIndex++) {
+  const dateIso = plannedDatesToUse[dateIndex];
+
+  const dayTarget =
+    targetType === ExpertiseType.PRESENTIAL
+      ? (dailyTargets[dateIndex] || 6)
+      : Number.POSITIVE_INFINITY;
+
+  const dayStartCount = scheduledEntries.length;
+
   const daySchedules = this.schedules.filter(
     s =>
       s.analystId === lotOwner.id &&
@@ -2139,35 +2198,56 @@ if (
   }
 
   for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
+    const alreadyScheduledToday = scheduledEntries.length - dayStartCount;
+
+    if (
+      targetType === ExpertiseType.PRESENTIAL &&
+      alreadyScheduledToday >= dayTarget
+    ) {
+      break;
+    }
+
     const isBlocked = this.events.some(
-  e =>
-    e.involvedUserIds.includes(lotOwner.id) &&
-    e.startDatetime.startsWith(dateIso) &&
-    (e as any).type !== 'CQ_SUPPORT' &&
-    (e.shift === Shift.FULL_DAY || e.shift === shift)
-);
+      e =>
+        e.involvedUserIds.includes(lotOwner.id) &&
+        e.startDatetime.startsWith(dateIso) &&
+        (e as any).type !== 'CQ_SUPPORT' &&
+        (e.shift === Shift.FULL_DAY || e.shift === shift)
+    );
 
-const cqSupportEvents = this.events.filter(
-  e =>
-    e.involvedUserIds.includes(lotOwner.id) &&
-    e.startDatetime.startsWith(dateIso) &&
-    (e as any).type === 'CQ_SUPPORT' &&
-    ((e as any).active ?? true) &&
-    (e.shift === Shift.FULL_DAY || e.shift === shift)
-);
+    const cqSupportEvents = this.events.filter(
+      e =>
+        e.involvedUserIds.includes(lotOwner.id) &&
+        e.startDatetime.startsWith(dateIso) &&
+        (e as any).type === 'CQ_SUPPORT' &&
+        ((e as any).active ?? true) &&
+        (e.shift === Shift.FULL_DAY || e.shift === shift)
+    );
 
-let cqExtraSlots = 0;
+    let cqExtraSlots = 0;
 
-cqSupportEvents.forEach(event => {
-  const extra = (event as any).capacityExtra || 6;
-  cqExtraSlots += extra / 2;
-});
+    cqSupportEvents.forEach(event => {
+      const extra = (event as any).capacityExtra || 6;
+      cqExtraSlots += extra / 2;
+    });
 
-if (isBlocked && cqExtraSlots <= 0) continue;
+    if (isBlocked && cqExtraSlots <= 0) continue;
+
+    const dailyExtraSlots =
+  targetType === ExpertiseType.PRESENTIAL
+    ? Math.max(0, dayTarget - 6)
+    : 0;
+
+const smartOverflowForShift =
+  targetType === ExpertiseType.PRESENTIAL &&
+  shift === Shift.AFTERNOON &&
+  !isBlocked
+    ? dailyExtraSlots
+    : 0;
 
 const shiftLimitWithCq = isBlocked
   ? cqExtraSlots
-  : limitPerShift + cqExtraSlots;
+  : limitPerShift + cqExtraSlots + smartOverflowForShift;
 
     let shiftSchedules = this.schedules.filter(
       s =>
@@ -2176,35 +2256,66 @@ const shiftLimitWithCq = isBlocked
         s.shift === shift &&
         s.status !== ScheduleStatus.CANCELLED
     );
+
     const lotBaseId = lotRoutingMatch.base?.id;
 
-const hasDifferentBaseOnShift = shiftSchedules.some(
-  s =>
-    s.type === ExpertiseType.PRESENTIAL &&
-    s.baseId &&
-    lotBaseId &&
-    s.baseId !== lotBaseId
-);
+    const hasDifferentBaseOnShift = shiftSchedules.some(
+      s =>
+        s.type === ExpertiseType.PRESENTIAL &&
+        s.baseId &&
+        lotBaseId &&
+        s.baseId !== lotBaseId
+    );
 
-if (targetType === ExpertiseType.PRESENTIAL && hasDifferentBaseOnShift) {
-  continue;
-}
+    if (targetType === ExpertiseType.PRESENTIAL && hasDifferentBaseOnShift) {
+      continue;
+    }
 
-    while (shiftSchedules.length < shiftLimitWithCq && scheduledEntries.length < lotTechs.length) {
+    while (
+      shiftSchedules.length < shiftLimitWithCq &&
+      scheduledEntries.length < lotTechs.length
+    ) {
+      const alreadyScheduledTodayLoop = scheduledEntries.length - dayStartCount;
+
+      if (
+        targetType === ExpertiseType.PRESENTIAL &&
+        alreadyScheduledTodayLoop >= dayTarget
+      ) {
+        break;
+      }
+
       const nextTech = lotTechs[scheduledEntries.length];
 
-      const scheduleTime = this.getManualScheduleTime(
+      const hasOtherEventOnDay = this.events.some(
+  e =>
+    e.involvedUserIds.includes(lotOwner.id) &&
+    e.startDatetime.startsWith(dateIso) &&
+    (e as any).type !== 'CQ_SUPPORT'
+);
+
+const isFullCertificationDay =
+  targetType === ExpertiseType.PRESENTIAL &&
+  !hasOtherEventOnDay &&
+  dayTarget > limitPerShift;
+
+const scheduleTime =
+  isFullCertificationDay &&
+  shift === Shift.MORNING &&
+  shiftSchedules.length === 0
+    ? '08:30:00'
+    : this.getManualScheduleTime(
         lotOwner.id,
         dateIso,
         shift,
         targetType
       );
+
       const resolvedBase = this.resolveBaseForScheduling({
-  city: nextTech.city,
-  uf: nextTech.state,
-  analystId: lotOwner.id,
-  company: nextTech.company
-});
+        city: nextTech.city,
+        uf: nextTech.state,
+        analystId: lotOwner.id,
+        company: nextTech.company
+      });
 
       const newSch: CertificationSchedule = {
         id: `sch-auto-${Date.now()}-${Math.random()}`,
@@ -2219,12 +2330,12 @@ if (targetType === ExpertiseType.PRESENTIAL && hasDifferentBaseOnShift) {
         availabilitySlotId: 'auto',
         shift,
         technology: nextTech.technology || 'GPON',
-baseId: resolvedBase.base?.id,
-baseName: resolvedBase.base?.name,
-baseAddress: resolvedBase.base?.address,
-baseNotes: resolvedBase.base?.notes,
-powerAppsBaseId: resolvedBase.base?.powerAppsBaseId,
-routingRuleId: resolvedBase.rule?.id
+        baseId: resolvedBase.base?.id,
+        baseName: resolvedBase.base?.name,
+        baseAddress: resolvedBase.base?.address,
+        baseNotes: resolvedBase.base?.notes,
+        powerAppsBaseId: resolvedBase.base?.powerAppsBaseId,
+        routingRuleId: resolvedBase.rule?.id
       };
 
       this.schedules.push(newSch);
@@ -2625,28 +2736,57 @@ if (hasFullDayEvent) {
   shift: Shift,
   type: ExpertiseType
 ): string {
-  const sameSlotSchedules = this.schedules.filter(s =>
-  s.analystId === analystId &&
-  s.datetime.startsWith(dateIso) &&
-  s.shift === shift &&
-  s.type === type &&
-  s.status !== ScheduleStatus.CANCELLED
-);
+  const sameDaySchedules = this.schedules.filter(s =>
+    s.analystId === analystId &&
+    s.datetime.startsWith(dateIso) &&
+    s.type === type &&
+    s.status !== ScheduleStatus.CANCELLED
+  );
+
+  const sameSlotSchedules = sameDaySchedules.filter(s =>
+    s.shift === shift
+  );
+
+  const dayEvents = this.events.filter(e =>
+    e.involvedUserIds.includes(analystId) &&
+    e.startDatetime.startsWith(dateIso) &&
+    (e as any).type !== 'CQ_SUPPORT'
+  );
+
+  const hasOtherEventOnDay = dayEvents.length > 0;
+
+  const isPresential = type === ExpertiseType.PRESENTIAL;
+  const hasMorningPresential = sameDaySchedules.some(s => s.shift === Shift.MORNING);
+  const hasAfternoonPresential = sameDaySchedules.some(s => s.shift === Shift.AFTERNOON);
+
+  const willHaveFullCertificationDay =
+    isPresential &&
+    !hasOtherEventOnDay &&
+    (
+      hasMorningPresential ||
+      shift === Shift.MORNING
+    ) &&
+    (
+      hasAfternoonPresential ||
+      shift === Shift.AFTERNOON
+    );
 
   const position = sameSlotSchedules.length + 1;
-  const isPresential = type === ExpertiseType.PRESENTIAL;
 
   if (isPresential) {
     if (shift === Shift.MORNING) {
+      if (willHaveFullCertificationDay && position === 1) return '08:30:00';
       if (position === 1) return '09:00:00';
       if (position === 2) return '10:00:00';
       if (position === 3) return '11:00:00';
+      if (position === 4) return '11:30:00';
     }
 
     if (shift === Shift.AFTERNOON) {
       if (position === 1) return '14:00:00';
       if (position === 2) return '15:00:00';
       if (position === 3) return '16:00:00';
+      if (position === 4) return '16:30:00';
     }
   } else {
     if (shift === Shift.MORNING) {
