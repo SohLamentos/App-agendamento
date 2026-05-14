@@ -1599,39 +1599,40 @@ onDrop={(e) => {
 
   e.preventDefault();
 
-  const scheduleId = e.dataTransfer.getData('scheduleId');
-  const technicianName = e.dataTransfer.getData('technicianName');
+  const itemType = (e.dataTransfer.getData('itemType') || 'SCHEDULE') as 'SCHEDULE' | 'EVENT';
+
+  const scheduleId = String(
+    e.dataTransfer.getData('scheduleId') || ''
+  ).trim();
+
+  const eventId = String(
+    e.dataTransfer.getData('eventId') || ''
+  ).trim();
+
+  const technicianName =
+    e.dataTransfer.getData('technicianName') ||
+    (itemType === 'EVENT' ? 'EVENTO' : 'LOTE / BLOCO');
+
   const fromAnalystId = e.dataTransfer.getData('fromAnalystId');
   const fromDateIso = e.dataTransfer.getData('fromDateIso');
   const fromShift = e.dataTransfer.getData('fromShift') as Shift;
 
-  if (!scheduleId) return;
-
-  const itemType = (e.dataTransfer.getData('itemType') || 'SCHEDULE') as 'SCHEDULE' | 'EVENT';
-const eventId = String(
-  e.dataTransfer.getData('eventId') || ''
-).trim();
-
-if (itemType === 'SCHEDULE' && !scheduleId) return;
-  console.log('DROP EVENT DEBUG', {
-  itemType,
-  eventId,
-  scheduleId
-});
-if (itemType === 'EVENT' && !eventId) return;
+  if (itemType === 'SCHEDULE' && !scheduleId) return;
+  if (itemType === 'EVENT' && !eventId) return;
 
   setPendingMove({
-  itemType,
-  scheduleId: scheduleId || undefined,
-  eventId: eventId || undefined,
-  technicianName,
-  fromAnalystId,
-  fromDateIso,
-  fromShift,
-  toAnalystId: analyst.id,
-  toDateIso: date.iso
-});
+    itemType,
+    scheduleId: scheduleId || undefined,
+    eventId: eventId || undefined,
+    technicianName,
+    fromAnalystId,
+    fromDateIso,
+    fromShift,
+    toAnalystId: analyst.id,
+    toDateIso: date.iso
+  });
 }}
+                      
                       
                       className={`p-0 border-r overflow-hidden relative group h-16 transition-all ${
   movementMode
