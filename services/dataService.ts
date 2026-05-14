@@ -607,6 +607,15 @@ this.analystMappings = [];
   getUsers() { return [...this.users]; }
   getCities() { return [...this.cities]; }
   getEvents() { return this.events.filter(e => e.groupId === this.getContext().groupId); }
+  public setEvents(newEvents: EventSchedule[]) {
+  const ctx = this.getContext();
+
+  const otherGroups = this.events.filter(e => e.groupId !== ctx.groupId);
+  this.events = [...otherGroups, ...newEvents];
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+}
   getSchedules() { 
     const pool = this.testModeActive ? this.schedulesTeste : this.schedules;
     return pool.filter(s => s.groupId === this.getContext().groupId); 
