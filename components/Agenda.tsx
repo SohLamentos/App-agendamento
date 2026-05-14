@@ -2270,17 +2270,26 @@ setPendingMove({
       </div>
 
       <div className="p-6 space-y-3 text-sm font-bold text-slate-700">
-        <p>
-          <b>Origem:</b> {pendingMove.fromAnalystId} — {pendingMove.fromDateIso}
-        </p>
+  <p>
+    <b>Origem:</b>{' '}
+    {analysts.find(a => a.id === pendingMove.fromAnalystId)?.normalizedLogin || pendingMove.fromAnalystId}
+    {' — '}
+    {formatDateBR(pendingMove.fromDateIso)}
+  </p>
 
-        <p>
-          <b>Destino:</b>
-          {(() => {
-  const validation = validateMovementTarget(
-    pendingMove.toAnalystId,
-    pendingMove.toDateIso
-  );
+  <p>
+    <b>Destino:</b>{' '}
+    {analysts.find(a => a.id === pendingMove.toAnalystId)?.normalizedLogin || pendingMove.toAnalystId}
+    {' — '}
+    {formatDateBR(pendingMove.toDateIso)}
+  </p>
+
+  <div>
+    {(() => {
+      const validation = validateMovementTarget(
+        pendingMove.toAnalystId,
+        pendingMove.toDateIso
+      );
 
   return (
     <div className="space-y-2 pt-3">
@@ -2304,9 +2313,8 @@ setPendingMove({
     </div>
   );
 })()}
-          {pendingMove.toAnalystId} — {pendingMove.toDateIso}
-        </p>
-      </div>
+  </div>
+</div>
 
       <div className="flex gap-3 p-6 pt-0">
         <button
