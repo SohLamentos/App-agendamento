@@ -621,18 +621,42 @@ this.analystMappings = [];
     return pool.filter(s => s.groupId === this.getContext().groupId); 
   }
   public setSchedules(newSchedules: CertificationSchedule[]) {
-  const ctx = this.getContext();
+  console.warn(
+    'setSchedules(listaInteira) ignorado para evitar perda de agendamentos em ambiente multiusuário.'
+  );
 
-  if (this.testModeActive) {
-    const otherGroups = this.schedulesTeste.filter(s => s.groupId !== ctx.groupId);
-    this.schedulesTeste = [...otherGroups, ...newSchedules];
-  } else {
-    const otherGroups = this.schedules.filter(s => s.groupId !== ctx.groupId);
-    this.schedules = [...otherGroups, ...newSchedules];
+  window.dispatchEvent(new Event('data-updated'));
+
+  return {
+    success: false,
+    message: 'Atualização em massa de agendamentos bloqueada. Use updateScheduleById.'
+  };
+}
+
+public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedule>) {
+  const ctx = this.getContext();
+  const pool = this.testModeActive ? this.schedulesTeste : this.schedules;
+
+  const index = pool.findIndex(
+    s => String(s.id) === String(scheduleId) && s.groupId === ctx.groupId
+  );
+
+  if (index === -1) {
+    return { success: false, message: 'Agendamento não encontrado.' };
   }
+
+  pool[index] = {
+    ...pool[index],
+    ...patch,
+    id: pool[index].id,
+    groupId: pool[index].groupId,
+    updatedAt: new Date().toISOString()
+  };
 
   this.persist();
   window.dispatchEvent(new Event('data-updated'));
+
+  return { success: true };
 }
   getTechnicians() { return this.technicians.filter(t => t.groupId === this.getContext().groupId); }
   getTrainingClasses() { return this.trainingClasses.filter(c => c.groupId === this.getContext().groupId); }
