@@ -113,7 +113,10 @@ const getRegion = (user: any) => {
   targetDateIso: string;
   rect: DOMRect;
 } | null>(null);
-  const [technicians, setTechnicians] = useState(dataService.getTechnicians());
+
+const [movedScheduleIds, setMovedScheduleIds] = useState<string[]>([]);
+
+const [technicians, setTechnicians] = useState(dataService.getTechnicians());
 
 const [hoverTooltip, setHoverTooltip] = useState<{
   visible: boolean;
@@ -1427,9 +1430,10 @@ const closeAgendaTooltip = () => {
   );
 
   dataService.setSchedules(updatedSchedules);
-setSchedules(updatedSchedules);
-setSplitMove(prev => prev ? { ...prev } : null);
-setHoverTooltip(null);
+  setSchedules(updatedSchedules);
+  setMovedScheduleIds(prev => [...prev, String(scheduleId)]);
+  setSplitMove(prev => prev ? { ...prev } : null);
+  setHoverTooltip(null);
 
   window.dispatchEvent(new Event('data-updated'));
 
@@ -1856,7 +1860,10 @@ setPendingMove({
   <>
     <div
       className="fixed inset-0 z-[90]"
-      onClick={() => setSplitMove(null)}
+      onClick={() => {
+        setSplitMove(null);
+        setMovedScheduleIds([]);
+      }}
     />
 
     <div
@@ -1867,53 +1874,51 @@ setPendingMove({
       }}
     >
       <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
-  Mover para {analysts.find(a => a.id === splitMove.targetAnalystId)?.normalizedLogin || splitMove.targetAnalystId} — {formatDateBR(splitMove.targetDateIso)}
-</div>
+        Mover para {analysts.find(a => a.id === splitMove.targetAnalystId)?.normalizedLogin || splitMove.targetAnalystId} — {formatDateBR(splitMove.targetDateIso)}
+      </div>
 
-      {buildAgendaTooltipData(
-        splitMove.sourceAnalystId,
-        splitMove.sourceDateIso,
-        splitMove.sourceShift,
-        splitMove.sourceTechnology,
-        splitMove.sourceModality
-      ).length > 0 ? (
-        buildAgendaTooltipData(
+      {(() => {
+        const items = buildAgendaTooltipData(
           splitMove.sourceAnalystId,
           splitMove.sourceDateIso,
           splitMove.sourceShift,
           splitMove.sourceTechnology,
           splitMove.sourceModality
-        ).map((item: any, index: number) => (
-          <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
-            <div className="text-[11px] font-black uppercase tracking-wide">
-              {item.time} — {item.technician}
-            </div>
+        ).filter((item: any) => !movedScheduleIds.includes(String(item.scheduleId)));
 
-            <div className="flex items-center justify-between gap-3 mt-1">
-              <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
-                {item.city}
+        return items.length > 0 ? (
+          items.map((item: any, index: number) => (
+            <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
+              <div className="text-[11px] font-black uppercase tracking-wide">
+                {item.time} — {item.technician}
               </div>
 
-              <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
-                {item.partner}
-              </div>
-            </div>
+              <div className="flex items-center justify-between gap-3 mt-1">
+                <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
+                  {item.city}
+                </div>
 
-            <button
-              onClick={() => moveOneScheduleNow(item.scheduleId)}
-              className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
-            >
-              Mover este técnico
-            </button>
+                <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
+                  {item.partner}
+                </div>
+              </div>
+
+              <button
+                onClick={() => moveOneScheduleNow(item.scheduleId)}
+                className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
+              >
+                Mover este técnico
+              </button>
+            </div>
+          ))
+        ) : (
+          <div className="bg-white/5 rounded-xl px-3 py-2">
+            <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
+              Todos os técnicos deste bloco já foram movimentados
+            </div>
           </div>
-        ))
-      ) : (
-        <div className="bg-white/5 rounded-xl px-3 py-2">
-          <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
-            Todos os técnicos deste bloco já foram movimentados
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   </>
 )}
