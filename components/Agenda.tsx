@@ -2392,6 +2392,72 @@ setPendingMove({
   </>
 )}
 
+      {splitMove && (
+  <>
+    <div
+      className="fixed inset-0 z-[90]"
+      onClick={() => setSplitMove(null)}
+    />
+
+    <div
+      className="fixed z-[100] bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[340px] max-w-[420px] max-h-[460px] overflow-y-auto border border-white/10"
+      style={{
+        top: Math.min(splitMove.rect.bottom + 12, window.innerHeight - 480),
+        left: Math.min(splitMove.rect.left, window.innerWidth - 440)
+      }}
+    >
+      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
+        Escolha técnicos para mover
+      </div>
+
+      {buildAgendaTooltipData(
+        splitMove.sourceAnalystId,
+        splitMove.sourceDateIso,
+        splitMove.sourceShift,
+        splitMove.sourceTechnology,
+        splitMove.sourceModality
+      ).length > 0 ? (
+        buildAgendaTooltipData(
+          splitMove.sourceAnalystId,
+          splitMove.sourceDateIso,
+          splitMove.sourceShift,
+          splitMove.sourceTechnology,
+          splitMove.sourceModality
+        ).map((item: any, index: number) => (
+          <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
+            <div className="text-[11px] font-black uppercase tracking-wide">
+              {item.time} — {item.technician}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-1">
+              <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
+                {item.city}
+              </div>
+
+              <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
+                {item.partner}
+              </div>
+            </div>
+
+            <button
+              onClick={() => moveOneScheduleNow(item.scheduleId)}
+              className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
+            >
+              Mover este técnico
+            </button>
+          </div>
+        ))
+      ) : (
+        <div className="bg-white/5 rounded-xl px-3 py-2">
+          <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
+            Todos os técnicos deste bloco já foram movimentados
+          </div>
+        </div>
+      )}
+    </div>
+  </>
+)}
+
             {hoverTooltip?.visible && (
         <div
 className="fixed z-[9999] pointer-events-auto bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[300px] max-w-[380px] max-h-[420px] overflow-y-auto border border-white/10"          style={{
@@ -2425,30 +2491,7 @@ className="fixed z-[9999] pointer-events-auto bg-slate-900 text-white rounded-2x
                       <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
                         {item.partner}
                       </div>
-                      <button
-  onClick={() => {
-    setPendingMove({
-      itemType: 'SCHEDULE',
-      scheduleId: item.scheduleId,
-      technicianId: item.technicianId,
-      technicianName: item.technician,
-      fromAnalystId: hoverTooltip.analystId,
-      fromDateIso: hoverTooltip.dateIso,
-      fromShift: hoverTooltip.shift === 'MORNING' ? Shift.MORNING : Shift.AFTERNOON,
-      toAnalystId: hoverTooltip.analystId,
-      toDateIso: hoverTooltip.dateIso
-    });
-
-    setHoverTooltip(null);
-    setToast({
-      message: 'Selecione a célula de destino para mover o técnico.',
-      type: 'success'
-    });
-  }}
-  className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white"
->
-  Mover este técnico
-</button>
+                      
                     </div>
                   </div>
                 ))
