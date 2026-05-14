@@ -1427,8 +1427,9 @@ const closeAgendaTooltip = () => {
   );
 
   dataService.setSchedules(updatedSchedules);
-  setSchedules(updatedSchedules);
-  setHoverTooltip(null);
+setSchedules(updatedSchedules);
+setSplitMove(prev => prev ? { ...prev } : null);
+setHoverTooltip(null);
 
   window.dispatchEvent(new Event('data-updated'));
 
@@ -1866,8 +1867,8 @@ setPendingMove({
       }}
     >
       <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
-        Escolha técnicos para mover
-      </div>
+  Mover para {analysts.find(a => a.id === splitMove.targetAnalystId)?.normalizedLogin || splitMove.targetAnalystId} — {formatDateBR(splitMove.targetDateIso)}
+</div>
 
       {buildAgendaTooltipData(
         splitMove.sourceAnalystId,
