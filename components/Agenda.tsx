@@ -103,6 +103,16 @@ const getRegion = (user: any) => {
   toAnalystId: string;
   toDateIso: string;
 } | null>(null);
+  const [splitMove, setSplitMove] = useState<{
+  sourceAnalystId: string;
+  sourceDateIso: string;
+  sourceShift: 'MORNING' | 'AFTERNOON';
+  sourceTechnology: string;
+  sourceModality: string;
+  targetAnalystId: string;
+  targetDateIso: string;
+  rect: DOMRect;
+} | null>(null);
   const [technicians, setTechnicians] = useState(dataService.getTechnicians());
 
 const [hoverTooltip, setHoverTooltip] = useState<{
@@ -423,6 +433,11 @@ return (
                 e.dataTransfer.setData('fromAnalystId', userId);
                 e.dataTransfer.setData('fromDateIso', dateIso);
                 e.dataTransfer.setData('fromShift', String(firstSchedule.shift));
+                e.dataTransfer.setData('fromTechnology', firstSchedule.technology || 'GPON');
+e.dataTransfer.setData(
+  'fromModality',
+  firstSchedule.type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENCIAL'
+);
 
                 setHoverTooltip(null);
               }}
@@ -491,6 +506,11 @@ return (
                 e.dataTransfer.setData('fromAnalystId', userId);
                 e.dataTransfer.setData('fromDateIso', dateIso);
                 e.dataTransfer.setData('fromShift', String(firstSchedule.shift));
+                e.dataTransfer.setData('fromTechnology', firstSchedule.technology || 'GPON');
+e.dataTransfer.setData(
+  'fromModality',
+  firstSchedule.type === ExpertiseType.VIRTUAL ? 'VIRTUAL' : 'PRESENCIAL'
+);
 
                 setHoverTooltip(null);
               }}
@@ -1380,6 +1400,43 @@ const closeAgendaTooltip = () => {
     type: 'success'
   });
 };
+  const moveOneScheduleNow = (scheduleId: string) => {
+  if (!splitMove) return;
+
+  const schedule = schedules.find((s: any) => String(s.id) === String(scheduleId));
+
+  if (!schedule) {
+    setToast({
+      message: 'Agendamento não encontrado.',
+      type: 'error'
+    });
+    return;
+  }
+
+  const originalTime = String(schedule.datetime || '').split('T')[1] || '09:00:00Z';
+
+  const updatedSchedule = {
+    ...schedule,
+    analystId: splitMove.targetAnalystId,
+    datetime: `${splitMove.targetDateIso}T${originalTime}`,
+    updatedAt: new Date().toISOString()
+  };
+
+  const updatedSchedules = schedules.map((s: any) =>
+    String(s.id) === String(scheduleId) ? updatedSchedule : s
+  );
+
+  dataService.setSchedules(updatedSchedules);
+  setSchedules(updatedSchedules);
+  setHoverTooltip(null);
+
+  window.dispatchEvent(new Event('data-updated'));
+
+  setToast({
+    message: 'Técnico movimentado.',
+    type: 'success'
+  });
+};
 
 return (
 
@@ -1592,6 +1649,8 @@ return (
   if (movementMode) return;
 
   if (pendingMove?.itemType === 'SCHEDULE' && pendingMove.technicianId) {
+
+    
     setPendingMove({
       ...pendingMove,
       toAnalystId: analyst.id,
@@ -1635,19 +1694,38 @@ onDrop={(e) => {
   const fromShift = e.dataTransfer.getData('fromShift') as Shift;
 
   if (itemType === 'SCHEDULE' && !scheduleId) return;
-  if (itemType === 'EVENT' && !eventId) return;
+if (itemType === 'EVENT' && !eventId) return;
 
-  setPendingMove({
-    itemType,
-    scheduleId: scheduleId || undefined,
-    eventId: eventId || undefined,
-    technicianName,
-    fromAnalystId,
-    fromDateIso,
-    fromShift,
-    toAnalystId: analyst.id,
-    toDateIso: date.iso
+const fromTechnology = e.dataTransfer.getData('fromTechnology') || 'GPON';
+const fromModality = e.dataTransfer.getData('fromModality') || 'VIRTUAL';
+
+if (itemType === 'SCHEDULE') {
+  setSplitMove({
+    sourceAnalystId: fromAnalystId,
+    sourceDateIso: fromDateIso,
+    sourceShift: fromShift === Shift.MORNING ? 'MORNING' : 'AFTERNOON',
+    sourceTechnology: fromTechnology,
+    sourceModality: fromModality,
+    targetAnalystId: analyst.id,
+    targetDateIso: date.iso,
+    rect: e.currentTarget.getBoundingClientRect()
   });
+
+  setHoverTooltip(null);
+  return;
+}
+
+setPendingMove({
+  itemType,
+  scheduleId: scheduleId || undefined,
+  eventId: eventId || undefined,
+  technicianName,
+  fromAnalystId,
+  fromDateIso,
+  fromShift,
+  toAnalystId: analyst.id,
+  toDateIso: date.iso
+});
 }}
                       
                       
@@ -2181,6 +2259,137 @@ onDrop={(e) => {
       </div>
     </div>
   </div>
+)}
+      {splitMove && (
+  <>
+    <div
+      className="fixed inset-0 z-[90]"
+      onClick={() => setSplitMove(null)}
+    />
+
+    <div
+      className="fixed z-[100] bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[340px] max-w-[420px] max-h-[460px] overflow-y-auto border border-white/10"
+      style={{
+        top: Math.min(splitMove.rect.bottom + 12, window.innerHeight - 480),
+        left: Math.min(splitMove.rect.left, window.innerWidth - 440)
+      }}
+    >
+      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
+        Escolha técnicos para mover
+      </div>
+
+      {buildAgendaTooltipData(
+        splitMove.sourceAnalystId,
+        splitMove.sourceDateIso,
+        splitMove.sourceShift,
+        splitMove.sourceTechnology,
+        splitMove.sourceModality
+      ).length > 0 ? (
+        buildAgendaTooltipData(
+          splitMove.sourceAnalystId,
+          splitMove.sourceDateIso,
+          splitMove.sourceShift,
+          splitMove.sourceTechnology,
+          splitMove.sourceModality
+        ).map((item: any, index: number) => (
+          <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
+            <div className="text-[11px] font-black uppercase tracking-wide">
+              {item.time} — {item.technician}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-1">
+              <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
+                {item.city}
+              </div>
+
+              <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
+                {item.partner}
+              </div>
+            </div>
+
+            <button
+              onClick={() => moveOneScheduleNow(item.scheduleId)}
+              className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
+            >
+              Mover este técnico
+            </button>
+          </div>
+        ))
+      ) : (
+        <div className="bg-white/5 rounded-xl px-3 py-2">
+          <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
+            Todos os técnicos deste bloco já foram movimentados
+          </div>
+        </div>
+      )}
+    </div>
+  </>
+)}
+
+      {splitMove && (
+  <>
+    <div
+      className="fixed inset-0 z-[90]"
+      onClick={() => setSplitMove(null)}
+    />
+
+    <div
+      className="fixed z-[100] bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[340px] max-w-[420px] max-h-[460px] overflow-y-auto border border-white/10"
+      style={{
+        top: Math.min(splitMove.rect.bottom + 12, window.innerHeight - 480),
+        left: Math.min(splitMove.rect.left, window.innerWidth - 440)
+      }}
+    >
+      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
+        Escolha técnicos para mover
+      </div>
+
+      {buildAgendaTooltipData(
+        splitMove.sourceAnalystId,
+        splitMove.sourceDateIso,
+        splitMove.sourceShift,
+        splitMove.sourceTechnology,
+        splitMove.sourceModality
+      ).length > 0 ? (
+        buildAgendaTooltipData(
+          splitMove.sourceAnalystId,
+          splitMove.sourceDateIso,
+          splitMove.sourceShift,
+          splitMove.sourceTechnology,
+          splitMove.sourceModality
+        ).map((item: any, index: number) => (
+          <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
+            <div className="text-[11px] font-black uppercase tracking-wide">
+              {item.time} — {item.technician}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-1">
+              <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
+                {item.city}
+              </div>
+
+              <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
+                {item.partner}
+              </div>
+            </div>
+
+            <button
+              onClick={() => moveOneScheduleNow(item.scheduleId)}
+              className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
+            >
+              Mover este técnico
+            </button>
+          </div>
+        ))
+      ) : (
+        <div className="bg-white/5 rounded-xl px-3 py-2">
+          <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
+            Todos os técnicos deste bloco já foram movimentados
+          </div>
+        </div>
+      )}
+    </div>
+  </>
 )}
 
             {hoverTooltip?.visible && (
