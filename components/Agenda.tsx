@@ -96,6 +96,7 @@ const getRegion = (user: any) => {
   scheduleId?: string;
   eventId?: string;
   technicianName: string;
+  technicianId?: string;
   fromAnalystId: string;
   fromDateIso: string;
   fromShift: Shift;
@@ -1163,6 +1164,8 @@ const technicianPartner =
   'N/D';
 
 return {
+  scheduleId,
+  technicianId,
   time: getVisualScheduleTime(modality, shift, index + 1),
   technician: technicianName,
   city: `${technicianCity}${technicianState ? ' / ' + technicianState : ''}`,
@@ -1335,7 +1338,11 @@ const closeAgendaTooltip = () => {
   return;
 }
 
-  const schedule = schedules.find((s: any) => s.id === pendingMove.scheduleId);
+  const schedule = schedules.find((s: any) =>
+  pendingMove.technicianId
+    ? String(s.technicianId) === String(pendingMove.technicianId)
+    : String(s.id) === String(pendingMove.scheduleId)
+);
 
   if (!schedule) {
     setToast({
@@ -1357,8 +1364,8 @@ const closeAgendaTooltip = () => {
   };
 
   const updatedSchedules = schedules.map((s: any) =>
-    s.id === pendingMove.scheduleId ? updatedSchedule : s
-  );
+  String(s.id) === String(schedule.id) ? updatedSchedule : s
+);
 
   dataService.setSchedules(updatedSchedules);
 
@@ -1583,6 +1590,16 @@ return (
                       key={idx} 
                       onClick={(e) => {
   if (movementMode) return;
+
+  if (pendingMove?.itemType === 'SCHEDULE' && pendingMove.technicianId) {
+    setPendingMove({
+      ...pendingMove,
+      toAnalystId: analyst.id,
+      toDateIso: date.iso
+    });
+    return;
+  }
+
   setSelection({
     userId: analyst.id,
     dateIso: date.iso,
@@ -2168,8 +2185,7 @@ onDrop={(e) => {
 
             {hoverTooltip?.visible && (
         <div
-          className="fixed z-[9999] pointer-events-none bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[300px] max-w-[380px] max-h-[420px] overflow-y-auto border border-white/10"
-          style={{
+className="fixed z-[9999] pointer-events-auto bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[300px] max-w-[380px] max-h-[420px] overflow-y-auto border border-white/10"          style={{
             left: hoverTooltip.x,
             top: hoverTooltip.y
           }}
@@ -2200,6 +2216,30 @@ onDrop={(e) => {
                       <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
                         {item.partner}
                       </div>
+                      <button
+  onClick={() => {
+    setPendingMove({
+      itemType: 'SCHEDULE',
+      scheduleId: item.scheduleId,
+      technicianId: item.technicianId,
+      technicianName: item.technician,
+      fromAnalystId: hoverTooltip.analystId,
+      fromDateIso: hoverTooltip.dateIso,
+      fromShift: hoverTooltip.shift === 'MORNING' ? Shift.MORNING : Shift.AFTERNOON,
+      toAnalystId: hoverTooltip.analystId,
+      toDateIso: hoverTooltip.dateIso
+    });
+
+    setHoverTooltip(null);
+    setToast({
+      message: 'Selecione a célula de destino para mover o técnico.',
+      type: 'success'
+    });
+  }}
+  className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white"
+>
+  Mover este técnico
+</button>
                     </div>
                   </div>
                 ))
