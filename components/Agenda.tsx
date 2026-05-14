@@ -1293,7 +1293,9 @@ const closeAgendaTooltip = () => {
   if (!pendingMove) return;
 
     if (pendingMove.itemType === 'EVENT') {
-  const event = events.find((e: any) => e.id === pendingMove.eventId);
+  const event = events.find(
+  (e: any) => String(e.id) === String(pendingMove.eventId)
+);
 
   if (!event) {
     setToast({
@@ -1305,16 +1307,17 @@ const closeAgendaTooltip = () => {
   }
 
   const updatedEvent = {
-    ...event,
-    involvedUserIds: [pendingMove.toAnalystId],
-    startDatetime: `${pendingMove.toDateIso}T00:00:00Z`,
-    endDatetime: `${pendingMove.toDateIso}T23:59:59Z`,
-    updatedAt: new Date().toISOString()
-  };
+  ...event,
+  involvedUserIds: [pendingMove.toAnalystId],
+  startDatetime: `${pendingMove.toDateIso}T00:00:00Z`,
+  endDatetime: `${pendingMove.toDateIso}T23:59:59Z`,
+  shift: event.shift || pendingMove.fromShift,
+  updatedAt: new Date().toISOString()
+};
 
   const updatedEvents = events.map((e: any) =>
-    e.id === pendingMove.eventId ? updatedEvent : e
-  );
+  String(e.id) === String(pendingMove.eventId) ? updatedEvent : e
+);
 
   dataService.setEvents(updatedEvents);
 
