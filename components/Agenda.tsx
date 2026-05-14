@@ -92,7 +92,9 @@ const getRegion = (user: any) => {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [movementMode, setMovementMode] = useState(false);
   const [pendingMove, setPendingMove] = useState<{
-  scheduleId: string;
+  itemType: 'SCHEDULE' | 'EVENT';
+  scheduleId?: string;
+  eventId?: string;
   technicianName: string;
   fromAnalystId: string;
   fromDateIso: string;
@@ -269,6 +271,8 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
     const scheduledCertificationId = String(t?.scheduledCertificationId ?? '');
     const certificationScheduleId = String(t?.certificationScheduleId ?? '');
 
+    
+
     return (
       (technicianId && tId === technicianId) ||
       (scheduleId && scheduledCertificationId === scheduleId) ||
@@ -290,6 +294,22 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
 
   return true;
 });
+
+    const startEventDrag = (
+  e: React.DragEvent<HTMLDivElement>,
+  event: EventSchedule
+) => {
+  if (!movementMode) return;
+
+  e.dataTransfer.setData('itemType', 'EVENT');
+  e.dataTransfer.setData('eventId', event.id);
+  e.dataTransfer.setData('technicianName', event.title || 'EVENTO');
+  e.dataTransfer.setData('fromAnalystId', userId);
+  e.dataTransfer.setData('fromDateIso', dateIso);
+  e.dataTransfer.setData('fromShift', String(event.shift));
+
+  setHoverTooltip(null);
+};
 
    const renderCard = (
   title: string,
@@ -344,7 +364,15 @@ else if (title.includes('ETN ') || title.includes('TREINAMENTO')) {
         .replace('OUTROS - ', '')
         .replace('IMPREVISTO - ', '');
 
-return renderCard(displayTitle, color);
+return (
+  <div
+    draggable={movementMode}
+    onDragStart={(e) => startEventDrag(e, fullDayBlock)}
+    className="w-full h-full"
+  >
+    {renderCard(displayTitle, color)}
+  </div>
+);
     }
 
     const morningBlock = dayBlocks.find(b => b.shift === Shift.MORNING);
@@ -357,19 +385,27 @@ return renderCard(displayTitle, color);
   <div className="flex flex-col h-full w-full overflow-hidden">
     <div className="flex-1 flex overflow-hidden border-b border-white/20">
       {morningBlock
-        ? renderCard(
-            morningBlock.title
-              .replace('OUTROS - ', '')
-              .replace('IMPREVISTO - ', ''),
-            morningBlock.color || (
-  morningBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
-  morningBlock.title.includes('FOLGA') ? COLORS.FOLGA :
-  morningBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
-  morningBlock.title.includes('OUTROS') ? COLORS.OUTROS :
-  (morningBlock.title.includes('ETN ') || morningBlock.title.includes('TREINAMENTO')) ? COLORS.OUTROS :
-  COLORS.BLOQUEIO
-)
-          )
+  ? (
+    <div
+      draggable={movementMode}
+      onDragStart={(e) => startEventDrag(e, morningBlock)}
+      className="w-full h-full"
+    >
+      {renderCard(
+        morningBlock.title
+          .replace('OUTROS - ', '')
+          .replace('IMPREVISTO - ', ''),
+        morningBlock.color || (
+          morningBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
+          morningBlock.title.includes('FOLGA') ? COLORS.FOLGA :
+          morningBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
+          morningBlock.title.includes('OUTROS') ? COLORS.OUTROS :
+          (morningBlock.title.includes('ETN ') || morningBlock.title.includes('TREINAMENTO')) ? COLORS.OUTROS :
+          COLORS.BLOQUEIO
+        )
+      )}
+    </div>
+  )
                 : morningSchs.length > 0
           ? (
             <div
@@ -378,6 +414,8 @@ return renderCard(displayTitle, color);
                 if (!movementMode) return;
 
                 const firstSchedule = morningSchs[0];
+
+                e.dataTransfer.setData('itemType', 'SCHEDULE');
 
                 e.dataTransfer.setData('scheduleId', firstSchedule.id);
                 e.dataTransfer.setData('technicianName', 'LOTE / BLOCO');
@@ -415,19 +453,27 @@ return renderCard(displayTitle, color);
 
         <div className="flex-1 flex overflow-hidden">
       {afternoonBlock
-        ? renderCard(
-            afternoonBlock.title
-              .replace('OUTROS - ', '')
-              .replace('IMPREVISTO - ', ''),
-            afternoonBlock.color || (
-              afternoonBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
-              afternoonBlock.title.includes('FOLGA') ? COLORS.FOLGA :
-              afternoonBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
-              afternoonBlock.title.includes('OUTROS') ? COLORS.OUTROS :
-              (afternoonBlock.title.includes('ETN ') || afternoonBlock.title.includes('TREINAMENTO')) ? COLORS.OUTROS :
-              COLORS.BLOQUEIO
-            )
-          )
+  ? (
+    <div
+      draggable={movementMode}
+      onDragStart={(e) => startEventDrag(e, afternoonBlock)}
+      className="w-full h-full"
+    >
+      {renderCard(
+        afternoonBlock.title
+          .replace('OUTROS - ', '')
+          .replace('IMPREVISTO - ', ''),
+        afternoonBlock.color || (
+          afternoonBlock.title.includes('FÉRIAS') ? COLORS.FERIAS :
+          afternoonBlock.title.includes('FOLGA') ? COLORS.FOLGA :
+          afternoonBlock.title.includes('IMPREVISTO') ? COLORS.IMPREVISTO :
+          afternoonBlock.title.includes('OUTROS') ? COLORS.OUTROS :
+          (afternoonBlock.title.includes('ETN ') || afternoonBlock.title.includes('TREINAMENTO')) ? COLORS.OUTROS :
+          COLORS.BLOQUEIO
+        )
+      )}
+    </div>
+  )
         : afternoonSchs.length > 0
           ? (
             <div
@@ -436,6 +482,8 @@ return renderCard(displayTitle, color);
                 if (!movementMode) return;
 
                 const firstSchedule = afternoonSchs[0];
+
+                e.dataTransfer.setData('itemType', 'SCHEDULE');
 
                 e.dataTransfer.setData('scheduleId', firstSchedule.id);
                 e.dataTransfer.setData('technicianName', 'LOTE / BLOCO');
@@ -1244,6 +1292,46 @@ const closeAgendaTooltip = () => {
   const confirmPendingMove = () => {
   if (!pendingMove) return;
 
+    if (pendingMove.itemType === 'EVENT') {
+  const event = events.find((e: any) => e.id === pendingMove.eventId);
+
+  if (!event) {
+    setToast({
+      message: 'Evento não encontrado para movimentação.',
+      type: 'error'
+    });
+    setPendingMove(null);
+    return;
+  }
+
+  const updatedEvent = {
+    ...event,
+    involvedUserIds: [pendingMove.toAnalystId],
+    startDatetime: `${pendingMove.toDateIso}T00:00:00Z`,
+    endDatetime: `${pendingMove.toDateIso}T23:59:59Z`,
+    updatedAt: new Date().toISOString()
+  };
+
+  const updatedEvents = events.map((e: any) =>
+    e.id === pendingMove.eventId ? updatedEvent : e
+  );
+
+  dataService.setEvents(updatedEvents);
+
+  setEvents(updatedEvents);
+  setHoverTooltip(null);
+  setPendingMove(null);
+
+  window.dispatchEvent(new Event('data-updated'));
+
+  setToast({
+    message: 'Evento movimentado com sucesso.',
+    type: 'success'
+  });
+
+  return;
+}
+
   const schedule = schedules.find((s: any) => s.id === pendingMove.scheduleId);
 
   if (!schedule) {
@@ -1516,16 +1604,25 @@ onDrop={(e) => {
 
   if (!scheduleId) return;
 
+  const itemType = (e.dataTransfer.getData('itemType') || 'SCHEDULE') as 'SCHEDULE' | 'EVENT';
+const eventId = e.dataTransfer.getData('eventId');
+
+if (itemType === 'SCHEDULE' && !scheduleId) return;
+if (itemType === 'EVENT' && !eventId) return;
+
   setPendingMove({
-    scheduleId,
-    technicianName,
-    fromAnalystId,
-    fromDateIso,
-    fromShift,
-    toAnalystId: analyst.id,
-    toDateIso: date.iso
-  });
+  itemType,
+  scheduleId: scheduleId || undefined,
+  eventId: eventId || undefined,
+  technicianName,
+  fromAnalystId,
+  fromDateIso,
+  fromShift,
+  toAnalystId: analyst.id,
+  toDateIso: date.iso
+});
 }}
+                      
                       className={`p-0 border-r overflow-hidden relative group h-16 transition-all ${
   movementMode
     ? (() => {
