@@ -611,6 +611,20 @@ this.analystMappings = [];
     const pool = this.testModeActive ? this.schedulesTeste : this.schedules;
     return pool.filter(s => s.groupId === this.getContext().groupId); 
   }
+  public setSchedules(newSchedules: CertificationSchedule[]) {
+  const ctx = this.getContext();
+
+  if (this.testModeActive) {
+    const otherGroups = this.schedulesTeste.filter(s => s.groupId !== ctx.groupId);
+    this.schedulesTeste = [...otherGroups, ...newSchedules];
+  } else {
+    const otherGroups = this.schedules.filter(s => s.groupId !== ctx.groupId);
+    this.schedules = [...otherGroups, ...newSchedules];
+  }
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+}
   getTechnicians() { return this.technicians.filter(t => t.groupId === this.getContext().groupId); }
   getTrainingClasses() { return this.trainingClasses.filter(c => c.groupId === this.getContext().groupId); }
   
