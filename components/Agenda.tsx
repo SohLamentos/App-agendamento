@@ -1318,54 +1318,51 @@ const closeAgendaTooltip = () => {
   const confirmPendingMove = () => {
   if (!pendingMove) return;
 
-    if (pendingMove.itemType === 'EVENT') {
-  const event = events.find(
-  (e: any) => String(e.id) === String(pendingMove.eventId)
-);
+  if (pendingMove.itemType === 'EVENT') {
+    const event = events.find(
+      (e: any) => String(e.id) === String(pendingMove.eventId)
+    );
 
-  if (!event) {
-    setToast({
-      message: 'Evento não encontrado para movimentação.',
-      type: 'error'
-    });
+    if (!event) {
+      setToast({
+        message: 'Evento não encontrado para movimentação.',
+        type: 'error'
+      });
+      setPendingMove(null);
+      return;
+    }
+
+    const updatedEvent = {
+      ...event,
+      involvedUserIds: [pendingMove.toAnalystId],
+      startDatetime: `${pendingMove.toDateIso}T00:00:00Z`,
+      endDatetime: `${pendingMove.toDateIso}T23:59:59Z`,
+      shift: event.shift || pendingMove.fromShift,
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedEvents = events.map((e: any) =>
+      String(e.id) === String(pendingMove.eventId) ? updatedEvent : e
+    );
+
+    dataService.setEvents(updatedEvents);
+    setEvents(dataService.getEvents());
+    setHoverTooltip(null);
     setPendingMove(null);
+
+    setToast({
+      message: 'Evento movimentado com sucesso.',
+      type: 'success'
+    });
+
     return;
   }
 
-  const updatedEvent = {
-  ...event,
-  involvedUserIds: [pendingMove.toAnalystId],
-  startDatetime: `${pendingMove.toDateIso}T00:00:00Z`,
-  endDatetime: `${pendingMove.toDateIso}T23:59:59Z`,
-  shift: event.shift || pendingMove.fromShift,
-  updatedAt: new Date().toISOString()
-};
-
-  const updatedEvents = events.map((e: any) =>
-  String(e.id) === String(pendingMove.eventId) ? updatedEvent : e
-);
-
-  dataService.setEvents(updatedEvents);
-
-  setEvents(updatedEvents);
-  setHoverTooltip(null);
-  setPendingMove(null);
-
-  window.dispatchEvent(new Event('data-updated'));
-
-  setToast({
-    message: 'Evento movimentado com sucesso.',
-    type: 'success'
-  });
-
-  return;
-}
-
   const schedule = schedules.find((s: any) =>
-  pendingMove.technicianId
-    ? String(s.technicianId) === String(pendingMove.technicianId)
-    : String(s.id) === String(pendingMove.scheduleId)
-);
+    pendingMove.technicianId
+      ? String(s.technicianId) === String(pendingMove.technicianId)
+      : String(s.id) === String(pendingMove.scheduleId)
+  );
 
   if (!schedule) {
     setToast({
@@ -1379,24 +1376,22 @@ const closeAgendaTooltip = () => {
   const targetDate = pendingMove.toDateIso;
   const originalTime = String(schedule.datetime || '').split('T')[1] || '09:00:00Z';
 
-  const updatedSchedule = {
-    ...schedule,
+  const result = dataService.updateScheduleById(schedule.id, {
     analystId: pendingMove.toAnalystId,
-    datetime: `${targetDate}T${originalTime}`,
-    updatedAt: new Date().toISOString()
-  };
+    datetime: `${targetDate}T${originalTime}`
+  });
 
-  const updatedSchedules = schedules.map((s: any) =>
-  String(s.id) === String(schedule.id) ? updatedSchedule : s
-);
+  if (!result.success) {
+    setToast({
+      message: result.message || 'Erro ao movimentar agendamento.',
+      type: 'error'
+    });
+    return;
+  }
 
-  dataService.setSchedules(updatedSchedules);
-
-  setSchedules(updatedSchedules);
+  setSchedules(dataService.getSchedules());
   setHoverTooltip(null);
   setPendingMove(null);
-
-  window.dispatchEvent(new Event('data-updated'));
 
   setToast({
     message: 'Movimentação salva com sucesso.',
@@ -1418,24 +1413,23 @@ const closeAgendaTooltip = () => {
 
   const originalTime = String(schedule.datetime || '').split('T')[1] || '09:00:00Z';
 
-  const updatedSchedule = {
-    ...schedule,
+  const result = dataService.updateScheduleById(scheduleId, {
     analystId: splitMove.targetAnalystId,
-    datetime: `${splitMove.targetDateIso}T${originalTime}`,
-    updatedAt: new Date().toISOString()
-  };
+    datetime: `${splitMove.targetDateIso}T${originalTime}`
+  });
 
-  const updatedSchedules = schedules.map((s: any) =>
-    String(s.id) === String(scheduleId) ? updatedSchedule : s
-  );
+  if (!result.success) {
+    setToast({
+      message: result.message || 'Erro ao movimentar técnico.',
+      type: 'error'
+    });
+    return;
+  }
 
-  dataService.setSchedules(updatedSchedules);
-  setSchedules(updatedSchedules);
+  setSchedules(dataService.getSchedules());
   setMovedScheduleIds(prev => [...prev, String(scheduleId)]);
   setSplitMove(prev => prev ? { ...prev } : null);
   setHoverTooltip(null);
-
-  window.dispatchEvent(new Event('data-updated'));
 
   setToast({
     message: 'Técnico movimentado.',
