@@ -302,7 +302,7 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
   if (!movementMode) return;
 
   e.dataTransfer.setData('itemType', 'EVENT');
-  e.dataTransfer.setData('eventId', event.id);
+  e.dataTransfer.setData('eventId', String(event.id || ''));
   e.dataTransfer.setData('technicianName', event.title || 'EVENTO');
   e.dataTransfer.setData('fromAnalystId', userId);
   e.dataTransfer.setData('fromDateIso', dateIso);
@@ -1605,9 +1605,16 @@ onDrop={(e) => {
   if (!scheduleId) return;
 
   const itemType = (e.dataTransfer.getData('itemType') || 'SCHEDULE') as 'SCHEDULE' | 'EVENT';
-const eventId = e.dataTransfer.getData('eventId');
+const eventId = String(
+  e.dataTransfer.getData('eventId') || ''
+).trim();
 
 if (itemType === 'SCHEDULE' && !scheduleId) return;
+  console.log('DROP EVENT DEBUG', {
+  itemType,
+  eventId,
+  scheduleId
+});
 if (itemType === 'EVENT' && !eventId) return;
 
   setPendingMove({
