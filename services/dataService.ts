@@ -608,13 +608,41 @@ this.analystMappings = [];
   getCities() { return [...this.cities]; }
   getEvents() { return this.events.filter(e => e.groupId === this.getContext().groupId); }
   public setEvents(newEvents: EventSchedule[]) {
+  console.warn(
+    'setEvents(listaInteira) ignorado para evitar perda de eventos em ambiente multiusuário.'
+  );
+
+  window.dispatchEvent(new Event('data-updated'));
+
+  return {
+    success: false,
+    message: 'Atualização em massa de eventos bloqueada. Use updateEventById.'
+  };
+}
+
+public updateEventById(eventId: string, patch: Partial<EventSchedule>) {
   const ctx = this.getContext();
 
-  const otherGroups = this.events.filter(e => e.groupId !== ctx.groupId);
-  this.events = [...otherGroups, ...newEvents];
+  const index = this.events.findIndex(
+    e => String(e.id) === String(eventId) && e.groupId === ctx.groupId
+  );
+
+  if (index === -1) {
+    return { success: false, message: 'Evento não encontrado.' };
+  }
+
+  this.events[index] = {
+    ...this.events[index],
+    ...patch,
+    id: this.events[index].id,
+    groupId: this.events[index].groupId,
+    updatedAt: new Date().toISOString()
+  } as any;
 
   this.persist();
   window.dispatchEvent(new Event('data-updated'));
+
+  return { success: true };
 }
   getSchedules() { 
     const pool = this.testModeActive ? this.schedulesTeste : this.schedules;
