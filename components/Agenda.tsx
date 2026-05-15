@@ -590,6 +590,53 @@ startScheduleTransport(userId, dateIso, firstSchedule);
     reader.readAsArrayBuffer(file);
   };
 
+  const exportSharePointAgenda = () => {
+  const rows = schedules
+    .filter((s: any) =>
+      s.status !== ScheduleStatus.CANCELLED &&
+      s.status !== 'CANCELLED' &&
+      s.status !== 'CANCELADO' &&
+      s.status !== 'CANCELADOS (ANALISTA)'
+    )
+    .map((s: any) => {
+      const analyst = analysts.find(a => String(a.id) === String(s.analystId));
+
+      const tech = technicians.find((t: any) =>
+        String(t.id) === String(s.technicianId) ||
+        String(t.scheduledCertificationId) === String(s.id) ||
+        String(t.certificationScheduleId) === String(s.id)
+      );
+
+      const dateIso = String(s.datetime || '').split('T')[0];
+      const time = String(s.datetime || '').split('T')[1]?.replace('Z', '').slice(0, 5) || '';
+
+      const tipo =
+        s.type === ExpertiseType.VIRTUAL
+          ? 'VIRTUAL'
+          : 'PRESENCIAL';
+
+      return {
+        STATUS: 'AGENDADO',
+        ANALISTA: analyst?.normalizedLogin || s.analystName || s.analystId || '',
+        DATA: formatDateBR(dateIso),
+        'PROVA TEÓRICA': time,
+        'PROVA PRÁTICA': '',
+        TÉCNICO: tech?.name || tech?.fullName || s.technicianName || '',
+        EMPRESA: tech?.companyPartner || tech?.company || s.company || '',
+        CIDADE: `${tech?.city || s.city || ''}${tech?.state || s.state ? ' / ' + (tech?.state || s.state) : ''}`,
+        TIPO: tipo,
+        OBSERVAÇÃO: ''
+      };
+    });
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'SHAREPOINT_RAW');
+
+  XLSX.writeFile(workbook, `Agenda_SharePoint_${new Date().toISOString().slice(0, 10)}.xlsx`);
+};
+
   const handleImportProductionAgenda = (rawData: any[][]) => {
   const inserted = dataService.importProductionSchedules(rawData);
   setToast({
@@ -1650,6 +1697,12 @@ return (
         >
           Limpar Produção
         </button>
+        <button
+  onClick={exportSharePointAgenda}
+  className="bg-emerald-700 text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
+>
+  Exportar SharePoint
+</button>
       </>
     )}
   </div>
