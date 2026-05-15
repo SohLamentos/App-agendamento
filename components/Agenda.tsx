@@ -1566,7 +1566,7 @@ setHoverTooltip(null);
 return (
 
 
-    <div className="flex flex-col space-y-6 h-full relative">
+    <div className="flex flex-col space-y-3 h-full relative">
        {toast && (
         <div className={`fixed top-10 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-right-10 duration-300 ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
           {toast.message}
@@ -1606,7 +1606,7 @@ return (
   }}
 />
 
- <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm gap-4">
+ <div className="flex flex-col md:flex-row justify-between items-center bg-white px-5 py-3 rounded-[24px] border border-slate-200 shadow-sm gap-3">
   <div className="flex items-center space-x-4">
     <div className="flex bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
       <button onClick={() => navigateWeek(-1)} className="p-3 hover:bg-slate-200 border-r border-slate-100">
@@ -1709,7 +1709,7 @@ return (
         setSelection(null);
         setHoverTooltip(null);
       }}
-      className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest ${
+      className={`px-4 py-1.5 rounded-2xl text-[9px] font-black uppercase shadow-lg tracking-widest ${
         movementMode
           ? 'bg-emerald-600 text-white'
           : 'bg-slate-900 text-white'
@@ -1785,9 +1785,9 @@ return (
           <tbody>
             {analysts.map((analyst, aIdx) => (
               <React.Fragment key={analyst.id}>
-                <tr className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-16 transition-colors`}>
-                  <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-16">
-                    <div className="flex items-center p-4 h-full">
+                <tr className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-12 transition-colors`}>
+                  <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-12">
+                    <div className="flex items-center px-3 py-2 h-full">
                       <span className={`w-1.5 h-8 mr-4 rounded-full ${aIdx % 2 === 0 ? 'bg-claro-red' : 'bg-slate-900'}`}></span>
                       <p className="font-black text-[11px] uppercase truncate">{analyst.normalizedLogin}</p>
                     </div>
