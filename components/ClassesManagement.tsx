@@ -859,8 +859,20 @@ const summary = {
   INABILITADO: 0
 };
 
+const nomeIdx = headers.findIndex(h => h === 'NOME');
+const cpfIdx = headers.findIndex(h => h === 'CPF');
+const loginIdx = headers.findIndex(h => h === 'LOGIN TOA');
+
 rawData.slice(1).forEach(row => {
   if (!row || row.every(cell => String(cell ?? '').trim() === '')) return;
+
+  const nome = nomeIdx >= 0 ? String(row[nomeIdx] ?? '').trim() : '';
+  const cpf = cpfIdx >= 0 ? String(row[cpfIdx] ?? '').replace(/\D/g, '').trim() : '';
+  const login = loginIdx >= 0 ? String(row[loginIdx] ?? '').trim() : '';
+
+  // Só conta linha que realmente parece ser técnico
+  // Evita contar linhas auxiliares da coluna "OPÇÕES PARA RESULTADO IMPORTAÇÃO"
+  if (!nome && !cpf && !login) return;
 
   const outcome =
     outcomeIdx >= 0
