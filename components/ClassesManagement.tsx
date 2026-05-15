@@ -419,7 +419,7 @@ flatItems
       item.analystName,
       item.dateLabel,
       index + 1,
-      item.className,
+      item.trainingClassName || item.className || item.turma || item.trainingClass || '',
       item.technician,
       item.company,
       item.city,
