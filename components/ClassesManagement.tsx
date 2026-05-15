@@ -430,7 +430,7 @@ flatItems
   });
 
     const rowsByRequester: any[][] = [
-  ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'PÚBLICO', 'SOLICITANTE', 'EMPRESA', 'CIDADE', 'TIPO', 'BASE']
+  ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'SOLICITANTE', 'EMPRESA', 'CIDADE', 'TIPO', 'BASE']
 ];
 
     const groupedByRequesterDate: Record<string, any[]> = {};
@@ -468,7 +468,6 @@ flatItems
             item.provaPratica,
             item.analystName,
             item.technician,
-            item.publico,
             item.solicitante,
             item.company,
             item.city,
