@@ -74,6 +74,44 @@ const App: React.FC = () => {
     return () => window.removeEventListener('data-updated', handleUpdate);
   }, []);
 
+  useEffect(() => {
+  let warningTimer: ReturnType<typeof setTimeout>;
+  let reloadTimer: ReturnType<typeof setTimeout>;
+
+  const resetInactivityTimers = () => {
+    clearTimeout(warningTimer);
+    clearTimeout(reloadTimer);
+
+    warningTimer = setTimeout(() => {
+      alert(
+        'Sua tela ficou parada por muito tempo. Os dados serão sincronizados para evitar perda de agendamentos.'
+      );
+    }, 20 * 60 * 1000);
+
+    reloadTimer = setTimeout(async () => {
+      await dataService.initializeFromCloud();
+      window.dispatchEvent(new Event('data-updated'));
+    }, 30 * 60 * 1000);
+  };
+
+  const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+  events.forEach(event =>
+    window.addEventListener(event, resetInactivityTimers)
+  );
+
+  resetInactivityTimers();
+
+  return () => {
+    clearTimeout(warningTimer);
+    clearTimeout(reloadTimer);
+
+    events.forEach(event =>
+      window.removeEventListener(event, resetInactivityTimers)
+    );
+  };
+}, []);
+
   if (isInitializing) {
     return <div>Carregando...</div>;
   }
