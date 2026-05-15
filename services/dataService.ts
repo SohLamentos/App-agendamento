@@ -2937,10 +2937,20 @@ return { success: true };
   }
 
   public removeEvent(userId: string, dateIso: string) {
-    this.events = this.events.filter(e => !(e.involvedUserIds.includes(userId) && e.startDatetime.startsWith(dateIso)));
-    this.persist();
-    window.dispatchEvent(new Event('data-updated'));
-  }
+  this.events = this.events.filter(
+    e =>
+      !(
+        e.involvedUserIds.includes(userId) &&
+        e.startDatetime.startsWith(dateIso)
+      )
+  );
+
+  this.persist({
+    allowEventDeletion: true
+  });
+
+  window.dispatchEvent(new Event('data-updated'));
+}
 
   public addEventRange(userId: string, start: string, end: string, title: string, type: any) {
     let curr = new Date(start + 'T00:00:00');
@@ -3321,7 +3331,15 @@ public getUnconfiguredCities() {
   window.dispatchEvent(new Event('data-updated'));
   return count;
 }
-  public clearTestSchedules() { this.schedulesTeste = []; this.persist(); window.dispatchEvent(new Event('data-updated')); }
+  public clearTestSchedules() {
+  this.schedulesTeste = [];
+
+  this.persist({
+    allowScheduleDeletion: true
+  });
+
+  window.dispatchEvent(new Event('data-updated'));
+}
   public clearProductionSchedules() {
   const ctx = this.getContext();
   const currentUser = this.getCurrentUser();
@@ -3330,7 +3348,9 @@ public getUnconfiguredCities() {
     s => !(s.groupId === ctx.groupId && s.availabilitySlotId === 'prod-import')
   );
 
-  this.persist();
+  this.persist({
+  allowScheduleDeletion: true
+});
 
   auditService.logTicket({
     user: currentUser,
