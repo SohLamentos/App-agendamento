@@ -1430,7 +1430,8 @@ return;
   }
 
   const targetDate = pendingMove.toDateIso;
-  const originalTime = String(schedule.datetime || '').split('T')[1] || '09:00:00Z';
+  const rawTime = String(schedule.datetime || '').split('T')[1] || '09:00:00';
+const originalTime = rawTime.replace('Z', '');
 
   const result = dataService.updateScheduleById(schedule.id, {
     analystId: pendingMove.toAnalystId,
@@ -1467,7 +1468,8 @@ return;
     return;
   }
 
-  const originalTime = String(schedule.datetime || '').split('T')[1] || '09:00:00Z';
+  const rawTime = String(schedule.datetime || '').split('T')[1] || '09:00:00';
+const originalTime = rawTime.replace('Z', '');
 
   const result = dataService.updateScheduleById(scheduleId, {
     analystId: splitMove.targetAnalystId,
