@@ -1606,20 +1606,20 @@ return (
   }}
 />
 
- <div className="flex flex-col md:flex-row justify-between items-center bg-white px-5 py-3 rounded-[24px] border border-slate-200 shadow-sm gap-3">
+ <div className="flex flex-col md:flex-row justify-between items-center bg-white px-4 py-2 rounded-[20px] border border-slate-200 shadow-sm gap-3">
   <div className="flex items-center space-x-4">
     <div className="flex bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-      <button onClick={() => navigateWeek(-1)} className="p-3 hover:bg-slate-200 border-r border-slate-100">
+      <button onClick={() => navigateWeek(-1)} className="p-2 hover:bg-slate-200 border-r border-slate-100">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
 
-      <div className="px-8 py-3 text-[10px] font-black text-slate-900 uppercase min-w-[220px] text-center tracking-widest">
+      <div className="px-6 py-2 text-[10px] font-black text-slate-900 uppercase min-w-[220px] text-center tracking-widest">
         {weekDates[0].iso.split('-').reverse().slice(0,2).join('/')} — {weekDates[4].iso.split('-').reverse().slice(0,2).join('/')}
       </div>
 
-      <button onClick={() => navigateWeek(1)} className="p-3 hover:bg-slate-200 border-l border-slate-100">
+      <button onClick={() => navigateWeek(1)} className="p-2 hover:bg-slate-200 border-l border-slate-100">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
         </svg>
@@ -1729,7 +1729,7 @@ return (
 )}
 </div>
 
-<div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-y-auto overflow-x-auto flex-1 relative no-scrollbar transition-colors max-h-[calc(100vh-220px)] ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>      
+<div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-y-auto overflow-x-auto flex-1 relative no-scrollbar transition-colors max-h-[calc(100vh-170px)] ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>      
   {isTestMode && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] bg-amber-500 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">Visualizando Ambiente de Teste</div>
         )}
