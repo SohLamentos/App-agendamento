@@ -399,6 +399,38 @@ const refreshData = () => {
         }
       });
 
+    const rowsSharePoint: any[][] = [
+  ['STATUS', 'ANALISTA', 'DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'TÉCNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'BASE', 'ENDEREÇO', 'OBSERVAÇÃO']
+];
+
+flatItems
+  .slice()
+  .sort((a, b) => {
+    const dateDiff = String(a.dateOnly).localeCompare(String(b.dateOnly));
+    if (dateDiff !== 0) return dateDiff;
+
+    const analystDiff = String(a.analystName).localeCompare(String(b.analystName));
+    if (analystDiff !== 0) return analystDiff;
+
+    return String(a.technician).localeCompare(String(b.technician));
+  })
+  .forEach((item) => {
+    rowsSharePoint.push([
+      'AGENDADO',
+      item.analystName,
+      item.dateLabel,
+      item.provaTeorica,
+      item.provaPratica,
+      item.technician,
+      item.company,
+      item.city,
+      item.type,
+      item.baseName,
+      item.baseAddress,
+      ''
+    ]);
+  });
+
     const rowsByRequester: any[][] = [
       ['DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'ANALISTA', 'TÉCNICO', 'PÚBLICO', 'SOLICITANTE', 'EMPRESA', 'CIDADE', 'TIPO', 'BASE', 'ENDEREÇO']
     ];
@@ -454,8 +486,9 @@ const refreshData = () => {
       });
 
     const wsByAnalyst = XLSX.utils.aoa_to_sheet(rowsByAnalyst);
-    const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
-    const wsByRequester = XLSX.utils.aoa_to_sheet(rowsByRequester);
+const wsByDay = XLSX.utils.aoa_to_sheet(rowsByDay);
+const wsSharePoint = XLSX.utils.aoa_to_sheet(rowsSharePoint);
+const wsByRequester = XLSX.utils.aoa_to_sheet(rowsByRequester);
 
     wsByAnalyst['!cols'] = [
       { wch: 24 },
@@ -508,20 +541,20 @@ const refreshData = () => {
       { wch: 40 }
     ];
 
-    wsByRequester['!cols'] = [
-      { wch: 12 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 24 },
-      { wch: 34 },
-      { wch: 18 },
-      { wch: 24 },
-      { wch: 18 },
-      { wch: 22 },
-      { wch: 14 },
-      { wch: 26 },
-      { wch: 40 }
-    ];
+    wsSharePoint['!cols'] = [
+  { wch: 14 },
+  { wch: 24 },
+  { wch: 12 },
+  { wch: 16 },
+  { wch: 16 },
+  { wch: 36 },
+  { wch: 18 },
+  { wch: 22 },
+  { wch: 14 },
+  { wch: 26 },
+  { wch: 40 },
+  { wch: 30 }
+];
 
     const applySheetStyle = (ws: XLSX.WorkSheet) => {
       if (!ws['!ref']) return;
@@ -552,13 +585,15 @@ const refreshData = () => {
     };
 
     applySheetStyle(wsByAnalyst);
-    applySheetStyle(wsByDay);
-    applySheetStyle(wsByRequester);
+applySheetStyle(wsByDay);
+applySheetStyle(wsSharePoint);
+applySheetStyle(wsByRequester);
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, wsByAnalyst, 'Por Analista');
-    XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
-    XLSX.utils.book_append_sheet(wb, wsByRequester, 'Por Solicitante');
+XLSX.utils.book_append_sheet(wb, wsByDay, 'Operacional');
+XLSX.utils.book_append_sheet(wb, wsSharePoint, 'SharePoint');
+XLSX.utils.book_append_sheet(wb, wsByRequester, 'Por Solicitante');
 
     const today = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `Agendados_${today}.xlsx`);
