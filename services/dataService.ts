@@ -2988,32 +2988,40 @@ private getRowStringValue(row: any[], index: number): string {
 }
 
   private processCpfValue(value: any): { cpf: string | null; error?: string } {
-    if (value === null || value === undefined || Number.isNaN(value)) {
-      return { cpf: null, error: "CPF não encontrado" };
-    }
-    const s = String(value).trim();
-    if (s === "") {
-      return { cpf: null, error: "CPF não encontrado" };
-    }
-
-    // Remover não numéricos
-    const clean = s.replace(/\D/g, "");
-    
-    // Validar tamanho
-    if (clean.length < 9) {
-      return { cpf: null, error: "CPF inválido (tamanho insuficiente)" };
-    }
-
-    // Aplicar padStart(11)
-    const padded = clean.padStart(11, "0");
-
-    // Proteção contra 00000000000
-    if (padded === "00000000000") {
-      return { cpf: null, error: "CPF inválido (sequência zerada)" };
-    }
-
-    return { cpf: padded };
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return { cpf: null, error: "CPF não encontrado" };
   }
+
+  const s = String(value).trim();
+
+  if (s === "") {
+    return { cpf: null, error: "CPF não encontrado" };
+  }
+
+  const clean = s.replace(/\D/g, "");
+
+  if (!clean) {
+    return { cpf: null, error: "CPF não encontrado" };
+  }
+
+  // ACEITA CPF QUE VEIO DO EXCEL SEM ZEROS À ESQUERDA
+  // Ex: 59546069 -> 00059546069
+  if (clean.length < 8) {
+    return { cpf: null, error: "CPF inválido (tamanho insuficiente)" };
+  }
+
+  if (clean.length > 11) {
+    return { cpf: null, error: "CPF inválido (mais de 11 dígitos)" };
+  }
+
+  const padded = clean.padStart(11, "0");
+
+  if (padded === "00000000000") {
+    return { cpf: null, error: "CPF inválido (sequência zerada)" };
+  }
+
+  return { cpf: padded };
+}
 
     public updateCompaniesFromSpreadsheet(raw: any[][]) {
   let updated = 0;
