@@ -3745,16 +3745,21 @@ if (cleanCpf.length !== 11) {
   requiresCert: classObj.requiresCert
 });
 
-      console.log('[IMPORT CONFIRMADO]', {
+this.technicians.push(newTech);
+inserted++;
+
+console.log('[IMPORT CONFIRMADO]', {
   totalTechnicians: this.technicians.length,
   tecnicoInserido: this.technicians.find(t => t.cpf === cleanCpf)
 });
 
-    this.persist();
-    window.dispatchEvent(new Event('data-updated'));
+}); // fecha o rawData.slice(1).forEach
 
-        return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors };
-  }
+this.persist();
+window.dispatchEvent(new Event('data-updated'));
+
+return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors };
+}
 
   public reproveScheduledTechnician(params: {
     techId: string;
