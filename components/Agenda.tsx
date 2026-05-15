@@ -1566,7 +1566,7 @@ setHoverTooltip(null);
 return (
 
 
-    <div className="flex flex-col space-y-0,5 h-full relative">
+    <div className="flex flex-col gap-1 h-full relative -mt-6">
        {toast && (
         <div className={`fixed top-10 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-right-10 duration-300 ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
           {toast.message}
