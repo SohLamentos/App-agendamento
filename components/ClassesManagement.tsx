@@ -400,7 +400,7 @@ const refreshData = () => {
       });
 
     const rowsSharePoint: any[][] = [
-  ['STATUS', 'ANALISTA', 'DATA', 'PROVA TEÓRICA', 'PROVA PRÁTICA', 'TÉCNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'BASE', 'ENDEREÇO', 'OBSERVAÇÃO']
+  ['ANALISTA', 'DATA', 'NÚMERO', 'TURMA', 'TECNICO', 'EMPRESA', 'CIDADE', 'TIPO', 'PROVA TEÓRICA', 'PROVA PRÁTICA']
 ];
 
 flatItems
@@ -414,20 +414,18 @@ flatItems
 
     return String(a.technician).localeCompare(String(b.technician));
   })
-  .forEach((item) => {
+  .forEach((item, index) => {
     rowsSharePoint.push([
-      'AGENDADO',
       item.analystName,
       item.dateLabel,
-      item.provaTeorica,
-      item.provaPratica,
+      index + 1,
+      item.className,
       item.technician,
       item.company,
       item.city,
       item.type,
-      item.baseName,
-      item.baseAddress,
-      ''
+      item.provaTeorica,
+      item.provaPratica
     ]);
   });
 
@@ -542,18 +540,16 @@ const wsByRequester = XLSX.utils.aoa_to_sheet(rowsByRequester);
     ];
 
     wsSharePoint['!cols'] = [
-  { wch: 14 },
   { wch: 24 },
   { wch: 12 },
-  { wch: 16 },
-  { wch: 16 },
+  { wch: 10 },
+  { wch: 30 },
   { wch: 36 },
   { wch: 18 },
-  { wch: 22 },
+  { wch: 24 },
   { wch: 14 },
-  { wch: 26 },
-  { wch: 40 },
-  { wch: 30 }
+  { wch: 16 },
+  { wch: 16 }
 ];
 
     const applySheetStyle = (ws: XLSX.WorkSheet) => {
