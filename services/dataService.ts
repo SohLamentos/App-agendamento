@@ -2125,13 +2125,13 @@ const simulations = allowedAnalysts.map((analyst, index) => ({
   analyst,
   orderIndex: index,
   result: simulateLotCapacityForAnalyst(
-    analyst,
-    targetType,
-    businessDays,
-    targetType === ExpertiseType.PRESENTIAL ? 7 / 2 : limitPerShift,
-    lotSize,
-    lotRoutingMatch.base?.id
-  )
+  analyst,
+  targetType,
+  businessDays,
+  limitPerShift,
+  lotSize,
+  lotRoutingMatch.base?.id
+)
 }));
 
 const safeDate = (value: string | null | undefined) => value || '9999-12-31';
