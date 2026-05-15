@@ -1698,11 +1698,7 @@ return (
           Limpar Produção
         </button>
         <button
-  onClick={exportSharePointAgenda}
-  className="bg-emerald-700 text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
->
-  Exportar SharePoint
-</button>
+  
       </>
     )}
   </div>
