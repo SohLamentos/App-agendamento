@@ -111,6 +111,7 @@ const getRegion = (user: any) => {
   sourceModality: string;
   targetAnalystId: string;
   targetDateIso: string;
+  targetShift: Shift;
   rect: DOMRect;
 } | null>(null);
 
@@ -1306,6 +1307,14 @@ const moveAgendaTooltip = (e: React.MouseEvent) => {
 const closeAgendaTooltip = () => {
   setHoverTooltip(null);
 };
+  const getTargetShiftFromCell = (
+  e: React.MouseEvent<HTMLTableCellElement> | React.DragEvent<HTMLTableCellElement>
+): Shift => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const relativeY = e.clientY - rect.top;
+
+  return relativeY <= rect.height / 2 ? Shift.MORNING : Shift.AFTERNOON;
+};
 
 const startScheduleTransport = (
   sourceAnalystId: string,
@@ -1468,12 +1477,24 @@ const originalTime = rawTime.replace('Z', '');
     return;
   }
 
-  const rawTime = String(schedule.datetime || '').split('T')[1] || '09:00:00';
-const originalTime = rawTime.replace('Z', '');
+  const modality =
+  schedule.type === ExpertiseType.VIRTUAL
+    ? 'VIRTUAL'
+    : 'PRESENCIAL';
+
+const targetTime =
+  modality === 'VIRTUAL'
+    ? splitMove.targetShift === Shift.MORNING
+      ? '09:30:00'
+      : '14:30:00'
+    : splitMove.targetShift === Shift.MORNING
+      ? '09:00:00'
+      : '14:00:00';
 
   const result = dataService.updateScheduleById(scheduleId, {
     analystId: splitMove.targetAnalystId,
-    datetime: `${splitMove.targetDateIso}T${originalTime}`
+    datetime: `${splitMove.targetDateIso}T${targetTime}`,
+shift: splitMove.targetShift
   });
 
   if (!result.success) {
@@ -1742,7 +1763,8 @@ return (
         sourceModality: transportingMove.sourceModality || 'VIRTUAL',
         targetAnalystId: analyst.id,
         targetDateIso: date.iso,
-        rect: e.currentTarget.getBoundingClientRect()
+targetShift: getTargetShiftFromCell(e),
+rect: e.currentTarget.getBoundingClientRect()
       });
 
       return;
@@ -1815,7 +1837,8 @@ if (itemType === 'SCHEDULE') {
     sourceModality: fromModality,
     targetAnalystId: analyst.id,
     targetDateIso: date.iso,
-    rect: e.currentTarget.getBoundingClientRect()
+targetShift: getTargetShiftFromCell(e),
+rect: e.currentTarget.getBoundingClientRect()
   });
 
   setHoverTooltip(null);
