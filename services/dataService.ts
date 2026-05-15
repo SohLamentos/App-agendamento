@@ -3644,15 +3644,26 @@ externalClassId: (params as any).externalClassId || '',
       );
 
       if (!cleanCpf) {
-        errors.push({
-          line: index + 2,
-          field: 'CPF',
-          reason: cpfError || 'CPF inválido',
-          value: cpfIdx !== -1 ? row[cpfIdx] : null
-        });
-        ignored++;
-        return;
-      }
+  errors.push({
+    line: index + 2,
+    field: 'CPF',
+    reason: cpfError || 'CPF inválido',
+    value: cpfIdx !== -1 ? row[cpfIdx] : null
+  });
+  ignored++;
+  return;
+}
+
+if (cleanCpf.length !== 11) {
+  errors.push({
+    line: index + 2,
+    field: 'CPF',
+    reason: `CPF não ficou com 11 dígitos após tratamento: ${cleanCpf}`,
+    value: cpfIdx !== -1 ? row[cpfIdx] : null
+  });
+  ignored++;
+  return;
+}
 
       const existingSameClass = this.technicians.find(
         t =>
@@ -3718,10 +3729,26 @@ externalClassId: (params as any).externalClassId || '',
   importedOutcome,
   obs
 );
+      console.log('[IMPORT TECNICO]', {
+  linha: index + 2,
+  nome,
+  cpfOriginal: cpfIdx !== -1 ? row[cpfIdx] : null,
+  cpfTratado: cleanCpf,
+  cidade,
+  estado,
+  empresaParceiro,
+  solicitante,
+  importedOutcome,
+  status_principal: newTech.status_principal,
+  certificationProcessStatus: newTech.certificationProcessStatus,
+  trainingClassId: classObj.id,
+  requiresCert: classObj.requiresCert
+});
 
-      this.technicians.push(newTech);
-      inserted++;
-    });
+      console.log('[IMPORT CONFIRMADO]', {
+  totalTechnicians: this.technicians.length,
+  tecnicoInserido: this.technicians.find(t => t.cpf === cleanCpf)
+});
 
     this.persist();
     window.dispatchEvent(new Event('data-updated'));
