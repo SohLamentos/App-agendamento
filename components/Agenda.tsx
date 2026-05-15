@@ -1566,7 +1566,7 @@ setHoverTooltip(null);
 return (
 
 
-    <div className="flex flex-col space-y-3 h-full relative">
+    <div className="flex flex-col space-y-0,5 h-full relative">
        {toast && (
         <div className={`fixed top-10 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-right-10 duration-300 ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
           {toast.message}
@@ -1606,7 +1606,7 @@ return (
   }}
 />
 
- <div className="flex flex-col md:flex-row justify-between items-center bg-white px-4 py-2 rounded-[20px] border border-slate-200 shadow-sm gap-3">
+ <div className="flex flex-col md:flex-row justify-between items-center bg-white px-2 py-1 rounded-[12px] border border-slate-200 shadow-sm gap-1">
   <div className="flex items-center space-x-4">
     <div className="flex bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
       <button onClick={() => navigateWeek(-1)} className="p-2 hover:bg-slate-200 border-r border-slate-100">
@@ -1646,14 +1646,14 @@ return (
           <>
             <button
               onClick={() => dataService.downloadTestTemplate()}
-              className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
+              className="bg-slate-900 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
             >
               Modelo Teste
             </button>
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="bg-amber-600 text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
+              className="bg-amber-600 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
             >
               Importar Teste
             </button>
@@ -1665,7 +1665,7 @@ return (
                   setToast({ message: 'Agenda de teste removida!', type: 'success' });
                 }
               }}
-              className="bg-rose-600 text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
+              className="bg-rose-600 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
             >
               Limpar Teste
             </button>
@@ -1674,14 +1674,14 @@ return (
 
         <button
           onClick={() => dataService.downloadTestTemplate()}
-          className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
+          className="bg-slate-900 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
         >
           Modelo Produção
         </button>
 
         <button
           onClick={() => productionAgendaInputRef.current?.click()}
-          className="bg-claro-red text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
+          className="bg-claro-red text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
         >
           Importar Produção
         </button>
@@ -1693,7 +1693,7 @@ return (
               setToast({ message: 'Agenda importada em produção removida!', type: 'success' });
             }
           }}
-          className="bg-rose-600 text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
+          className="bg-rose-600 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
         >
           Limpar Produção
         </button>
@@ -1720,7 +1720,7 @@ return (
 
     <button
       onClick={() => setIsRangeModalOpen(true)}
-      className="bg-claro-red text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest"
+      className="bg-claro-red text-white px-6 py-1 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest"
     >
       Bloqueio Lote
     </button>
@@ -1729,19 +1729,19 @@ return (
 )}
 </div>
 
-<div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-y-auto overflow-x-auto flex-1 relative no-scrollbar transition-colors max-h-[calc(100vh-170px)] ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>      
+<div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-y-auto overflow-x-auto flex-1 relative no-scrollbar transition-colors max-h-[calc(100vh-105px)] ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>      
   {isTestMode && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] bg-amber-500 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">Visualizando Ambiente de Teste</div>
         )}
 
   {movementMode && (
-  <div className="sticky top-0 z-[60] bg-emerald-600 text-white px-6 py-3 text-[10px] font-black uppercase tracking-widest shadow-lg">
+  <div className="sticky top-0 z-[60] bg-emerald-600 text-white px-6 py-1 text-[10px] font-black uppercase tracking-widest shadow-lg">
     Modo movimentação ativo — próximo passo: arrastar técnicos entre células com validação.
   </div>
 )}
 
 {transportingMove && (
-  <div className="sticky top-0 z-[70] bg-slate-900 text-white px-6 py-3 flex items-center justify-between shadow-xl border-t border-white/10">
+  <div className="sticky top-0 z-[70] bg-slate-900 text-white px-6 py-1 flex items-center justify-between shadow-xl border-t border-white/10">
     <div className="flex flex-col">
       <span className="text-[9px] font-black uppercase tracking-[0.25em] text-emerald-300">
         Item em transporte
