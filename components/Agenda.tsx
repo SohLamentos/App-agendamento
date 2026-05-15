@@ -114,6 +114,18 @@ const getRegion = (user: any) => {
   rect: DOMRect;
 } | null>(null);
 
+const [transportingMove, setTransportingMove] = useState<{
+  itemType: 'SCHEDULE' | 'EVENT';
+  sourceAnalystId: string;
+  sourceDateIso: string;
+  sourceShift: Shift;
+  sourceTechnology?: string;
+  sourceModality?: string;
+  scheduleId?: string;
+  eventId?: string;
+  technicianName?: string;
+} | null>(null);
+
 const [movedScheduleIds, setMovedScheduleIds] = useState<string[]>([]);
 
 const [technicians, setTechnicians] = useState(dataService.getTechnicians());
@@ -323,6 +335,15 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
   e.dataTransfer.setData('fromShift', String(event.shift));
 
   setHoverTooltip(null);
+
+  setTransportingMove({
+    itemType: 'EVENT',
+    sourceAnalystId: userId,
+    sourceDateIso: dateIso,
+    sourceShift: event.shift,
+    eventId: String(event.id || ''),
+    technicianName: event.title || 'EVENTO'
+  });
 };
 
    const renderCard = (
@@ -443,6 +464,7 @@ e.dataTransfer.setData(
 );
 
                 setHoverTooltip(null);
+startScheduleTransport(userId, dateIso, firstSchedule);
               }}
               className="w-full h-full"
             >
@@ -516,6 +538,7 @@ e.dataTransfer.setData(
 );
 
                 setHoverTooltip(null);
+startScheduleTransport(userId, dateIso, firstSchedule);
               }}
               className="w-full h-full"
             >
@@ -1273,6 +1296,27 @@ const moveAgendaTooltip = (e: React.MouseEvent) => {
 const closeAgendaTooltip = () => {
   setHoverTooltip(null);
 };
+
+const startScheduleTransport = (
+  sourceAnalystId: string,
+  sourceDateIso: string,
+  firstSchedule: CertificationSchedule
+) => {
+  setTransportingMove({
+    itemType: 'SCHEDULE',
+    sourceAnalystId,
+    sourceDateIso,
+    sourceShift: firstSchedule.shift,
+    sourceTechnology: firstSchedule.technology || 'GPON',
+    sourceModality:
+      firstSchedule.type === ExpertiseType.VIRTUAL
+        ? 'VIRTUAL'
+        : 'PRESENCIAL',
+    scheduleId: firstSchedule.id,
+    technicianName: 'LOTE / BLOCO'
+  });
+};
+  
   const getLiveTooltipItems = () => {
   if (!hoverTooltip) return [];
 
@@ -1614,6 +1658,31 @@ return (
     Modo movimentação ativo — próximo passo: arrastar técnicos entre células com validação.
   </div>
 )}
+
+{transportingMove && (
+  <div className="sticky top-0 z-[70] bg-slate-900 text-white px-6 py-3 flex items-center justify-between shadow-xl border-t border-white/10">
+    <div className="flex flex-col">
+      <span className="text-[9px] font-black uppercase tracking-[0.25em] text-emerald-300">
+        Item em transporte
+      </span>
+
+      <span className="text-[12px] font-black uppercase">
+        {transportingMove.technicianName || 'LOTE / EVENTO'}
+      </span>
+
+      <span className="text-[10px] font-bold uppercase text-white/70">
+        Origem: {analysts.find(a => a.id === transportingMove.sourceAnalystId)?.normalizedLogin || transportingMove.sourceAnalystId} — {formatDateBR(transportingMove.sourceDateIso)}
+      </span>
+    </div>
+
+    <button
+      onClick={() => setTransportingMove(null)}
+      className="rounded-xl bg-rose-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-rose-500"
+    >
+      Cancelar transporte
+    </button>
+  </div>
+)}
   
         <table className="w-full border-collapse table-fixed min-w-[1400px]">
           <thead>
@@ -1645,17 +1714,42 @@ return (
                   {weekDates.map((date, idx) => (
                     <td 
                       key={idx} 
-                      onClick={(e) => {
-  if (movementMode) return;
+  onClick={(e) => {
+  if (movementMode) {
 
-  if (pendingMove?.itemType === 'SCHEDULE' && pendingMove.technicianId) {
+    if (transportingMove?.itemType === 'SCHEDULE') {
+      setSplitMove({
+        sourceAnalystId: transportingMove.sourceAnalystId,
+        sourceDateIso: transportingMove.sourceDateIso,
+        sourceShift:
+          transportingMove.sourceShift === Shift.MORNING
+            ? 'MORNING'
+            : 'AFTERNOON',
+        sourceTechnology: transportingMove.sourceTechnology || 'GPON',
+        sourceModality: transportingMove.sourceModality || 'VIRTUAL',
+        targetAnalystId: analyst.id,
+        targetDateIso: date.iso,
+        rect: e.currentTarget.getBoundingClientRect()
+      });
 
-    
-    setPendingMove({
-      ...pendingMove,
-      toAnalystId: analyst.id,
-      toDateIso: date.iso
-    });
+      return;
+    }
+
+    if (transportingMove?.itemType === 'EVENT') {
+      setPendingMove({
+        itemType: 'EVENT',
+        eventId: transportingMove.eventId,
+        technicianName: transportingMove.technicianName || 'EVENTO',
+        fromAnalystId: transportingMove.sourceAnalystId,
+        fromDateIso: transportingMove.sourceDateIso,
+        fromShift: transportingMove.sourceShift,
+        toAnalystId: analyst.id,
+        toDateIso: date.iso
+      });
+
+      return;
+    }
+
     return;
   }
 
