@@ -3004,8 +3004,8 @@ private getRowStringValue(row: any[], index: number): string {
     return { cpf: null, error: "CPF não encontrado" };
   }
 
-  // ACEITA CPF QUE VEIO DO EXCEL SEM ZEROS À ESQUERDA
-  // Ex: 59546069 -> 00059546069
+  // Corrige CPF que veio do Excel sem zeros à esquerda
+  // Exemplo: 59546069 -> 00059546069
   if (clean.length < 8) {
     return { cpf: null, error: "CPF inválido (tamanho insuficiente)" };
   }
