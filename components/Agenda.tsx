@@ -1056,29 +1056,39 @@ let relatedSchedules = sameAnalystSchedules.filter((s: any) => {
   if (!matchesShift) return false;
 
   const scheduleTechnology = String(
-    s?.technology || ''
-  ).toUpperCase().trim();
+  s?.technology || ''
+).toUpperCase().trim();
 
-  const targetTechnology = String(
-    technology || ''
-  ).toUpperCase().trim();
+const targetTechnology = String(
+  technology || ''
+).toUpperCase().trim();
 
-  if (scheduleTechnology !== targetTechnology) {
-    return false;
-  }
+// Só valida tecnologia se ambos existirem
+if (
+  scheduleTechnology &&
+  targetTechnology &&
+  scheduleTechnology !== targetTechnology
+) {
+  return false;
+}
 
-  const scheduleModality =
-    s?.type === ExpertiseType.VIRTUAL
-      ? 'VIRTUAL'
-      : 'PRESENCIAL';
+const scheduleModality =
+  s?.type === ExpertiseType.VIRTUAL
+    ? 'VIRTUAL'
+    : 'PRESENCIAL';
 
-  const targetModality = String(modality || '')
-    .toUpperCase()
-    .trim();
+const targetModality = String(modality || '')
+  .toUpperCase()
+  .trim()
+  .replace('PRESENTIAL', 'PRESENCIAL');
 
-  if (scheduleModality !== targetModality) {
-    return false;
-  }
+// Só valida modalidade se existir
+if (
+  targetModality &&
+  scheduleModality !== targetModality
+) {
+  return false;
+}
 
   return true;
 });
@@ -1394,6 +1404,7 @@ if (!result.success) {
 setEvents(dataService.getEvents());
 setHoverTooltip(null);
 setPendingMove(null);
+setTransportingMove(null);
 
 setToast({
   message: 'Evento movimentado com sucesso.',
@@ -1474,8 +1485,8 @@ return;
   setSchedules(dataService.getSchedules());
   setMovedScheduleIds(prev => [...prev, String(scheduleId)]);
   setSplitMove(prev => prev ? { ...prev } : null);
-  setHoverTooltip(null);
-
+setTransportingMove(null);
+setHoverTooltip(null);
   setToast({
     message: 'Técnico movimentado.',
     type: 'success'
