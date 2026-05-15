@@ -175,6 +175,23 @@ this.technicians =
   savedTechs && JSON.parse(savedTechs).length > 0
     ? JSON.parse(savedTechs)
     : mockTechnicians;
+    // NORMALIZA CPF ANTIGO
+this.technicians = this.technicians.map(t => {
+  const cleanCpf = String(t.cpf || '')
+    .replace(/\D/g, '');
+
+  if (!cleanCpf) return t;
+
+  return {
+    ...t,
+    cpf: cleanCpf.padStart(11, '0')
+  };
+});
+    // PERSISTE NORMALIZAÇÃO ANTIGA
+localStorage.setItem(
+  'certitech_technicians_v15',
+  JSON.stringify(this.technicians)
+);
 this.trainingClasses =
   savedClasses && JSON.parse(savedClasses).length > 0
     ? JSON.parse(savedClasses)
@@ -2992,35 +3009,38 @@ private getRowStringValue(row: any[], index: number): string {
     return { cpf: null, error: "CPF não encontrado" };
   }
 
-  const s = String(value).trim();
+  const raw = String(value).trim();
 
-  if (s === "") {
-    return { cpf: null, error: "CPF não encontrado" };
+  if (!raw) {
+    return { cpf: null, error: "CPF vazio" };
   }
 
-  const clean = s.replace(/\D/g, "");
+  // remove qualquer coisa que não seja número
+  let clean = raw.replace(/\D/g, '');
 
-  if (!clean) {
-    return { cpf: null, error: "CPF não encontrado" };
+  // Excel remove zeros à esquerda
+  // então completa automaticamente até 11
+  if (clean.length <= 11) {
+    clean = clean.padStart(11, '0');
   }
 
-  // Corrige CPF que veio do Excel sem zeros à esquerda
-  // Exemplo: 59546069 -> 00059546069
-  if (clean.length < 8) {
-    return { cpf: null, error: "CPF inválido (tamanho insuficiente)" };
+  // se mesmo assim ficou inválido
+  if (clean.length !== 11) {
+    return {
+      cpf: null,
+      error: `CPF inválido (${clean.length} dígitos)`
+    };
   }
 
-  if (clean.length > 11) {
-    return { cpf: null, error: "CPF inválido (mais de 11 dígitos)" };
+  // evita sequência totalmente zerada
+  if (clean === '00000000000') {
+    return {
+      cpf: null,
+      error: 'CPF zerado'
+    };
   }
 
-  const padded = clean.padStart(11, "0");
-
-  if (padded === "00000000000") {
-    return { cpf: null, error: "CPF inválido (sequência zerada)" };
-  }
-
-  return { cpf: padded };
+  return { cpf: clean };
 }
 
     public updateCompaniesFromSpreadsheet(raw: any[][]) {
