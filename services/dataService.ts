@@ -300,8 +300,25 @@ localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings
     supabase.removeChannel(channel);
   };
 }
+
+  private mergeById<T extends { id: string }>(
+  cloudItems: T[] = [],
+  localItems: T[] = []
+): T[] {
+  const map = new Map<string, T>();
+
+  cloudItems.forEach(item => {
+    if (item?.id) map.set(String(item.id), item);
+  });
+
+  localItems.forEach(item => {
+    if (item?.id) map.set(String(item.id), item);
+  });
+
+  return Array.from(map.values());
+}
   
-  private persist() {
+  private persist(options: { allowScheduleDeletion?: boolean; allowEventDeletion?: boolean } = {}) {
   localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
   localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
   localStorage.setItem('g_cities_v15', JSON.stringify(this.cities));
@@ -351,7 +368,27 @@ localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings
 
         if (version !== this.persistVersion) return;
 
-        await saveAppState(groupId, payload);
+        const cloudData = currentCloudState?.data;
+
+const mergedPayload = cloudData
+  ? {
+      ...payload,
+
+      schedules: options.allowScheduleDeletion
+        ? payload.schedules
+        : this.mergeById(cloudData.schedules || [], payload.schedules || []),
+
+      schedulesTeste: options.allowScheduleDeletion
+        ? payload.schedulesTeste
+        : this.mergeById(cloudData.schedulesTeste || [], payload.schedulesTeste || []),
+
+      events: options.allowEventDeletion
+        ? payload.events
+        : this.mergeById(cloudData.events || [], payload.events || [])
+    }
+  : payload;
+
+await saveAppState(groupId, mergedPayload);
       } catch (error) {
         console.error('Erro ao persistir no Supabase:', error);
       }
@@ -477,7 +514,10 @@ this.analystMappings = [];
     keys.forEach(k => localStorage.removeItem(k));
 
     // 5) persiste novamente local + cloud
-    this.persist();
+    this.persist({
+  allowScheduleDeletion: true,
+  allowEventDeletion: true
+});
 
     // 6) auditoria
     auditService.logTicket({
@@ -735,7 +775,10 @@ this.analystMappings = Array.isArray(parsed.analystMappings) ? parsed.analystMap
       return c;
     });
 
-    this.persist();
+    this.persist({
+  allowScheduleDeletion: true,
+  allowEventDeletion: true
+});
 
     auditService.logTicket({
       user: this.getCurrentUser(),
@@ -829,7 +872,10 @@ this.analystMappings = Array.isArray(parsed.analystMappings) ? parsed.analystMap
       return c;
     });
 
-    this.persist();
+    this.persist({
+  allowScheduleDeletion: true,
+  allowEventDeletion: true
+});
 
     auditService.logTicket({
       user: this.getCurrentUser(),
@@ -937,7 +983,7 @@ this.analystMappings = Array.isArray(parsed.analystMappings) ? parsed.analystMap
       c => !(c.groupId === ctx.groupId && c.id === classId)
     );
 
-    this.persist();
+    this.persist({ allowScheduleDeletion: true });
 
     auditService.logTicket({
       user: currentUser,
@@ -1019,7 +1065,7 @@ this.analystMappings = Array.isArray(parsed.analystMappings) ? parsed.analystMap
     }
 
     // Salva no storage
-    this.persist();
+    this.persist({ allowScheduleDeletion: true });
 
     return {
       success: true,
