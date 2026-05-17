@@ -3879,6 +3879,115 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
       return { success: false, message: e.message };
     }
   }
+  public async importarResultadoCertificacaoExcel(file: File) {
+  const currentUser = this.getCurrentUser();
+  const ctx = this.getContext();
+
+  const normalize = (v: any) =>
+    String(v || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toUpperCase();
+
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+  const pendentes = rows.filter(row =>
+    normalize(row.ProcessadoNoApp) === 'NAO' &&
+    normalize(row.ResultadoIntegracao) === 'AGUARDANDO_APP'
+  );
+
+  const resumo = {
+    lidas: rows.length,
+    pendentes: pendentes.length,
+    aprovados: 0,
+    reprovados: 0,
+    noshow: 0,
+    naoLocalizados: 0,
+    duplicados: 0,
+    erros: [] as string[]
+  };
+
+  for (const row of pendentes) {
+    const nome = normalize(row.NomeTecnico);
+    const status = normalize(row.StatusTecnico);
+    const municipio = normalize(row.Município || row.Municipio);
+    const uf = normalize(row.UF);
+    const empresa = normalize(row.Empresa);
+
+    const candidatos = this.technicians.filter(t =>
+      t.groupId === ctx.groupId &&
+      normalize(t.name) === nome &&
+      normalize(t.city) === municipio &&
+      normalize(t.state) === uf &&
+      normalize(t.company) === empresa &&
+      (
+        t.status_principal === 'AGENDADOS' ||
+        t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED
+      )
+    );
+
+    if (candidatos.length === 0) {
+      resumo.naoLocalizados++;
+      resumo.erros.push(`Não localizado: ${row.NomeTecnico}`);
+      continue;
+    }
+
+    if (candidatos.length > 1) {
+      resumo.duplicados++;
+      resumo.erros.push(`Duplicado no app: ${row.NomeTecnico}`);
+      continue;
+    }
+
+    const tech = candidatos[0];
+
+    if (status === 'APROVADO') {
+      this.approveScheduledTechnician(tech.id);
+      resumo.aprovados++;
+      continue;
+    }
+
+    if (status === 'REPROVADO') {
+      this.reproveScheduledTechnician({
+        techId: tech.id,
+        outcome: 'REPROVADO_1_CERTIFICACAO',
+        observation: 'Resultado recebido via integração Excel.'
+      });
+      resumo.reprovados++;
+      continue;
+    }
+
+    if (status === 'NOSHOW' || status === 'NO SHOW') {
+      this.reproveScheduledTechnician({
+        techId: tech.id,
+        outcome: 'NOSHOW',
+        observation: 'No-show recebido via integração Excel.'
+      });
+      resumo.noshow++;
+      continue;
+    }
+
+    resumo.erros.push(`Status inválido para ${row.NomeTecnico}: ${row.StatusTecnico}`);
+  }
+
+  auditService.logTicket({
+    user: currentUser,
+    action: 'IMPORTACAO_RESULTADO_CERTIFICACAO_EXCEL',
+    targetType: 'Sistema',
+    targetValue: 'Integração Excel',
+    reason: `Linhas lidas: ${resumo.lidas}. Pendentes: ${resumo.pendentes}. Aprovados: ${resumo.aprovados}. Reprovados: ${resumo.reprovados}. No-show: ${resumo.noshow}.`,
+    screen: 'Integração Excel',
+    groupId: ctx.groupId
+  });
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+
+  return resumo;
 }
+}
+  
 
 export const dataService = new DataService();
