@@ -35,7 +35,7 @@ const App: React.FC = () => {
     setIsAuthenticated(true);
 
     // garante aprovação automática após login
-    dataService.processAutoApprovals();
+    // dataService.processAutoApprovals();
 
     setCurrentUser(dataService.getCurrentUser());
     setActiveTab('overview');
@@ -48,9 +48,9 @@ const App: React.FC = () => {
       await dataService.initializeFromCloud();
 
       // roda somente depois que a nuvem carregou
-      if (authService.isAuthenticated()) {
-        dataService.processAutoApprovals();
-      }
+      // if (authService.isAuthenticated()) {
+        // dataService.processAutoApprovals();
+      // }
 
       unsubscribe = dataService.subscribeToCloudUpdates();
       setCurrentUser(dataService.getCurrentUser());
