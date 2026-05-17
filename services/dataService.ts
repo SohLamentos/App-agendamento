@@ -1237,68 +1237,9 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
    * Executada ao carregar o app.
    */
   public processAutoApprovals() {
-    const context = this.getContext();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let changed = false;
-    const currentUser = this.getCurrentUser();
-
-    this.technicians.forEach(t => {
-      // Regra: Somente se estiver no status AGENDADO e pertencer ao grupo ativo
-      const isScheduled = t.groupId === context.groupId && (t.status_principal === "AGENDADOS" || t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED);
-      
-      if (isScheduled && t.scheduledCertificationId) {
-        // Exceções: Não mover se houver flag de ação manual ou status impeditivo
-        const hasManualAction = t.aprovado_manual || t.reprovado_manual || t.cancelado_manual;
-        if (hasManualAction) return;
-
-        const sch = this.schedules.find(s => s.id === t.scheduledCertificationId);
-        if (sch && sch.status === ScheduleStatus.CONFIRMED) {
-          const certDate = new Date(sch.datetime);
-          certDate.setHours(0, 0, 0, 0);
-
-          // Lógica D+1: Se hoje >= (data_certificacao + 1 dia)
-          const diffTime = today.getTime() - certDate.getTime();
-          const diffDays = diffTime / (1000 * 3600 * 24);
-
-          if (diffDays >= 1) {
-            // Executar aprovação automática
-            t.status_principal = "APROVADOS";
-            t.certificationProcessStatus = CertificationProcessStatus.CERTIFIED_APPROVED;
-            t.status_updated_at = new Date().toISOString();
-            t.status_updated_by = "SISTEMA";
-            
-            // Gravar campos de auditoria específicos
-            t.aprovado_auto = true;
-            t.aprovado_auto_em = new Date().toISOString();
-            t.aprovado_auto_regra = "D+1";
-
-            // Atualizar status do agendamento para concluído
-            sch.status = ScheduleStatus.COMPLETED;
-
-            changed = true;
-
-            // Logar Ticket de Auditoria
-            auditService.logTicket({
-              user: currentUser,
-              action: 'APROVACAO_AUTOMATICA_D+1',
-              targetType: 'CPF',
-              targetValue: t.cpf,
-              reason: `Aprovação automática: Data certif. (${sch.datetime.split('T')[0]}) ultrapassou D+1.`,
-              screen: 'Sistema',
-              groupId: t.groupId
-            });
-          }
-        }
-      }
-    });
-
-    if (changed) {
-      this.persist();
-      window.dispatchEvent(new Event('data-updated'));
-    }
-  }
+  console.log('Regra D+1 desativada');
+  return;
+}
 
   public saveScoreAdjustment(
   adj: Omit<VirtualScoreAdjustment, 'id' | 'createdAt' | 'createdBy' | 'startDate' | 'endDate'>
