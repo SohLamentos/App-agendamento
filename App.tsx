@@ -26,6 +26,33 @@ const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(true);
 
   const handleRoleSwitch = () => {};
+  const handleGroupSwitch = async (groupId: string) => {
+  try {
+    setIsInitializing(true);
+
+    dataService.setActiveGroup(groupId);
+
+    const loadedFromCloud = await dataService.initializeFromCloud();
+
+    if (!loadedFromCloud) {
+      alert(`Não foi possível carregar os dados do grupo ${groupId}.`);
+      setIsInitializing(false);
+      return;
+    }
+
+    await auditService.initialize(groupId);
+
+    setCurrentUser(authService.getCurrentUser());
+    setActiveTab('overview');
+
+    window.dispatchEvent(new Event('data-updated'));
+  } catch (error) {
+    console.error('Erro ao trocar grupo:', error);
+    alert('Erro ao trocar grupo. Tente novamente.');
+  } finally {
+    setIsInitializing(false);
+  }
+};
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
@@ -178,11 +205,12 @@ window.dispatchEvent(new Event('data-updated'));
 
   return (
     <Layout
-      user={currentUser}
-      onRoleSwitch={handleRoleSwitch}
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-    >
+  user={currentUser}
+  onRoleSwitch={handleRoleSwitch}
+  onGroupSwitch={handleGroupSwitch}
+  activeTab={activeTab}
+  setActiveTab={setActiveTab}
+>
       {renderContent()}
     </Layout>
   );
