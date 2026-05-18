@@ -1,5 +1,12 @@
 
-import { saveAppState, loadAppState, saveAppStateHistory, listAppStateHistory } from './appStateService';
+import {
+  saveAppState,
+  loadAppState,
+  saveAppStateHistory,
+  listAppStateHistory,
+  restoreAppStateFromHistory,
+} from './appStateService';
+
 import { supabase } from './supabase';
 import { 
   mockUsers, mockCities, mockClasses, mockTechnicians, mockEvents
@@ -109,6 +116,7 @@ const normalizeUF = (value?: string): string => {
 class DataService {
   private persistQueue: Promise<void> = Promise.resolve();
   private persistVersion: number = 0;
+  private cloudUpdatedAt: string | null = null;
 
   private users: User[];
   private groups: Group[];
@@ -235,6 +243,8 @@ const cloudState = await loadAppState(groupId);
     if (!cloudState?.data) {
       return false;
     }
+
+    this.cloudUpdatedAt = cloudState.updated_at || null;
 
     const payload = cloudState.data;
     if (
@@ -365,9 +375,31 @@ localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings
       try {
         const currentCloudState = await loadAppState(groupId);
 
-        if (version !== this.persistVersion) return;
+if (version !== this.persistVersion) return;
 
-        if (currentCloudState?.data) {
+const cloudWasChangedByAnotherSession =
+  !!currentCloudState?.updated_at &&
+  !!this.cloudUpdatedAt &&
+  currentCloudState.updated_at !== this.cloudUpdatedAt &&
+  !options.allowScheduleDeletion &&
+  !options.allowEventDeletion;
+
+if (cloudWasChangedByAnotherSession) {
+  console.warn(
+    'Estado desatualizado: outra sessão salvou dados antes desta gravação. Recarregando da nuvem para evitar sobrescrita.'
+  );
+
+  await this.initializeFromCloud();
+  window.dispatchEvent(new Event('data-updated'));
+
+  alert(
+    'Os dados foram atualizados por outra máquina. A tela foi sincronizada para evitar perda de agendamentos. Repita a operação se necessário.'
+  );
+
+  return;
+}
+
+if (currentCloudState?.data) {
           await saveAppStateHistory({
             groupId,
             data: {
@@ -405,7 +437,8 @@ const mergedPayload = cloudData
     }
   : payload;
 
-await saveAppState(groupId, mergedPayload);
+const savedState = await saveAppState(groupId, mergedPayload);
+this.cloudUpdatedAt = savedState?.updated_at || new Date().toISOString();
       } catch (error) {
         console.error('Erro ao persistir no Supabase:', error);
       }
@@ -754,65 +787,40 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
 
   public async restoreHistoryEntry(entryId: string) {
   try {
-    const history = await this.getBackupHistory(200);
-    const entry = history.find(item => item.id === entryId);
+    const currentUser = this.getCurrentUser();
 
-    if (!entry || !entry.data) {
-      throw new Error('Backup histórico não encontrado.');
-    }
+    const restored = await restoreAppStateFromHistory(
+      entryId,
+      currentUser?.fullName || 'SYSTEM'
+    );
 
-    await this.createHistoryBackup('BEFORE_RESTORE_HISTORY_ENTRY');
+    this.cloudUpdatedAt = restored?.updated_at || new Date().toISOString();
 
-    const parsed = entry.data;
-
-    this.groups = Array.isArray(parsed.groups) ? parsed.groups : this.groups;
-    this.groupRules = Array.isArray(parsed.groupRules) ? parsed.groupRules : this.groupRules;
-    this.cities = Array.isArray(parsed.cities) ? parsed.cities : this.cities;
-    this.users = Array.isArray(parsed.users) ? parsed.users : this.users;
-    this.ensureFixedAdmin();
-    this.technicians = Array.isArray(parsed.technicians) ? parsed.technicians : [];
-    this.trainingClasses = Array.isArray(parsed.trainingClasses) ? parsed.trainingClasses : [];
-    this.schedules = Array.isArray(parsed.schedules) ? parsed.schedules : [];
-    this.schedulesTeste = Array.isArray(parsed.schedulesTeste) ? parsed.schedulesTeste : [];
-    this.events = Array.isArray(parsed.events) ? parsed.events : [];
-    this.schedulingConfig = parsed.schedulingConfig ?? this.schedulingConfig;
-    this.testModeActive = typeof parsed.testModeActive === 'boolean' ? parsed.testModeActive : false;
-    this.scoreAdjustments = Array.isArray(parsed.scoreAdjustments) ? parsed.scoreAdjustments : [];
-    this.integrationBases = Array.isArray(parsed.integrationBases) ? parsed.integrationBases : [];
-this.routingRules = Array.isArray(parsed.routingRules) ? parsed.routingRules : [];
-this.analystMappings = Array.isArray(parsed.analystMappings) ? parsed.analystMappings : [];
-
-    this.trainingClasses = this.trainingClasses.map(c => {
-      if (!(c as any).audience) {
-        return {
-          ...c,
-          audience: 'ANALISTA'
-        };
-      }
-      return c;
-    });
-
-    this.persist({
-  allowScheduleDeletion: true,
-  allowEventDeletion: true
-});
+    await this.initializeFromCloud();
 
     auditService.logTicket({
-      user: this.getCurrentUser(),
+      user: currentUser,
       action: 'RESTORE_BACKUP_HISTORY',
       targetType: 'Sistema',
       targetValue: this.getContext().groupId,
-      reason: `Restauração de histórico executada. EntryId: ${entryId}`,
+      reason: `Restauração de histórico executada direto do Supabase. EntryId: ${entryId}`,
       screen: 'Administração',
-      groupId: this.getContext().groupId
+      groupId: this.getContext().groupId,
     });
 
     window.dispatchEvent(new Event('data-updated'));
 
-    return { success: true, message: 'Versão histórica restaurada com sucesso.' };
+    return {
+      success: true,
+      message: 'Versão histórica restaurada com sucesso.',
+    };
   } catch (error: any) {
     console.error('Erro ao restaurar histórico:', error);
-    return { success: false, message: error?.message || 'Erro ao restaurar histórico.' };
+
+    return {
+      success: false,
+      message: error?.message || 'Erro ao restaurar histórico.',
+    };
   }
 }
   
