@@ -240,7 +240,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
             {[
               { id: 'bases', label: 'Bases Presenciais' },
               { id: 'routing', label: 'Regras de Roteamento' },
-              { id: 'mappings', label: 'Analistas x PowerApps' }
+              { id: 'mappings', label: 'Analistas & Acessos' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -261,8 +261,8 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                Bases Presenciais
-              </h3>
+  Analistas & Acessos
+</h3>
 
               <button
                 onClick={() => {
@@ -444,7 +444,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
                 Analistas x PowerApps
               </h3>
               <button className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">
-                Novo Mapeamento
+                Novo Analista
               </button>
             </div>
 
@@ -460,27 +460,68 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
                 </thead>
 
                 <tbody>
-                  {mappings.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="p-8 text-center text-[11px] font-bold text-slate-400 uppercase">
-                        Nenhum mapeamento cadastrado
-                      </td>
-                    </tr>
-                  ) : (
-                    mappings.map(mapping => {
-                      const analyst = analysts.find(a => a.id === mapping.userId);
+  {analysts.length === 0 ? (
+    <tr>
+      <td colSpan={6} className="p-8 text-center text-[11px] font-bold text-slate-400 uppercase">
+        Nenhum analista cadastrado
+      </td>
+    </tr>
+  ) : (
+    analysts.map(analyst => (
+      <tr key={analyst.id} className="border-t border-slate-100">
+        
+        <td className="p-4 text-xs font-black text-slate-800 uppercase">
+          {analyst.fullName}
+        </td>
 
-                      return (
-                        <tr key={mapping.id} className="border-t border-slate-100">
-                          <td className="p-4 text-xs font-black text-slate-800 uppercase">{analyst?.fullName || 'Analista não encontrado'}</td>
-                          <td className="p-4 text-xs font-bold text-slate-600">{mapping.userId}</td>
-                          <td className="p-4 text-xs font-bold text-slate-600">{mapping.powerAppsUserId}</td>
-                          <td className="p-4 text-xs font-bold">{mapping.active ? 'Ativo' : 'Inativo'}</td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
+        <td className="p-4 text-xs font-bold text-slate-600">
+          {analyst.id}
+        </td>
+
+        <td className="p-4 text-xs font-bold text-slate-600">
+          {analyst.email || 'Sem e-mail'}
+        </td>
+
+        <td className="p-4 text-xs font-bold text-slate-600">
+          {analyst.analystProfileId || '-'}
+        </td>
+
+        <td className="p-4">
+          <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase ${
+            analyst.active
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-slate-100 text-slate-500'
+          }`}>
+            {analyst.active ? 'Ativo' : 'Inativo'}
+          </span>
+        </td>
+
+        <td className="p-4">
+          <div className="flex gap-2">
+            
+            <button
+              className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-200"
+            >
+              Editar
+            </button>
+
+            <button
+              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
+                analyst.active
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                  : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+              }`}
+            >
+              {analyst.active ? 'Inativar' : 'Ativar'}
+            </button>
+
+          </div>
+        </td>
+
+      </tr>
+    ))
+  )}
+</tbody>
               </table>
             </div>
           </div>
