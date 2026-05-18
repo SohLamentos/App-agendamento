@@ -244,14 +244,39 @@ const cloudState = await loadAppState(groupId);
   !payload ||
   !Array.isArray(payload.technicians) ||
   !Array.isArray(payload.trainingClasses) ||
-  !Array.isArray(payload.schedules) ||
-  !Array.isArray(payload.integrationBases) ||
-  !Array.isArray(payload.routingRules) ||
-  !Array.isArray(payload.analystMappings)
+  !Array.isArray(payload.schedules)
 ) {
-  console.warn('Supabase incompleto — ignorando carregamento para evitar perda de dados.');
+  console.warn(
+    'Supabase incompleto — ignorando carregamento para evitar perda de dados.'
+  );
+
   return false;
 }
+
+// compatibilidade com backups antigos
+payload.integrationBases = Array.isArray(payload.integrationBases)
+  ? payload.integrationBases
+  : [];
+
+payload.routingRules = Array.isArray(payload.routingRules)
+  ? payload.routingRules
+  : [];
+
+payload.analystMappings = Array.isArray(payload.analystMappings)
+  ? payload.analystMappings
+  : [];
+
+payload.schedulesTeste = Array.isArray(payload.schedulesTeste)
+  ? payload.schedulesTeste
+  : [];
+
+payload.events = Array.isArray(payload.events)
+  ? payload.events
+  : [];
+
+payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments)
+  ? payload.scoreAdjustments
+  : [];
 
     this.groups = payload.groups ?? this.groups;
     this.groupRules = payload.groupRules ?? this.groupRules;
