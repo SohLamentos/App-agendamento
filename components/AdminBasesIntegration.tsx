@@ -14,6 +14,15 @@ const AdminBasesIntegration: React.FC<Props> = ({ user }) => {
   const [rules, setRules] = useState<RoutingRule[]>(dataService.getRoutingRules());
   const [mappings, setMappings] = useState<AnalystIntegrationMapping[]>(dataService.getAnalystMappings());
   const [users, setUsers] = useState(dataService.getUsers());
+  const [isAnalystModalOpen, setIsAnalystModalOpen] = useState(false);
+const [editingAnalystId, setEditingAnalystId] = useState<string | null>(null);
+
+const [analystForm, setAnalystForm] = useState({
+  fullName: '',
+  email: '',
+  analystProfileId: '',
+  active: true
+});
 
   const [isBaseModalOpen, setIsBaseModalOpen] = useState(false);
   const [editingBaseId, setEditingBaseId] = useState<string | null>(null);
@@ -124,6 +133,55 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   if (!confirmDelete) return;
 
   dataService.deleteRoutingRule(rule.id);
+  refresh();
+};
+
+  const handleEditAnalyst = (analyst: User) => {
+  setEditingAnalystId(analyst.id);
+
+  setAnalystForm({
+    fullName: analyst.fullName || '',
+    email: analyst.email || '',
+    analystProfileId: analyst.analystProfileId || '',
+    active: analyst.active
+  });
+
+  setIsAnalystModalOpen(true);
+};
+
+const handleSaveAnalyst = () => {
+  if (!editingAnalystId) return;
+
+  if (!analystForm.fullName.trim()) {
+    alert('Informe o nome do analista.');
+    return;
+  }
+
+  const normalizedName = analystForm.fullName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+
+  dataService.updateUser(editingAnalystId, {
+    fullName: normalizedName,
+    email: analystForm.email.trim().toLowerCase(),
+    analystProfileId: analystForm.analystProfileId.trim(),
+    normalizedLogin: normalizedName,
+    firstNameLogin: normalizedName.split(' ')[0],
+    active: analystForm.active
+  });
+
+  setIsAnalystModalOpen(false);
+  setEditingAnalystId(null);
+
+  setAnalystForm({
+    fullName: '',
+    email: '',
+    analystProfileId: '',
+    active: true
+  });
+
   refresh();
 };
   
