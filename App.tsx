@@ -16,21 +16,16 @@ import Login from './components/Login';
 import AdminManagement from './components/AdminManagement';
 import { dataService } from './services/dataService';
 import { authService } from './services/authService';
-import { UserRole } from './types';
+
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated());
-  const [currentUser, setCurrentUser] = useState(dataService.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
   const [activeTab, setActiveTab] = useState('overview');
   const [, setUpdateTrigger] = useState(0);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  const handleRoleSwitch = (role: UserRole) => {
-    if (currentUser.role === UserRole.ADMIN) {
-      const user = dataService.getUsers().find(u => u.role === role);
-      if (user) dataService.setCurrentUser(user);
-    }
-  };
+  const handleRoleSwitch = () => {};
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
@@ -38,7 +33,7 @@ const App: React.FC = () => {
     // garante aprovação automática após login
     // dataService.processAutoApprovals();
 
-    setCurrentUser(dataService.getCurrentUser());
+    setCurrentUser(authService.getCurrentUser());
     setActiveTab('overview');
   };
 
@@ -58,7 +53,15 @@ if (!loadedFromCloud) {
   return;
 }
 
-await auditService.initialize(dataService.getCurrentUser().groupId);
+const authUser = authService.getCurrentUser();
+
+if (!authUser) {
+  setIsAuthenticated(false);
+  setIsInitializing(false);
+  return;
+}
+
+await auditService.initialize(authUser.groupId);
 
       // roda somente depois que a nuvem carregou
       // if (authService.isAuthenticated()) {
@@ -66,11 +69,13 @@ await auditService.initialize(dataService.getCurrentUser().groupId);
       // }
 
       unsubscribe = dataService.subscribeToCloudUpdates();
-      setCurrentUser(dataService.getCurrentUser());
+      setCurrentUser(authUser);
       setIsInitializing(false);
     };
 
     initialize();
+
+
 
     return () => {
       if (unsubscribe) unsubscribe();
@@ -78,9 +83,24 @@ await auditService.initialize(dataService.getCurrentUser().groupId);
   }, []);
 
   useEffect(() => {
+  const validateSession = async () => {
+    const current = authService.getCurrentUser();
+
+    if (!current) {
+      setIsAuthenticated(false);
+      return;
+    }
+
+    setCurrentUser(current);
+  };
+
+  validateSession();
+}, []);
+
+  useEffect(() => {
     const handleUpdate = () => {
       setUpdateTrigger(prev => prev + 1);
-      setCurrentUser(dataService.getCurrentUser());
+      setCurrentUser(authService.getCurrentUser());
     };
 
     window.addEventListener('data-updated', handleUpdate);
@@ -103,7 +123,11 @@ await auditService.initialize(dataService.getCurrentUser().groupId);
 
     reloadTimer = setTimeout(async () => {
       await dataService.initializeFromCloud();
-await auditService.refresh(dataService.getCurrentUser().groupId);
+const authUser = authService.getCurrentUser();
+
+if (authUser) {
+  await auditService.refresh(authUser.groupId);
+}
 window.dispatchEvent(new Event('data-updated'));
       
     }, 30 * 60 * 1000);
