@@ -239,33 +239,44 @@ const cloudState = await loadAppState(groupId);
     this.cloudUpdatedAt = cloudState.updated_at || null;
     this.cloudLoaded = true;
 
-    const payload = cloudState.data;
-        const diagnostics = {
-  hasPayload: !!payload,
-  technicians: Array.isArray(payload?.technicians),
-  trainingClasses: Array.isArray(payload?.trainingClasses),
-  schedules: Array.isArray(payload?.schedules),
-  schedulesTeste: Array.isArray(payload?.schedulesTeste),
-  events: Array.isArray(payload?.events),
-  groups: Array.isArray(payload?.groups),
-  users: Array.isArray(payload?.users),
-};
+    let payload = cloudState.data;
 
-console.log('DIAGNOSTICO PAYLOAD:', diagnostics);
-console.log('PAYLOAD COMPLETO:', payload);
+// compatibilidade caso o Supabase tenha salvo o estado dentro de data.data
+if (payload?.data && typeof payload.data === 'object') {
+  payload = payload.data;
+}
 
-const invalidFields = Object.entries(diagnostics)
-  .filter(([_, valid]) => !valid)
-  .map(([field]) => field);
+// compatibilidade caso tenha sido salvo dentro de payload
+if (payload?.payload && typeof payload.payload === 'object') {
+  payload = payload.payload;
+}
+    
+        if (
+  !payload ||
+  !Array.isArray(payload.technicians) ||
+  !Array.isArray(payload.trainingClasses) ||
+  !Array.isArray(payload.schedules)
+) {
+  console.warn('Payload inválido recebido do Supabase:', payload);
 
-if (invalidFields.length > 0) {
   alert(
-    'Payload incompleto. Campos inválidos: ' +
-    invalidFields.join(', ')
+    'O estado atual salvo no Supabase está inválido. Será necessário restaurar uma versão válida pelo histórico.'
   );
 
   return false;
 }
+
+// campos opcionais/default para compatibilidade
+payload.groups = Array.isArray(payload.groups) ? payload.groups : this.groups;
+payload.users = Array.isArray(payload.users) ? payload.users : this.users;
+payload.groupRules = Array.isArray(payload.groupRules) ? payload.groupRules : this.groupRules;
+payload.cities = Array.isArray(payload.cities) ? payload.cities : this.cities;
+payload.schedulesTeste = Array.isArray(payload.schedulesTeste) ? payload.schedulesTeste : [];
+payload.events = Array.isArray(payload.events) ? payload.events : [];
+payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments) ? payload.scoreAdjustments : [];
+payload.integrationBases = Array.isArray(payload.integrationBases) ? payload.integrationBases : [];
+payload.routingRules = Array.isArray(payload.routingRules) ? payload.routingRules : [];
+payload.analystMappings = Array.isArray(payload.analystMappings) ? payload.analystMappings : [];
     console.log('CLOUD STATE RECEBIDO:', cloudState);
 console.log('PAYLOAD RECEBIDO:', payload);
 console.log('CHECK PAYLOAD:', {
