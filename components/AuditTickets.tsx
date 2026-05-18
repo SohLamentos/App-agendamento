@@ -14,10 +14,14 @@ const AuditTickets: React.FC<{ user: User }> = ({ user }) => {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    const refresh = () => setTickets(auditService.getTickets());
-    window.addEventListener('audit-updated', refresh);
-    return () => window.removeEventListener('audit-updated', refresh);
-  }, []);
+  auditService.refresh(user.groupId);
+
+  const refresh = () => setTickets(auditService.getTickets());
+
+  window.addEventListener('audit-updated', refresh);
+
+  return () => window.removeEventListener('audit-updated', refresh);
+}, [user.groupId]);
 
   const filteredTickets = useMemo(() => {
   return tickets.filter(t => {
