@@ -404,7 +404,7 @@ const handleSaveAnalyst = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-  Analistas & Acessos
+  Regras de Roteamento
 </h3>
               <button
   onClick={() => setIsRuleModalOpen(true)}
@@ -418,10 +418,11 @@ const handleSaveAnalyst = () => {
               <table className="w-full">
                 <thead className="bg-slate-50">
   <tr>
+    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Cidade/UF</th>
     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Analista</th>
-    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">ID Interno</th>
-    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">E-mail</th>
-    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Perfil Agenda</th>
+    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Empresa</th>
+    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Base</th>
+    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Prioridade</th>
     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Status</th>
     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Ações</th>
   </tr>
@@ -459,7 +460,7 @@ const handleSaveAnalyst = () => {
                           <td className="p-4">
   <div className="flex gap-2">
     <button
-  onClick={() => handleEditAnalyst(analyst)}
+  onClick={() => handleEditRule(rule)}
   className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-200"
 >
   Editar
@@ -498,7 +499,7 @@ const handleSaveAnalyst = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                Analistas x PowerApps
+                Analistas & Acessos
               </h3>
               <button className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">
                 Novo Analista
@@ -557,10 +558,11 @@ const handleSaveAnalyst = () => {
           <div className="flex gap-2">
             
             <button
-              className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-200"
-            >
-              Editar
-            </button>
+  onClick={() => handleEditAnalyst(analyst)}
+  className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-200"
+>
+  Editar
+</button>
 
             <button
               className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
@@ -660,6 +662,65 @@ const handleSaveAnalyst = () => {
           </div>
         </div>
           )}
+
+            {isAnalystModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-[30px] w-[520px] space-y-4">
+            <h3 className="text-sm font-black uppercase text-slate-900">
+              Editar Analista
+            </h3>
+
+            <input
+              placeholder="Nome completo"
+              value={analystForm.fullName}
+              onChange={(e) => setAnalystForm({ ...analystForm, fullName: e.target.value })}
+              className="w-full p-3 border rounded-xl text-xs font-bold uppercase"
+            />
+
+            <input
+              placeholder="E-mail"
+              value={analystForm.email}
+              onChange={(e) => setAnalystForm({ ...analystForm, email: e.target.value })}
+              className="w-full p-3 border rounded-xl text-xs font-bold"
+            />
+
+            <input
+              placeholder="Perfil Agenda / AnalystProfileId"
+              value={analystForm.analystProfileId}
+              onChange={(e) => setAnalystForm({ ...analystForm, analystProfileId: e.target.value })}
+              className="w-full p-3 border rounded-xl text-xs font-bold"
+            />
+
+            <label className="flex items-center gap-2 text-xs font-black uppercase text-slate-600">
+              <input
+                type="checkbox"
+                checked={analystForm.active}
+                onChange={(e) => setAnalystForm({ ...analystForm, active: e.target.checked })}
+              />
+              Analista ativo
+            </label>
+
+            <div className="flex gap-2 pt-4">
+              <button
+                onClick={() => {
+                  setIsAnalystModalOpen(false);
+                  setEditingAnalystId(null);
+                }}
+                className="flex-1 p-3 bg-slate-200 rounded-xl text-xs font-black uppercase"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={handleSaveAnalyst}
+                className="flex-1 p-3 bg-claro-red text-white rounded-xl text-xs font-black uppercase"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isRuleModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
