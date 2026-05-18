@@ -83,7 +83,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         <div className="p-10 pt-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Nome Completo (Login)</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">LOGIN (PRIMEIRO NOME) </label>
               <input 
                 type="text" 
                 required
