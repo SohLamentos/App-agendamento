@@ -240,18 +240,28 @@ const cloudState = await loadAppState(groupId);
     this.cloudLoaded = true;
 
     const payload = cloudState.data;
-    if (
+        if (
   !payload ||
   !Array.isArray(payload.technicians) ||
   !Array.isArray(payload.trainingClasses) ||
   !Array.isArray(payload.schedules)
 ) {
-  console.warn(
-    'Supabase incompleto — ignorando carregamento para evitar perda de dados.'
-  );
+  console.warn('Supabase incompleto:', payload);
 
-  return false;
+alert(
+  'Supabase carregou, mas o backup está incompleto. Ver console para detalhes.'
+);
+
+return false;
 }
+    console.log('CLOUD STATE RECEBIDO:', cloudState);
+console.log('PAYLOAD RECEBIDO:', payload);
+console.log('CHECK PAYLOAD:', {
+  hasPayload: !!payload,
+  technicians: Array.isArray(payload?.technicians),
+  trainingClasses: Array.isArray(payload?.trainingClasses),
+  schedules: Array.isArray(payload?.schedules),
+});
 
 // compatibilidade com backups antigos
 payload.integrationBases = Array.isArray(payload.integrationBases)
@@ -312,10 +322,16 @@ localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
 localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings));
 
     return true;
-  } catch (error) {
-    console.error('Erro ao carregar do Supabase:', error);
-    return false;
-  }
+  } catch (error: any) {
+  console.error('ERRO REAL initializeFromCloud:', error);
+
+  alert(
+    'Erro real ao carregar Supabase: ' +
+    (error?.message || JSON.stringify(error))
+  );
+
+  return false;
+}
 }
 
   public subscribeToCloudUpdates() {
