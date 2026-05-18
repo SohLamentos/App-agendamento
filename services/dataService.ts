@@ -750,16 +750,52 @@ this.analystMappings = [];
     return this.users.find(u => u.id === ctx.userId) || this.users[0];
   }
 
-  setCurrentUser(user: User) {
+    setCurrentUser(user: User) {
     const firstName = user.firstNameLogin || user.fullName.split(' ')[0].toUpperCase();
     localStorage.setItem('certitech_user', JSON.stringify({
       userId: user.id,
+      id: user.id,
       name: firstName,
+      fullName: user.fullName,
       role: user.role,
       groupId: user.groupId,
       managerId: user.managerId
     }));
     window.location.reload();
+  }
+
+  setActiveGroup(groupId: string) {
+    const raw = localStorage.getItem('certitech_user');
+
+    if (!raw) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    const currentUser = JSON.parse(raw);
+
+    const nextUser = {
+      ...currentUser,
+      groupId,
+      group_id: groupId,
+    };
+
+    localStorage.setItem('certitech_user', JSON.stringify(nextUser));
+
+    const rawProfile = localStorage.getItem('etn_user_profile');
+    if (rawProfile) {
+      try {
+        const profile = JSON.parse(rawProfile);
+        localStorage.setItem(
+          'etn_user_profile',
+          JSON.stringify({
+            ...profile,
+            group_id: groupId,
+          })
+        );
+      } catch {
+        localStorage.removeItem('etn_user_profile');
+      }
+    }
   }
 
   getUsers() { return [...this.users]; }
