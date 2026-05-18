@@ -391,16 +391,14 @@ const cloudWasChangedByAnotherSession =
 
 if (cloudWasChangedByAnotherSession) {
   console.warn(
-    'Estado desatualizado: outra sessão salvou dados antes desta gravação. Recarregando da nuvem para evitar sobrescrita.'
+    'Estado desatualizado: outra sessão salvou dados antes desta gravação.'
   );
-
-  await this.initializeFromCloud();
-  window.dispatchEvent(new Event('data-updated'));
 
   alert(
-    'Os dados foram atualizados por outra máquina. A tela foi sincronizada para evitar perda de agendamentos. Repita a operação se necessário.'
+    'Outra máquina atualizou o sistema antes desta alteração. A tela será recarregada para evitar perda de agendamentos.'
   );
 
+  window.location.reload();
   return;
 }
 
@@ -444,6 +442,7 @@ const mergedPayload = cloudData
 
 const savedState = await saveAppState(groupId, mergedPayload);
 this.cloudUpdatedAt = savedState?.updated_at || new Date().toISOString();
+        this.cloudLoaded = true;
       } catch (error) {
         console.error('Erro ao persistir no Supabase:', error);
       }
