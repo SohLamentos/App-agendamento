@@ -10,7 +10,8 @@ const ROLE_ANALYST = 'Analista';
 
 interface LayoutProps {
   user: User;
-  onRoleSwitch: (role: UserRole) => void;
+  onRoleSwitch: () => void;
+  onGroupSwitch: (groupId: string) => void;
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -27,10 +28,18 @@ const LogoDynamic = ({ groupId }: { groupId: string }) => {
   );
 };
 
-const Layout: React.FC<LayoutProps> = ({ user, onRoleSwitch, children, activeTab, setActiveTab }) => {
+const Layout: React.FC<LayoutProps> = ({
+  user,
+  onRoleSwitch,
+  onGroupSwitch,
+  children,
+  activeTab,
+  setActiveTab
+}) => {
   const [reportsExpanded, setReportsExpanded] = useState(activeTab.startsWith('reports-'));
   const [lastTickets, setLastTickets] = useState<AuditTicket[]>([]);
   const [highlightUpdates, setHighlightUpdates] = useState(false);
+  const availableGroups = ['G1', 'G2', 'G3', 'G4', 'G5'];
 
   useEffect(() => {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -211,12 +220,29 @@ const formatHeaderTicketTime = (value?: string) => {
                 {user.fullName.split(' ')[0].toUpperCase()}
               </div>
             </div>
-            <div>
-              <label className="text-[8px] font-black text-slate-500 uppercase block mb-1.5 tracking-widest">Grupo Ativo</label>
-              <div className="bg-claro-red/10 rounded-xl py-2.5 px-3 text-[10px] text-claro-red font-black border border-claro-red/20 uppercase">
-                {user.groupId} - {user.role}
-              </div>
-            </div>
+           <div>
+  <label className="text-[8px] font-black text-slate-500 uppercase block mb-1.5 tracking-widest">
+    Grupo Ativo
+  </label>
+
+  {user.isGlobalAdmin ? (
+    <select
+      value={user.groupId}
+      onChange={(e) => onGroupSwitch(e.target.value)}
+      className="w-full bg-claro-red/10 rounded-xl py-2.5 px-3 text-[10px] text-claro-red font-black border border-claro-red/20 uppercase outline-none cursor-pointer"
+    >
+      {availableGroups.map(group => (
+        <option key={group} value={group}>
+          {group} - ADMIN GLOBAL
+        </option>
+      ))}
+    </select>
+  ) : (
+    <div className="bg-claro-red/10 rounded-xl py-2.5 px-3 text-[10px] text-claro-red font-black border border-claro-red/20 uppercase">
+      {user.groupId} - {user.role}
+    </div>
+  )}
+</div>
           </div>
         </div>
       </aside>
