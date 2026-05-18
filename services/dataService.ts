@@ -179,10 +179,7 @@ const savedMappings = localStorage.getItem('g_analyst_mapping_v1');
 
     this.users = savedUsers ? JSON.parse(savedUsers) : mockUsers;
     this.ensureFixedAdmin();
-this.technicians =
-  savedTechs && JSON.parse(savedTechs).length > 0
-    ? JSON.parse(savedTechs)
-    : mockTechnicians;
+this.technicians = [];
     // NORMALIZA CPF ANTIGO
 this.technicians = this.technicians.map(t => {
   const cleanCpf = String(t.cpf || '')
@@ -196,14 +193,8 @@ this.technicians = this.technicians.map(t => {
   };
 });
     // PERSISTE NORMALIZAÇÃO ANTIGA
-localStorage.setItem(
-  'certitech_technicians_v15',
-  JSON.stringify(this.technicians)
-);
-this.trainingClasses =
-  savedClasses && JSON.parse(savedClasses).length > 0
-    ? JSON.parse(savedClasses)
-    : mockClasses;
+
+this.trainingClasses = [];
 
 // MIGRAÇÃO: garantir audience nas turmas antigas
 this.trainingClasses = this.trainingClasses.map(c => {
@@ -216,10 +207,10 @@ this.trainingClasses = this.trainingClasses.map(c => {
   return c;
 });
 
-this.schedules = savedSchedules ? JSON.parse(savedSchedules) : [];
+this.schedules = [];
     
-    this.schedulesTeste = savedSchedulesTeste ? JSON.parse(savedSchedulesTeste) : [];
-    this.events = savedEvents ? JSON.parse(savedEvents) : [];
+    this.schedulesTeste = [];
+this.events = [];
     this.schedulingConfig = savedConfig
   ? JSON.parse(savedConfig)
   : { smartPrioritizationEnabled: true, weightCity: 10, weightPending: 5, weightActive: 2 };
