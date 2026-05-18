@@ -261,7 +261,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-  Analistas & Acessos
+  Bases Presenciais
 </h3>
 
               <button
@@ -346,8 +346,8 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                Regras de Roteamento
-              </h3>
+  Analistas & Acessos
+</h3>
               <button
   onClick={() => setIsRuleModalOpen(true)}
   className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest"
@@ -360,11 +360,10 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
               <table className="w-full">
                 <thead className="bg-slate-50">
   <tr>
-    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Cidade/UF</th>
     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Analista</th>
-    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Empresa</th>
-    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Base</th>
-    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Prioridade</th>
+    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">ID Interno</th>
+    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">E-mail</th>
+    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Perfil Agenda</th>
     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Status</th>
     <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Ações</th>
   </tr>
