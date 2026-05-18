@@ -46,8 +46,19 @@ const App: React.FC = () => {
     let unsubscribe: (() => void) | undefined;
 
     const initialize = async () => {
-      await dataService.initializeFromCloud();
-      await auditService.initialize(dataService.getCurrentUser().groupId);
+
+      const loadedFromCloud = await dataService.initializeFromCloud();
+
+if (!loadedFromCloud) {
+  alert(
+    'Não foi possível carregar os dados do Supabase. O app será bloqueado para evitar sobrescrever agendamentos.'
+  );
+
+  setIsInitializing(false);
+  return;
+}
+
+await auditService.initialize(dataService.getCurrentUser().groupId);
 
       // roda somente depois que a nuvem carregou
       // if (authService.isAuthenticated()) {
