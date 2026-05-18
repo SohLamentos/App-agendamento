@@ -1,8 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, User, AuditTicket } from '../types';
+import { User, AuditTicket } from '../types';
 import { authService } from '../services/authService';
 import { auditService } from '../services/auditService';
+
+const ROLE_ADMIN = 'Admin';
+const ROLE_MANAGER = 'Gestor';
+const ROLE_ANALYST = 'Analista';
 
 interface LayoutProps {
   user: User;
@@ -35,7 +39,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onRoleSwitch, children, activeTab
     const allTickets = auditService.getTickets();
 
     const visibleTickets = allTickets
-      .filter(t => user.role === UserRole.ADMIN || t.groupId === user.groupId)
+      .filter(t => user.role === ROLE_ADMIN || t.groupId === user.groupId)
       .filter(t => (t.action || '').toUpperCase() !== 'LOGIN REALIZADO (PRIMEIRO NOME)')
       .sort(
         (a, b) =>
@@ -86,14 +90,14 @@ const formatHeaderTicketTime = (value?: string) => {
 };
 
   const tabs = [
-  { id: 'overview', label: 'Visão Geral', icon: '📊', roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.ANALYST] },
-  { id: 'agenda', label: 'Agenda', icon: '📅', roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.ANALYST] },
-  { id: 'classes', label: 'Turmas e Técnicos', icon: '👥', roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.ANALYST] },
+  { id: 'overview', label: 'Visão Geral', icon: '📊', roles: [ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST] },
+  { id: 'agenda', label: 'Agenda', icon: '📅', roles: [ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST] },
+  { id: 'classes', label: 'Turmas e Técnicos', icon: '👥', roles: [ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST] },
 
   // NOVO MENU
-  { id: 'score', label: 'Score / Carga', icon: '📈', roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.ANALYST] },
+  { id: 'score', label: 'Score / Carga', icon: '📈', roles: [ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST] },
 
-  { id: 'audit', label: 'Tickets (Auditoria)', icon: '🛡️', roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.ANALYST] },
+  { id: 'audit', label: 'Tickets (Auditoria)', icon: '🛡️', roles: [ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST] },
 ];
 
   const reportSubTabs = [
@@ -133,7 +137,7 @@ const formatHeaderTicketTime = (value?: string) => {
             </button>
           ))}
 
-          {(user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) && (
+          {(user.role === ROLE_ADMIN || user.role === ROLE_MANAGER) && (
             <div className="pt-4">
               <button 
                 onClick={() => setReportsExpanded(!reportsExpanded)}
@@ -169,7 +173,7 @@ const formatHeaderTicketTime = (value?: string) => {
             </div>
           )}
 
-          {(user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) && (
+          {(user.role === ROLE_ADMIN || user.role === ROLE_MANAGER) && (
   <div className="pt-4 border-t border-white/10 mt-4 space-y-1.5">
     <button
       onClick={() => setActiveTab('bases-integration')}
@@ -183,7 +187,7 @@ const formatHeaderTicketTime = (value?: string) => {
       BASES & INTEGRAÇÃO
     </button>
 
-    {user.role === UserRole.ADMIN && (
+    {user.role === ROLE_ADMIN && (
       <button
         onClick={() => setActiveTab('admin')}
         className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
