@@ -240,19 +240,31 @@ const cloudState = await loadAppState(groupId);
     this.cloudLoaded = true;
 
     const payload = cloudState.data;
-        if (
-  !payload ||
-  !Array.isArray(payload.technicians) ||
-  !Array.isArray(payload.trainingClasses) ||
-  !Array.isArray(payload.schedules)
-) {
-  console.warn('Supabase incompleto:', payload);
+        const diagnostics = {
+  hasPayload: !!payload,
+  technicians: Array.isArray(payload?.technicians),
+  trainingClasses: Array.isArray(payload?.trainingClasses),
+  schedules: Array.isArray(payload?.schedules),
+  schedulesTeste: Array.isArray(payload?.schedulesTeste),
+  events: Array.isArray(payload?.events),
+  groups: Array.isArray(payload?.groups),
+  users: Array.isArray(payload?.users),
+};
 
-alert(
-  'Supabase carregou, mas o backup está incompleto. Ver console para detalhes.'
-);
+console.log('DIAGNOSTICO PAYLOAD:', diagnostics);
+console.log('PAYLOAD COMPLETO:', payload);
 
-return false;
+const invalidFields = Object.entries(diagnostics)
+  .filter(([_, valid]) => !valid)
+  .map(([field]) => field);
+
+if (invalidFields.length > 0) {
+  alert(
+    'Payload incompleto. Campos inválidos: ' +
+    invalidFields.join(', ')
+  );
+
+  return false;
 }
     console.log('CLOUD STATE RECEBIDO:', cloudState);
 console.log('PAYLOAD RECEBIDO:', payload);
