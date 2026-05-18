@@ -3209,6 +3209,23 @@ public getUnconfiguredCities() {
     const newCity: CityGroup = { id: `city-${Date.now()}`, groupId: params.groupId, name: params.city.toUpperCase(), uf: params.uf.toUpperCase(), type: ExpertiseType.PRESENTIAL, active: true, responsibleAnalystIds: params.analystIds };
     this.cities.push(newCity); this.persist(); window.dispatchEvent(new Event('data-updated'));
   }
+  public updateUser(userId: string, patch: Partial<User>) {
+  const index = this.users.findIndex(u => u.id === userId);
+
+  if (index === -1) {
+    alert('Analista não encontrado.');
+    return;
+  }
+
+  this.users[index] = {
+    ...this.users[index],
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+}
 
   public updateUserStatus(userId: string, active: boolean) {
   const user = this.users.find(u => u.id === userId);
@@ -3230,6 +3247,7 @@ public getUnconfiguredCities() {
   this.persist();
   window.dispatchEvent(new Event('data-updated'));
 }
+  
 
   public downloadTemplate() {
   const headers = [[
