@@ -65,15 +65,24 @@ class AuthService {
     return localStorage.getItem('certitech_session_active') === 'true';
   }
 
-  getCurrentUser(): AuthProfile | null {
-    const raw = localStorage.getItem('etn_user_profile');
-    if (!raw) return null;
+  getCurrentUser(): any | null {
+    const rawLegacy = localStorage.getItem('certitech_user');
 
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
+    if (rawLegacy) {
+      try {
+        return JSON.parse(rawLegacy);
+      } catch {
+        localStorage.removeItem('certitech_user');
+      }
     }
+
+    return null;
+  }
+
+  private mapRole(role: string): string {
+    if (role === 'admin') return 'Admin';
+    if (role === 'gestor') return 'Gestor';
+    return 'Analista';
   }
 
   private setSession(profile: AuthProfile) {
@@ -83,15 +92,26 @@ class AuthService {
       'certitech_user',
       JSON.stringify({
         userId: profile.legacy_user_id || profile.user_id,
+        id: profile.legacy_user_id || profile.user_id,
         authUserId: profile.user_id,
-        name: profile.normalized_login || profile.name || profile.full_name,
-        fullName: profile.full_name,
+
+        name: profile.normalized_login || profile.name || profile.full_name || profile.email,
+        fullName: profile.full_name || profile.name || profile.email,
+        firstNameLogin: profile.normalized_login || profile.name || 'ADMIN',
+        normalizedLogin: profile.normalized_login || profile.name || 'ADMIN',
+
         email: profile.email,
-        role: profile.role,
+        role: this.mapRole(profile.role),
         groupId: profile.group_id,
+        group_id: profile.group_id,
+
+        active: profile.active,
         isGlobalAdmin: profile.is_global_admin,
+        is_global_admin: profile.is_global_admin,
+
         permissions: profile.permissions || {},
         analystProfileId: profile.analyst_profile_id || null,
+        analyst_profile_id: profile.analyst_profile_id || null,
       })
     );
 
