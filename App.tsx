@@ -1,4 +1,5 @@
 
+import { auditService } from './services/auditService';
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -46,6 +47,7 @@ const App: React.FC = () => {
 
     const initialize = async () => {
       await dataService.initializeFromCloud();
+      await auditService.initialize(dataService.getCurrentUser().groupId);
 
       // roda somente depois que a nuvem carregou
       // if (authService.isAuthenticated()) {
@@ -90,7 +92,9 @@ const App: React.FC = () => {
 
     reloadTimer = setTimeout(async () => {
       await dataService.initializeFromCloud();
-      window.dispatchEvent(new Event('data-updated'));
+await auditService.refresh(dataService.getCurrentUser().groupId);
+window.dispatchEvent(new Event('data-updated'));
+      
     }, 30 * 60 * 1000);
   };
 
