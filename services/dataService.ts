@@ -117,6 +117,7 @@ class DataService {
   private persistQueue: Promise<void> = Promise.resolve();
   private persistVersion: number = 0;
   private cloudUpdatedAt: string | null = null;
+  private cloudLoaded: boolean = false;
 
   private users: User[];
   private groups: Group[];
@@ -236,6 +237,7 @@ const cloudState = await loadAppState(groupId);
     }
 
     this.cloudUpdatedAt = cloudState.updated_at || null;
+    this.cloudLoaded = true;
 
     const payload = cloudState.data;
     if (
@@ -352,6 +354,18 @@ localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings
   localStorage.setItem('g_integration_bases_v1', JSON.stringify(this.integrationBases));
   localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
   localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings));
+
+    if (!this.cloudLoaded) {
+  console.error(
+    'Persistência bloqueada: Supabase ainda não foi carregado. Isso evita sobrescrever o banco com estado vazio/local.'
+  );
+
+  alert(
+    'Os dados ainda não foram carregados da nuvem. Atualize a página antes de fazer alterações.'
+  );
+
+  return;
+}
 
   const payload = this.buildFullPayload();
   const groupId = this.getActiveGroupId();
