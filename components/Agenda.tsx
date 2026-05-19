@@ -99,6 +99,51 @@ const getRegion = (user: any) => {
     });
 }, [user]);
 
+  
+  const AGENDA_ANALYST_ORDER_KEY = `agenda_analyst_order_${user.groupId || 'GERAL'}`;
+
+const sensors = useSensors(
+  useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8
+    }
+  })
+);
+
+const [analystOrder, setAnalystOrder] = useState<string[]>(() => {
+  try {
+    const saved = localStorage.getItem(AGENDA_ANALYST_ORDER_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+});
+
+  const sortedAnalysts = useMemo(() => {
+  if (!analystOrder.length) return analysts;
+
+  const orderMap = new Map(
+    analystOrder.map((id, index) => [String(id), index])
+  );
+
+  return [...analysts].sort((a, b) => {
+    const indexA = orderMap.has(String(a.id))
+      ? orderMap.get(String(a.id))!
+      : 9999;
+
+    const indexB = orderMap.has(String(b.id))
+      ? orderMap.get(String(b.id))!
+      : 9999;
+
+    if (indexA !== indexB) return indexA - indexB;
+
+    return (a.normalizedLogin || '').localeCompare(
+      b.normalizedLogin || '',
+      'pt-BR'
+    );
+  });
+}, [analysts, analystOrder]);
+
   const [events, setEvents] = useState<EventSchedule[]>(dataService.getEvents());
   const [schedules, setSchedules] = useState(dataService.getSchedules());
   const [isTestMode, setIsTestMode] = useState(dataService.isTestMode());
@@ -1576,6 +1621,33 @@ setHoverTooltip(null);
   });
 };
 
+  const handleAnalystDragEnd = (event: any) => {
+  const { active, over } = event;
+
+  if (!over || active.id === over.id) return;
+
+  const currentIds = sortedAnalysts.map(a => String(a.id));
+
+  const oldIndex = currentIds.indexOf(String(active.id));
+  const newIndex = currentIds.indexOf(String(over.id));
+
+  if (oldIndex === -1 || newIndex === -1) return;
+
+  const newOrder = arrayMove(currentIds, oldIndex, newIndex);
+
+  setAnalystOrder(newOrder);
+
+  localStorage.setItem(
+    AGENDA_ANALYST_ORDER_KEY,
+    JSON.stringify(newOrder)
+  );
+
+  setToast({
+    message: 'Ordem dos analistas salva.',
+    type: 'success'
+  });
+};
+
 return (
 
 
@@ -1778,7 +1850,17 @@ return (
   </div>
 )}
   
-        <table className="w-full border-collapse table-fixed min-w-[1400px]">
+        <DndContext
+  sensors={sensors}
+  collisionDetection={closestCenter}
+  onDragEnd={handleAnalystDragEnd}
+>
+  <SortableContext
+    items={sortedAnalysts.map(a => String(a.id))}
+    strategy={verticalListSortingStrategy}
+  >
+
+<table className="w-full border-collapse table-fixed min-w-[1400px]">
           <thead>
   <tr className="bg-slate-900 text-white shadow-xl">
     <th className="w-72 p-4 text-left font-black text-[11px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
@@ -1796,7 +1878,7 @@ return (
   </tr>
 </thead>
           <tbody>
-            {analysts.map((analyst, aIdx) => (
+            {sortedAnalysts.map((analyst, aIdx) => (
               <React.Fragment key={analyst.id}>
                 <tr className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-9 transition-colors`}>
                   <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-9">
@@ -1947,7 +2029,10 @@ setPendingMove({
               </React.Fragment>
             ))}
           </tbody>
-        </table>
+                </table>
+
+  </SortableContext>
+</DndContext>
       </div>
 
       <div className="flex gap-4 flex-wrap px-4 pb-4">
@@ -2482,6 +2567,7 @@ setPendingMove({
         pendingMove.toDateIso
       );
 
+    
   return (
     <div className="space-y-2 pt-3">
       {validation.blocked && (
