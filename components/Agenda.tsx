@@ -4,22 +4,7 @@ import * as XLSX from 'xlsx';
 import { dataService } from '../services/dataService';
 import { User, UserRole, EventSchedule, Shift, ExpertiseType, ScheduleStatus, CertificationSchedule } from '../types';
 import { auditService } from '../services/auditService';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors
-} from '@dnd-kit/core';
 
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable
-} from '@dnd-kit/sortable';
-
-import { CSS } from '@dnd-kit/utilities';
 
 interface AgendaProps {
   user: User;
@@ -105,13 +90,6 @@ const getRegion = (user: any) => {
   
   const AGENDA_ANALYST_ORDER_KEY = `agenda_analyst_order_${user.groupId || 'GERAL'}`;
 
-const sensors = useSensors(
-  useSensor(PointerSensor, {
-    activationConstraint: {
-      distance: 8
-    }
-  })
-);
 
 const [analystOrder, setAnalystOrder] = useState<string[]>(() => {
   try {
@@ -121,6 +99,8 @@ const [analystOrder, setAnalystOrder] = useState<string[]>(() => {
     return [];
   }
 });
+
+  const [draggingAnalystId, setDraggingAnalystId] = useState<string | null>(null);
 
   const sortedAnalysts = useMemo(() => {
   if (!analystOrder.length) return analysts;
@@ -1624,19 +1604,40 @@ setHoverTooltip(null);
   });
 };
 
-  const handleAnalystDragEnd = (event: any) => {
-  const { active, over } = event;
-
-  if (!over || active.id === over.id) return;
+  const handleAnalystDrop = (targetAnalystId: string) => {
+  if (!draggingAnalystId || draggingAnalystId === targetAnalystId) return;
 
   const currentIds = sortedAnalysts.map(a => String(a.id));
 
-  const oldIndex = currentIds.indexOf(String(active.id));
-  const newIndex = currentIds.indexOf(String(over.id));
+  const oldIndex = currentIds.indexOf(String(draggingAnalystId));
+  const newIndex = currentIds.indexOf(String(targetAnalystId));
 
   if (oldIndex === -1 || newIndex === -1) return;
 
-  const newOrder = arrayMove(currentIds, oldIndex, newIndex);
+  const fromAnalyst = sortedAnalysts.find(
+    a => String(a.id) === String(draggingAnalystId)
+  );
+
+  const toAnalyst = sortedAnalysts.find(
+    a => String(a.id) === String(targetAnalystId)
+  );
+
+  const confirmed = window.confirm(
+    `Deseja mover ${
+      fromAnalyst?.normalizedLogin || draggingAnalystId
+    } para a posição de ${
+      toAnalyst?.normalizedLogin || targetAnalystId
+    }?`
+  );
+
+  if (!confirmed) {
+    setDraggingAnalystId(null);
+    return;
+  }
+
+  const newOrder = [...currentIds];
+  const [removed] = newOrder.splice(oldIndex, 1);
+  newOrder.splice(newIndex, 0, removed);
 
   setAnalystOrder(newOrder);
 
@@ -1644,6 +1645,8 @@ setHoverTooltip(null);
     AGENDA_ANALYST_ORDER_KEY,
     JSON.stringify(newOrder)
   );
+
+  setDraggingAnalystId(null);
 
   setToast({
     message: 'Ordem dos analistas salva.',
@@ -1853,16 +1856,6 @@ return (
   </div>
 )}
   
-        <DndContext
-  sensors={sensors}
-  collisionDetection={closestCenter}
-  onDragEnd={handleAnalystDragEnd}
->
-  <SortableContext
-    items={sortedAnalysts.map(a => String(a.id))}
-    strategy={verticalListSortingStrategy}
-  >
-
 <table className="w-full border-collapse table-fixed min-w-[1400px]">
           <thead>
   <tr className="bg-slate-900 text-white shadow-xl">
@@ -1881,48 +1874,34 @@ return (
   </tr>
 </thead>
           <tbody>
-            {sortedAnalysts.map((analyst, aIdx) => {
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition
-  } = useSortable({
-    id: String(analyst.id)
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition
-  };
-
-  return (
+            {sortedAnalysts.map((analyst, aIdx) => (
               <React.Fragment key={analyst.id}>
 <tr
-  ref={setNodeRef}
-  style={{
-    ...style,
-    position: 'relative',
-    zIndex: transform ? 50 : 'auto'
-  }}
-  {...attributes}
-  className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-9 transition-colors`}
+  onDragOver={(e) => e.preventDefault()}
+  onDrop={() => handleAnalystDrop(String(analyst.id))}
+  className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-9 transition-colors ${
+    draggingAnalystId === String(analyst.id) ? 'opacity-60' : ''
+  }`}
 >
                   <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-9">
                     <div
-  {...listeners}
+  draggable
+  onDragStart={() => setDraggingAnalystId(String(analyst.id))}
+  onDragEnd={() => setDraggingAnalystId(null)}
   className="flex items-center px-2 py-1 h-full cursor-grab active:cursor-grabbing select-none"
-  style={{ touchAction: 'none' }}
   title="Arraste para reorganizar"
 >
   <span className={`w-1.5 h-8 mr-4 rounded-full ${aIdx % 2 === 0 ? 'bg-claro-red' : 'bg-slate-900'}`}></span>
 
-  <span className="mr-2 text-slate-400 font-black">☰</span>
+  <span className="mr-2 text-slate-400 font-black">
+    ☰
+  </span>
 
-  <p className="font-black text-[11px] uppercase truncate">{analyst.normalizedLogin}</p>
+  <p className="font-black text-[11px] uppercase truncate">
+    {analyst.normalizedLogin}
+  </p>
 </div>
+  
                   </td>
                   {weekDates.map((date, idx) => (
                     <td 
@@ -2064,13 +2043,11 @@ setPendingMove({
                 </tr>
                 <tr><td colSpan={6} className="h-1 bg-slate-900/10"></td></tr>
                             </React.Fragment>
-  );
-})}
+ 
+))}
           </tbody>
                 </table>
 
-  </SortableContext>
-</DndContext>
       </div>
 
       <div className="flex gap-4 flex-wrap px-4 pb-4">
