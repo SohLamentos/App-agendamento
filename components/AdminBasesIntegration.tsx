@@ -589,9 +589,12 @@ const handleSaveAnalyst = () => {
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
                 Analistas & Acessos
               </h3>
-              <button className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">
-                Novo Analista
-              </button>
+              <button
+  onClick={() => setIsNewAnalystModalOpen(true)}
+  className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+>
+  Novo Analista
+</button>
             </div>
 
             <div className="rounded-[28px] border border-slate-200 overflow-hidden">
@@ -757,6 +760,76 @@ const handleSaveAnalyst = () => {
           </div>
         </div>
           )}
+
+      {isNewAnalystModalOpen && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-8 rounded-[30px] w-[520px] space-y-4">
+      <h3 className="text-sm font-black uppercase text-slate-900">
+        Novo Analista
+      </h3>
+
+      <input
+        placeholder="Nome completo"
+        value={newAnalystForm.fullName}
+        onChange={(e) =>
+          setNewAnalystForm({
+            ...newAnalystForm,
+            fullName: e.target.value,
+          })
+        }
+        className="w-full p-3 border rounded-xl text-xs font-bold uppercase"
+      />
+
+      <input
+        placeholder="E-mail corporativo"
+        value={newAnalystForm.email}
+        onChange={(e) =>
+          setNewAnalystForm({
+            ...newAnalystForm,
+            email: e.target.value,
+          })
+        }
+        className="w-full p-3 border rounded-xl text-xs font-bold"
+      />
+
+      <input
+        placeholder="Senha inicial"
+        value={newAnalystForm.password}
+        onChange={(e) =>
+          setNewAnalystForm({
+            ...newAnalystForm,
+            password: e.target.value,
+          })
+        }
+        className="w-full p-3 border rounded-xl text-xs font-bold"
+      />
+
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+        <p className="text-[10px] font-black uppercase text-amber-700 leading-relaxed">
+          O login do analista será criado automaticamente no Supabase.
+        </p>
+      </div>
+
+      <div className="flex gap-2 pt-4">
+        <button
+          onClick={() => {
+            setIsNewAnalystModalOpen(false);
+          }}
+          className="flex-1 p-3 bg-slate-200 rounded-xl text-xs font-black uppercase"
+        >
+          Cancelar
+        </button>
+
+        <button
+          onClick={handleCreateAnalyst}
+          className="flex-1 p-3 bg-claro-red text-white rounded-xl text-xs font-black uppercase"
+        >
+          Criar Analista
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
             {isAnalystModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
