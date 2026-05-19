@@ -565,14 +565,21 @@ const handleSaveAnalyst = () => {
 </button>
 
             <button
-              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
-                analyst.active
-                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                  : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-              }`}
-            >
-              {analyst.active ? 'Inativar' : 'Ativar'}
-            </button>
+  onClick={() => {
+    dataService.updateUser(analyst.id, {
+      active: !analyst.active,
+      updatedAt: new Date().toISOString()
+    });
+    refresh();
+  }}
+  className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
+    analyst.active
+      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+      : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+  }`}
+>
+  {analyst.active ? 'Inativar' : 'Ativar'}
+</button>
 
           </div>
         </td>
