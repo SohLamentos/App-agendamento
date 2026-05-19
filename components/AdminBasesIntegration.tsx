@@ -856,11 +856,11 @@ const handleSaveAnalyst = () => {
         </button>
 
         <button
-          onClick={handleCreateAnalyst}
-          className="flex-1 p-3 bg-claro-red text-white rounded-xl text-xs font-black uppercase"
-        >
-          Criar Analista
-        </button>
+  onClick={handleCreateAnalyst}
+  className="flex-1 p-3 bg-claro-red text-white rounded-xl text-xs font-black uppercase transition-all duration-100 shadow-[0_5px_0_#7f0000] hover:translate-y-[1px] hover:shadow-[0_4px_0_#7f0000] active:translate-y-[5px] active:shadow-none"
+>
+  Criar Analista
+</button>
       </div>
     </div>
   </div>
