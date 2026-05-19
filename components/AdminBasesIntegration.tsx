@@ -31,6 +31,8 @@ const [newAnalystForm, setNewAnalystForm] = useState({
   fullName: '',
   email: '',
   password: 'Claro@123',
+  mode: 'link',
+  existingAnalystId: '',
 });
 
   const [isBaseModalOpen, setIsBaseModalOpen] = useState(false);
@@ -159,6 +161,22 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
 
   const email = newAnalystForm.email.trim().toLowerCase();
 
+  let legacyUserId = '';
+let analystProfileId = '';
+
+if (newAnalystForm.mode === 'link') {
+  const existing = operationalAnalysts.find(
+    a => a.id === newAnalystForm.existingAnalystId
+  );
+
+  if (!existing) {
+    alert('Selecione um analista existente.');
+    return;
+  }
+
+  legacyUserId = existing.id;
+  analystProfileId = existing.analystProfileId || '';
+} else {
   const nextUserNumber =
     Math.max(
       0,
@@ -175,8 +193,9 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
         .filter(n => !Number.isNaN(n))
     ) + 1;
 
-  const legacyUserId = `u${nextUserNumber}`;
-  const analystProfileId = `ap${nextAnalystProfileNumber}`;
+  legacyUserId = `u${nextUserNumber}`;
+  analystProfileId = `ap${nextAnalystProfileNumber}`;
+}
 
   const { data, error } = await supabase.functions.invoke(
     'create-analyst-user',
@@ -197,6 +216,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
     return;
   }
 
+  if (newAnalystForm.mode === 'create') {
   dataService.addUser({
     id: legacyUserId,
     fullName: normalizedName,
@@ -210,6 +230,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
+}
 
   setIsNewAnalystModalOpen(false);
 
@@ -328,6 +349,12 @@ const handleSaveAnalyst = () => {
   }, []);
 
   const analysts = useMemo(() => {
+  return users.filter(
+    u => u.role === UserRole.ANALYST && u.groupId === user.groupId
+  );
+}, [users, user.groupId]);
+
+  const operationalAnalysts = useMemo(() => {
   return users.filter(
     u => u.role === UserRole.ANALYST && u.groupId === user.groupId
   );
