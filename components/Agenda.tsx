@@ -4,6 +4,19 @@ import * as XLSX from 'xlsx';
 import { dataService } from '../services/dataService';
 import { User, UserRole, EventSchedule, Shift, ExpertiseType, ScheduleStatus, CertificationSchedule } from '../types';
 import { auditService } from '../services/auditService';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
+
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable';
 
 interface AgendaProps {
   user: User;
