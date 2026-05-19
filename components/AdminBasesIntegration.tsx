@@ -24,6 +24,14 @@ const [analystForm, setAnalystForm] = useState({
   active: true
 });
 
+const [isNewAnalystModalOpen, setIsNewAnalystModalOpen] = useState(false);
+
+const [newAnalystForm, setNewAnalystForm] = useState({
+  fullName: '',
+  email: '',
+  password: 'Claro@123',
+});
+
   const [isBaseModalOpen, setIsBaseModalOpen] = useState(false);
   const [editingBaseId, setEditingBaseId] = useState<string | null>(null);
   const [newBase, setNewBase] = useState({
@@ -136,7 +144,87 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   refresh();
 };
 
+  const handleCreateAnalyst = async () => {
+  if (!newAnalystForm.fullName.trim() || !newAnalystForm.email.trim()) {
+    alert('Informe nome e e-mail do analista.');
+    return;
+  }
+
+  const normalizedName = newAnalystForm.fullName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+
+  const email = newAnalystForm.email.trim().toLowerCase();
+
+  const nextUserNumber =
+    Math.max(
+      0,
+      ...users
+        .map(u => Number(String(u.id).replace('u', '')))
+        .filter(n => !Number.isNaN(n))
+    ) + 1;
+
+  const nextAnalystProfileNumber =
+    Math.max(
+      0,
+      ...users
+        .map(u => Number(String(u.analystProfileId || '').replace('ap', '')))
+        .filter(n => !Number.isNaN(n))
+    ) + 1;
+
+  const legacyUserId = `u${nextUserNumber}`;
+  const analystProfileId = `ap${nextAnalystProfileNumber}`;
+
+  const { data, error } = await dataService.getSupabaseClient().functions.invoke(
+    'create-analyst-user',
+    {
+      body: {
+        email,
+        password: newAnalystForm.password || 'Claro@123',
+        fullName: normalizedName,
+        groupId: user.groupId,
+        legacyUserId,
+        analystProfileId,
+      },
+    }
+  );
+
+  if (error || data?.error) {
+    alert(data?.error || error?.message || 'Erro ao criar login do analista.');
+    return;
+  }
+
+  dataService.addUser({
+    id: legacyUserId,
+    fullName: normalizedName,
+    normalizedLogin: normalizedName,
+    firstNameLogin: normalizedName.split(' ')[0],
+    email,
+    role: UserRole.ANALYST,
+    groupId: user.groupId,
+    analystProfileId,
+    active: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  setIsNewAnalystModalOpen(false);
+
+  setNewAnalystForm({
+    fullName: '',
+    email: '',
+    password: 'Claro@123',
+  });
+
+  refresh();
+
+  alert('Analista criado com sucesso. Login já disponível.');
+};
+
   const handleEditAnalyst = (analyst: User) => {
+    
   setEditingAnalystId(analyst.id);
 
   setAnalystForm({
