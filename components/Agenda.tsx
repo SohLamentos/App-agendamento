@@ -1900,7 +1900,13 @@ return (
 
   return (
               <React.Fragment key={analyst.id}>
-                <tr className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-9 transition-colors`}>
+                <tr
+  ref={setNodeRef}
+  style={style}
+  {...attributes}
+  {...listeners}
+  className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-9 transition-colors cursor-grab active:cursor-grabbing`}
+>
                   <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-9">
                     <div className="flex items-center px-2 py-1 h-full">
                       <span className={`w-1.5 h-8 mr-4 rounded-full ${aIdx % 2 === 0 ? 'bg-claro-red' : 'bg-slate-900'}`}></span>
