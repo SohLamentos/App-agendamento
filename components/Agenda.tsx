@@ -2046,8 +2046,9 @@ setPendingMove({
                   ))}
                 </tr>
                 <tr><td colSpan={6} className="h-1 bg-slate-900/10"></td></tr>
-              </React.Fragment>
-            ))}
+                            </React.Fragment>
+  );
+})}
           </tbody>
                 </table>
 
