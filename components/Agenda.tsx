@@ -1900,18 +1900,29 @@ return (
 
   return (
               <React.Fragment key={analyst.id}>
-                <tr
+<tr
   ref={setNodeRef}
-  style={style}
+  style={{
+    ...style,
+    position: 'relative',
+    zIndex: transform ? 50 : 'auto'
+  }}
   {...attributes}
-  {...listeners}
-  className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-9 transition-colors cursor-grab active:cursor-grabbing`}
+  className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-9 transition-colors`}
 >
                   <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-9">
-                    <div className="flex items-center px-2 py-1 h-full">
-                      <span className={`w-1.5 h-8 mr-4 rounded-full ${aIdx % 2 === 0 ? 'bg-claro-red' : 'bg-slate-900'}`}></span>
-                      <p className="font-black text-[11px] uppercase truncate">{analyst.normalizedLogin}</p>
-                    </div>
+                    <div
+  {...listeners}
+  className="flex items-center px-2 py-1 h-full cursor-grab active:cursor-grabbing select-none"
+  style={{ touchAction: 'none' }}
+  title="Arraste para reorganizar"
+>
+  <span className={`w-1.5 h-8 mr-4 rounded-full ${aIdx % 2 === 0 ? 'bg-claro-red' : 'bg-slate-900'}`}></span>
+
+  <span className="mr-2 text-slate-400 font-black">☰</span>
+
+  <p className="font-black text-[11px] uppercase truncate">{analyst.normalizedLogin}</p>
+</div>
                   </td>
                   {weekDates.map((date, idx) => (
                     <td 
