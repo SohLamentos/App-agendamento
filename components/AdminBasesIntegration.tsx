@@ -830,17 +830,87 @@ const handleSaveAnalyst = () => {
         Novo Analista
       </h3>
 
-      <input
-        placeholder="Nome completo"
-        value={newAnalystForm.fullName}
-        onChange={(e) =>
-          setNewAnalystForm({
-            ...newAnalystForm,
-            fullName: e.target.value,
-          })
-        }
-        className="w-full p-3 border rounded-xl text-xs font-bold uppercase"
-      />
+      <div className="space-y-3">
+  <label className="text-[10px] font-black uppercase text-slate-500">
+    Tipo de criação
+  </label>
+
+  <div className="flex gap-2">
+    <button
+      type="button"
+      onClick={() =>
+        setNewAnalystForm({
+          ...newAnalystForm,
+          mode: 'link',
+        })
+      }
+      className={`flex-1 p-3 rounded-xl text-[10px] font-black uppercase transition-all ${
+        newAnalystForm.mode === 'link'
+          ? 'bg-claro-red text-white'
+          : 'bg-slate-100 text-slate-500'
+      }`}
+    >
+      Vincular Existente
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        setNewAnalystForm({
+          ...newAnalystForm,
+          mode: 'create',
+        })
+      }
+      className={`flex-1 p-3 rounded-xl text-[10px] font-black uppercase transition-all ${
+        newAnalystForm.mode === 'create'
+          ? 'bg-claro-red text-white'
+          : 'bg-slate-100 text-slate-500'
+      }`}
+    >
+      Criar Novo
+    </button>
+  </div>
+</div>
+
+      {newAnalystForm.mode === 'link' && (
+  <select
+  value={newAnalystForm.existingAnalystId}
+  onChange={(e) => {
+    const selected = operationalAnalysts.find(
+      a => a.id === e.target.value
+    );
+
+    setNewAnalystForm({
+      ...newAnalystForm,
+      existingAnalystId: e.target.value,
+      fullName: selected?.fullName || '',
+    });
+  }}
+  className="w-full p-3 border rounded-xl text-xs font-bold"
+>
+    <option value="">Selecione um analista existente</option>
+
+    {operationalAnalysts.map((analyst) => (
+      <option key={analyst.id} value={analyst.id}>
+        {analyst.fullName} ({analyst.id})
+      </option>
+    ))}
+  </select>
+)}
+
+      {newAnalystForm.mode === 'create' && (
+  <input
+    placeholder="Nome completo"
+    value={newAnalystForm.fullName}
+    onChange={(e) =>
+      setNewAnalystForm({
+        ...newAnalystForm,
+        fullName: e.target.value,
+      })
+    }
+    className="w-full p-3 border rounded-xl text-xs font-bold uppercase"
+  />
+)}
 
       <input
         placeholder="E-mail corporativo"
