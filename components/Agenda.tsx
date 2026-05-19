@@ -15,8 +15,11 @@ import {
 import {
   arrayMove,
   SortableContext,
-  verticalListSortingStrategy
+  verticalListSortingStrategy,
+  useSortable
 } from '@dnd-kit/sortable';
+
+import { CSS } from '@dnd-kit/utilities';
 
 interface AgendaProps {
   user: User;
@@ -1878,7 +1881,24 @@ return (
   </tr>
 </thead>
           <tbody>
-            {sortedAnalysts.map((analyst, aIdx) => (
+            {sortedAnalysts.map((analyst, aIdx) => {
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition
+  } = useSortable({
+    id: String(analyst.id)
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  };
+
+  return (
               <React.Fragment key={analyst.id}>
                 <tr className={`${aIdx % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]'} border-b border-slate-900/10 h-9 transition-colors`}>
                   <td className="p-0 border-r-2 border-slate-300 sticky left-0 z-20 bg-inherit shadow-md h-9">
