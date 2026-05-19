@@ -1,3 +1,4 @@
+import { supabase } from '../services/supabase';
 import React, { useEffect, useMemo, useState } from 'react';
 import { dataService } from '../services/dataService';
 import { User, UserRole, IntegrationBase, RoutingRule, AnalystIntegrationMapping } from '../types';
@@ -177,7 +178,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   const legacyUserId = `u${nextUserNumber}`;
   const analystProfileId = `ap${nextAnalystProfileNumber}`;
 
-  const { data, error } = await dataService.getSupabaseClient().functions.invoke(
+  const { data, error } = await supabase.functions.invoke(
     'create-analyst-user',
     {
       body: {
@@ -221,6 +222,46 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   refresh();
 
   alert('Analista criado com sucesso. Login já disponível.');
+};
+
+  const handleToggleAnalystStatus = async (analyst: User) => {
+  const nextActive = !analyst.active;
+
+  const confirmMessage = nextActive
+    ? `Deseja ativar o analista ${analyst.fullName}?`
+    : `Deseja inativar o analista ${analyst.fullName}? Ele não deverá conseguir acessar o app.`;
+
+  if (!window.confirm(confirmMessage)) return;
+
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      'set-analyst-active',
+      {
+        body: {
+          legacyUserId: analyst.id,
+          email: analyst.email,
+          active: nextActive,
+        },
+      }
+    );
+
+    if (error || data?.error) {
+      alert(data?.error || error?.message || 'Erro ao atualizar acesso do analista.');
+      return;
+    }
+
+    dataService.updateUser(analyst.id, {
+      active: nextActive,
+      updatedAt: new Date().toISOString(),
+    });
+
+    refresh();
+
+    alert(nextActive ? 'Analista ativado com sucesso.' : 'Analista inativado com sucesso.');
+  } catch (err: any) {
+    console.error(err);
+    alert(err?.message || 'Erro inesperado ao atualizar analista.');
+  }
 };
 
   const handleEditAnalyst = (analyst: User) => {
@@ -287,10 +328,10 @@ const handleSaveAnalyst = () => {
   }, []);
 
   const analysts = useMemo(() => {
-    return users.filter(
-      u => u.role === UserRole.ANALYST && u.active && u.groupId === user.groupId
-    );
-  }, [users, user.groupId]);
+  return users.filter(
+    u => u.role === UserRole.ANALYST && u.groupId === user.groupId
+  );
+}, [users, user.groupId]);
 
   const resetBaseForm = () => {
     setEditingBaseId(null);
@@ -656,13 +697,7 @@ const handleSaveAnalyst = () => {
 </button>
 
             <button
-  onClick={() => {
-    dataService.updateUser(analyst.id, {
-      active: !analyst.active,
-      updatedAt: new Date().toISOString()
-    });
-    refresh();
-  }}
+  onClick={() => handleToggleAnalystStatus(analyst)}
   className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
     analyst.active
       ? 'bg-red-100 text-red-700 hover:bg-red-200'
