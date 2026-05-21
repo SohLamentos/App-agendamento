@@ -1,4 +1,5 @@
 
+import BaseCollectiveSchedule from './components/BaseCollectiveSchedule';
 import { auditService } from './services/auditService';
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
@@ -194,6 +195,17 @@ window.dispatchEvent(new Event('data-updated'));
       case 'score': return <ScoreBoard user={currentUser} />;
       case 'audit': return <AuditTickets user={currentUser} />;
       case 'bases-integration': return <AdminBasesIntegration user={currentUser} />;
+      case 'base-collective-schedule':
+  return (
+    <BaseCollectiveSchedule
+      bases={dataService.getIntegrationBases()}
+      analysts={dataService.getUsers().filter(u =>
+        u.role === 'Analista' &&
+        u.active === true &&
+        (currentUser.role === 'Admin' || u.groupId === currentUser.groupId)
+      )}
+    />
+  );
       case 'reports-operational': return <OperationalDashboard />;
       case 'reports-quality': return <QualityReport />;
       case 'reports-capacity-risk': return <CapacityRiskReport />;
