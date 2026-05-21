@@ -146,7 +146,9 @@ const formatHeaderTicketTime = (value?: string) => {
             </button>
           ))}
 
-          {(user.role === ROLE_ADMIN || user.role === ROLE_MANAGER) && (
+          {(user.role === ROLE_ADMIN ||
+  user.role === ROLE_MANAGER ||
+  user.role === ROLE_ANALYST) && (
             <div className="pt-4">
               <button 
                 onClick={() => setReportsExpanded(!reportsExpanded)}
@@ -195,6 +197,17 @@ const formatHeaderTicketTime = (value?: string) => {
       <span className="mr-3 text-lg opacity-80">🏢</span>
       BASES & INTEGRAÇÃO
     </button>
+    <button
+  onClick={() => setActiveTab('base-collective-schedule')}
+  className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+    activeTab === 'base-collective-schedule'
+      ? 'bg-blue-600 text-white shadow-lg'
+      : 'text-blue-300 hover:bg-blue-500/10 hover:text-white'
+  }`}
+>
+  <span className="mr-3 text-lg opacity-80">📍</span>
+  AGENDA COLETIVA
+</button>
 
     {user.role === ROLE_ADMIN && (
       <button
@@ -253,7 +266,9 @@ const formatHeaderTicketTime = (value?: string) => {
   {activeTab === 'admin'
   ? 'Painel de Controle Nacional'
   : activeTab === 'bases-integration'
-  ? 'Bases & Integração PowerApps'
+? 'Bases & Integração PowerApps'
+: activeTab === 'base-collective-schedule'
+? 'Agenda Coletiva por Base'
   : activeTab === 'score'
   ? 'Monitoramento de Score'
   : 'Gestão Operacional'}
