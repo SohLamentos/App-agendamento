@@ -189,10 +189,10 @@ export default function BaseCollectiveSchedule({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-800">
-            Agenda Coletiva por Base
+            Datas Fixas Presenciais Por Base
           </h1>
           <p className="text-sm text-slate-500">
-            Crie bases com data fixa para certificação presencial. Esta tela ainda não altera as regras atuais do app.
+            Configure bases com datas presenciais programadas para baixo volume de técnicos. Esta tela ainda não altera as regras atuais do app.
           </p>
         </div>
 
@@ -200,7 +200,7 @@ export default function BaseCollectiveSchedule({
           onClick={() => setShowCreate(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg"
         >
-          + Criar base data fixa
+          + Nova base presencial
         </button>
       </div>
 
