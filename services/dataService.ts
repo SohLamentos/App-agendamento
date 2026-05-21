@@ -639,7 +639,8 @@ this.analystMappings = [];
       'g_score_adjustments_v15',
       'g_integration_bases_v1',
 'g_routing_rules_v1',
-'g_analyst_mapping_v1'
+'g_analyst_mapping_v1',
+'certitech_base_fixed_dates_v1'
     ];
 
     keys.forEach(k => localStorage.removeItem(k));
