@@ -200,22 +200,13 @@ window.dispatchEvent(new Event('data-updated'));
   return (
     <BaseCollectiveSchedule
       bases={dataService.getIntegrationBases()}
-      analysts={dataService.getUsers().filter((u: any) => {
-        const role = String(u.role || '').toUpperCase();
-
-        const isAnalyst =
-          role === 'ANALYST' ||
-          role === 'ANALISTA';
-
-        const isActive = u.active === true;
-
-        const sameGroup =
-          currentUser.role === UserRole.ADMIN ||
+      analysts={dataService.getUsers().filter((u: any) =>
+        u.active === true &&
+        (
           String(currentUser.role).toUpperCase() === 'ADMIN' ||
-          u.groupId === currentUser.groupId;
-
-        return isAnalyst && isActive && sameGroup;
-      })}
+          u.groupId === currentUser.groupId
+        )
+      )}
     />
   );
       case 'reports-operational': return <OperationalDashboard />;
