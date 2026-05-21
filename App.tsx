@@ -200,10 +200,10 @@ window.dispatchEvent(new Event('data-updated'));
     <BaseCollectiveSchedule
       bases={dataService.getIntegrationBases()}
       analysts={dataService.getUsers().filter(u =>
-        u.role === 'Analista' &&
-        u.active === true &&
-        (currentUser.role === 'Admin' || u.groupId === currentUser.groupId)
-      )}
+  u.role === UserRole.ANALYST &&
+  u.active === true &&
+  (currentUser.role === UserRole.ADMIN || u.groupId === currentUser.groupId)
+)}
     />
   );
       case 'reports-operational': return <OperationalDashboard />;
