@@ -206,7 +206,7 @@ const formatHeaderTicketTime = (value?: string) => {
   }`}
 >
   <span className="mr-3 text-lg opacity-80">📍</span>
-  AGENDA COLETIVA
+  DATAS FIXAS
 </button>
 
     {user.role === ROLE_ADMIN && (
@@ -268,7 +268,7 @@ const formatHeaderTicketTime = (value?: string) => {
   : activeTab === 'bases-integration'
 ? 'Bases & Integração PowerApps'
 : activeTab === 'base-collective-schedule'
-? 'Agenda Coletiva por Base'
+? 'Datas Fixas Presenciais por Base'
   : activeTab === 'score'
   ? 'Monitoramento de Score'
   : 'Gestão Operacional'}
