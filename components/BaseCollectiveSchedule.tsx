@@ -245,10 +245,15 @@ export default function BaseCollectiveSchedule({
             >
               <option value="">Selecione</option>
               {analysts.map((analyst) => (
-                <option key={analyst.id} value={analyst.id}>
-                  {analyst.name || analyst.analystName}
-                </option>
-              ))}
+  <option key={analyst.id} value={analyst.id}>
+    {analyst.normalizedLogin ||
+      analyst.fullName ||
+      analyst.name ||
+      analyst.analystName ||
+      analyst.firstNameLogin ||
+      analyst.id}
+  </option>
+))}
             </select>
           </div>
 
