@@ -277,6 +277,15 @@ payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments) ? payload.sco
 payload.integrationBases = Array.isArray(payload.integrationBases) ? payload.integrationBases : [];
 payload.routingRules = Array.isArray(payload.routingRules) ? payload.routingRules : [];
 payload.analystMappings = Array.isArray(payload.analystMappings) ? payload.analystMappings : [];
+    payload.baseFixedDates = Array.isArray(payload.baseFixedDates)
+  ? payload.baseFixedDates
+  : [];
+
+localStorage.setItem(
+  'g_analyst_mapping_v1',
+  'certitech_base_fixed_dates_v1',
+  JSON.stringify(payload.baseFixedDates)
+);
     console.log('CLOUD STATE RECEBIDO:', cloudState);
 console.log('PAYLOAD RECEBIDO:', payload);
 console.log('CHECK PAYLOAD:', {
@@ -551,7 +560,11 @@ this.cloudUpdatedAt = savedState?.updated_at || new Date().toISOString();
     scoreAdjustments: this.scoreAdjustments.filter(a => a.groupId === groupId),
     integrationBases: this.integrationBases.filter(b => b.groupId === groupId),
     routingRules: this.routingRules.filter(r => r.groupId === groupId),
-    analystMappings: this.analystMappings.filter(m => m.groupId === groupId)
+    analystMappings: this.analystMappings.filter(m => m.groupId === groupId),
+
+    baseFixedDates: JSON.parse(
+      localStorage.getItem('certitech_base_fixed_dates_v1') || '[]'
+    )
   };
 }
   
@@ -1658,7 +1671,7 @@ const windowDaysCount = 10;
   const effectiveStart = startReq < today ? today.toISOString().split('T')[0] : startDateIso;
   const businessDays = this.getBusinessDays(effectiveStart, windowDaysCount);
   const businessDaySet = new Set(businessDays);
-    const techniciansPool = this.technicians
+    let techniciansPool = this.technicians
   .filter(
     t =>
       t.groupId === context.groupId &&
@@ -1681,6 +1694,242 @@ const windowDaysCount = 10;
     if (cityA !== cityB) return cityA.localeCompare(cityB);
     return nameA.localeCompare(nameB);
   });
+
+      // ============================================================
+  // AGENDA COLETIVA POR BASE — PRÉ-PROCESSAMENTO SEGURO
+  // Esta camada roda antes das regras normais.
+  // Se não houver regra ativa, o fluxo atual segue igual.
+  // ============================================================
+
+  type FixedBaseDate = {
+    id: string;
+    date: string;
+    capacity: number;
+    active: boolean;
+  };
+
+  type FixedBaseRule = {
+    id: string;
+    baseId: string;
+    baseName: string;
+    city: string;
+    uf: string;
+    analystId: string;
+    analystName: string;
+    defaultCapacity: number;
+    notes: string;
+    active: boolean;
+    dates: FixedBaseDate[];
+    createdAt: string;
+  };
+
+  const readBaseFixedDateRules = (): FixedBaseRule[] => {
+    try {
+      const raw = localStorage.getItem('certitech_base_fixed_dates_v1');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const getCollectiveScheduleTime = (
+    shift: Shift,
+    positionInShift: number
+  ) => {
+    if (shift === Shift.MORNING) {
+      if (positionInShift === 0) return '08:30:00';
+      if (positionInShift === 1) return '10:00:00';
+      return '11:00:00';
+    }
+
+    if (positionInShift === 0) return '13:30:00';
+    if (positionInShift === 1) return '15:00:00';
+    return '16:00:00';
+  };
+
+  const getActiveCollectiveRules = () => {
+    return readBaseFixedDateRules()
+      .filter(rule => rule.active)
+      .map(rule => ({
+        ...rule,
+        dates: (rule.dates || [])
+          .filter(date => date.active)
+          .sort((a, b) => a.date.localeCompare(b.date))
+      }))
+      .filter(rule => rule.dates.length > 0);
+  };
+
+  const activeCollectiveRules = getActiveCollectiveRules();
+
+  const collectiveHandledTechIds = new Set<string>();
+
+  if (activeCollectiveRules.length > 0) {
+    for (const tech of techniciansPool) {
+      const routingMatch = this.resolveBaseForScheduling({
+        city: tech.city,
+        uf: tech.state,
+        company: tech.company
+      });
+
+      const baseId = routingMatch.base?.id;
+
+      if (!baseId) continue;
+
+      const collectiveRule = activeCollectiveRules.find(
+        rule =>
+          String(rule.baseId) === String(baseId) &&
+          rule.active
+      );
+
+      if (!collectiveRule) continue;
+
+      const analyst = this.users.find(
+        u =>
+          String(u.id) === String(collectiveRule.analystId) &&
+          u.active === true &&
+          u.groupId === context.groupId
+      );
+
+      if (!analyst) {
+        tech.status_principal = 'BACKLOG AGUARDANDO';
+        tech.backlog_score_aplicado = true;
+        tech.backlog_motivo =
+          'AGENDA COLETIVA: ANALISTA RESPONSÁVEL INATIVO OU NÃO LOCALIZADO';
+
+        summary.backlog += 1;
+        addReason('AGENDA COLETIVA: ANALISTA RESPONSÁVEL INATIVO OU NÃO LOCALIZADO');
+        collectiveHandledTechIds.add(tech.id);
+        continue;
+      }
+
+      let scheduledByCollective = false;
+
+      for (const fixedDate of collectiveRule.dates) {
+        const dateIso = fixedDate.date;
+
+        // Não agenda no passado.
+        if (dateIso < effectiveStart) continue;
+
+        const capacity = Number(fixedDate.capacity || collectiveRule.defaultCapacity || 6);
+
+        const existingCollectiveSchedules = this.schedules.filter(
+          s =>
+            s.status !== ScheduleStatus.CANCELLED &&
+            s.type === ExpertiseType.PRESENTIAL &&
+            s.datetime.startsWith(dateIso) &&
+            String(s.baseId || '') === String(collectiveRule.baseId)
+        );
+
+        if (existingCollectiveSchedules.length >= capacity) {
+          continue;
+        }
+
+        const analystDaySchedules = this.schedules.filter(
+          s =>
+            s.status !== ScheduleStatus.CANCELLED &&
+            s.analystId === collectiveRule.analystId &&
+            s.datetime.startsWith(dateIso)
+        );
+
+        const hasVirtualOnDay = analystDaySchedules.some(
+          s => s.type === ExpertiseType.VIRTUAL
+        );
+
+        if (hasVirtualOnDay) {
+          continue;
+        }
+
+        const hasBlockingEvent = this.events.some(
+          e =>
+            e.involvedUserIds.includes(collectiveRule.analystId) &&
+            e.startDatetime.startsWith(dateIso) &&
+            (e as any).type !== 'CQ_SUPPORT'
+        );
+
+        if (hasBlockingEvent) {
+          continue;
+        }
+
+        const usedInMorning = analystDaySchedules.filter(
+          s => s.shift === Shift.MORNING
+        ).length;
+
+        const usedInAfternoon = analystDaySchedules.filter(
+          s => s.shift === Shift.AFTERNOON
+        ).length;
+
+        const nextIndex = existingCollectiveSchedules.length;
+
+        const shift =
+          nextIndex < Math.ceil(capacity / 2)
+            ? Shift.MORNING
+            : Shift.AFTERNOON;
+
+        const positionInShift =
+          shift === Shift.MORNING ? usedInMorning : usedInAfternoon;
+
+        const scheduleTime = getCollectiveScheduleTime(shift, positionInShift);
+
+        const newSch: CertificationSchedule = {
+          id: `sch-base-fixed-${Date.now()}-${Math.random()}`,
+          groupId: tech.groupId,
+          title: `CERTIFICAÇÃO DATA FIXA - ${tech.name}`,
+          technicianId: tech.id,
+          analystId: collectiveRule.analystId,
+          trainingClassId: tech.trainingClassId,
+          datetime: `${dateIso}T${scheduleTime}`,
+          type: ExpertiseType.PRESENTIAL,
+          status: ScheduleStatus.CONFIRMED,
+          availabilitySlotId: 'base-fixed',
+          shift,
+          technology: tech.technology || 'GPON',
+          baseId: routingMatch.base?.id,
+          baseName: routingMatch.base?.name || collectiveRule.baseName,
+          baseAddress: routingMatch.base?.address,
+          baseNotes: collectiveRule.notes || routingMatch.base?.notes,
+          powerAppsBaseId: routingMatch.base?.powerAppsBaseId,
+          routingRuleId: routingMatch.rule?.id
+        };
+
+        this.schedules.push(newSch);
+
+        tech.status_principal = 'AGENDADOS';
+        tech.certificationProcessStatus = CertificationProcessStatus.SCHEDULED;
+        tech.scheduledCertificationId = newSch.id;
+        tech.status_updated_at = new Date().toISOString();
+        tech.status_updated_by = 'SISTEMA - AGENDA COLETIVA';
+
+        summary.scheduled += 1;
+        addReason('AGENDA COLETIVA POR BASE');
+
+        collectiveHandledTechIds.add(tech.id);
+        scheduledByCollective = true;
+        break;
+      }
+
+      if (!scheduledByCollective) {
+        tech.status_principal = 'BACKLOG AGUARDANDO';
+        tech.backlog_score_aplicado = true;
+        tech.backlog_motivo =
+          'AGENDA COLETIVA: DATA LOTADA, BLOQUEADA OU SEM VAGA DISPONÍVEL';
+
+        summary.backlog += 1;
+        addReason('AGENDA COLETIVA: DATA LOTADA/BLOQUEADA/SEM VAGA');
+
+        collectiveHandledTechIds.add(tech.id);
+      }
+    }
+
+    techniciansPool = techniciansPool.filter(
+      tech => !collectiveHandledTechIds.has(tech.id)
+    );
+  }
+
+  // ============================================================
+  // FIM AGENDA COLETIVA POR BASE
+  // Daqui para baixo o fluxo antigo continua igual.
+  // ============================================================
 
 const analystsPool = this.users.filter(
   u => u.role === UserRole.ANALYST && u.active && u.groupId === context.groupId
@@ -1736,6 +1985,7 @@ const activeAdjustments = this.scoreAdjustments.filter(
       .filter(adj => adj.analystId === analystId)
       .reduce((acc, adj) => acc + (adj.penalty || 0), 0);
   };
+    
 
   const sortAnalystsForScenario = (analysts: User[], requiresPresential: boolean) => {
   return [...analysts].sort((a, b) => {
