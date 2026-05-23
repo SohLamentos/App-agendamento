@@ -3161,6 +3161,10 @@ const safeDate = (value: string | null | undefined) => value || '9999-12-31';
       while (scheduledEntries.length < lotTechs.length) {
   const nextTech = lotTechs[scheduledEntries.length];
 
+  if (!nextTech) {
+    break;
+  }
+
   const compatibleCount = shiftSchedules.filter(s =>
     isScheduleCompatibleWithTechFuso(s, nextTech, targetType)
   ).length;
@@ -3178,6 +3182,9 @@ const safeDate = (value: string | null | undefined) => value || '9999-12-31';
   targetType,
   nextTech
 );
+        if (!scheduleTime) {
+  break;
+}
 
         const newSch: CertificationSchedule = {
           id: `sch-auto-${Date.now()}-${Math.random()}`,
