@@ -2926,22 +2926,21 @@ const isFullCertificationDay =
   dayTarget > limitPerShift;
 
 const scheduleTime =
-  isFullCertificationDay &&
-  shift === Shift.MORNING &&
-  shiftSchedules.length === 0
+  targetType === ExpertiseType.PRESENTIAL &&
+  isFullCertificationDay
     ? getOperationalStartTime({
-    uf: nextTech?.state,
-    city: nextTech?.city,
-    type: targetType,
-    shift
-  })
-: this.getManualScheduleTime(
-    lotOwner.id,
-    dateIso,
-    shift,
-    targetType,
-    nextTech
-  );
+        uf: nextTech?.state,
+        city: nextTech?.city,
+        type: targetType,
+        shift: Shift.MORNING
+      })
+    : this.getManualScheduleTime(
+        lotOwner.id,
+        dateIso,
+        shift,
+        targetType,
+        nextTech
+      );
 
       const resolvedBase = this.resolveBaseForScheduling({
         city: nextTech.city,
