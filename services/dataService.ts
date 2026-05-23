@@ -64,16 +64,19 @@ export const StatusEngine = [
     label: 'FILA — TREINAMENTO COM CERTIFICAÇÃO', 
     filter: (t: Technician) => t.status_principal === 'PENDENTE_CERTIFICAÇÃO' || t.status_principal === 'PENDENTE_TRATAMENTO' || t.status_principal === 'BACKLOG AGUARDANDO' 
   },
-  { 
-    key: 'training_no_cert', 
-    label: 'FILA — TREINAMENTO SEM CERTIFICAÇÃO', 
-    filter: (t: Technician) => t.status_principal === 'TREINAMENTO SEM CERTIFICAÇÃO'
-  },
+  
   { 
     key: 'scheduled', 
     label: 'AGENDADOS', 
     filter: (t: Technician) => t.status_principal === 'AGENDADOS' || t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED 
   },
+  {
+  key: 'awaiting_result',
+  label: 'AGUARDANDO RESULTADO',
+  filter: (t: Technician) =>
+    t.status_principal === 'AGUARDANDO_RESULTADO' ||
+    t.certificationProcessStatus === CertificationProcessStatus.AWAITING_RESULT
+},
   { 
     key: 'approved', 
     label: 'APROVADOS', 
