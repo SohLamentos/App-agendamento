@@ -2926,21 +2926,28 @@ const isFullCertificationDay =
   dayTarget > limitPerShift;
 
 const scheduleTime =
-  targetType === ExpertiseType.PRESENTIAL &&
-  isFullCertificationDay
+  this.getManualScheduleTime(
+    lotOwner.id,
+    dateIso,
+    shift,
+    targetType,
+    nextTech
+  );
+
+      const theoreticalTime =
+  targetType === ExpertiseType.PRESENTIAL
     ? getOperationalStartTime({
         uf: nextTech?.state,
         city: nextTech?.city,
         type: targetType,
         shift: Shift.MORNING
       })
-    : this.getManualScheduleTime(
-        lotOwner.id,
-        dateIso,
-        shift,
-        targetType,
-        nextTech
-      );
+    : getOperationalStartTime({
+        uf: nextTech?.state,
+        city: nextTech?.city,
+        type: targetType,
+        shift
+      });
 
       const resolvedBase = this.resolveBaseForScheduling({
         city: nextTech.city,
@@ -2957,6 +2964,10 @@ const scheduleTime =
         analystId: lotOwner.id,
         trainingClassId: nextTech.trainingClassId,
         datetime: `${dateIso}T${scheduleTime}`,
+        theoreticalDatetime: `${dateIso}T${theoreticalTime}`,
+theoreticalTime,
+practicalDatetime: `${dateIso}T${scheduleTime}`,
+practicalTime: scheduleTime,
         type: targetType,
         status: ScheduleStatus.CONFIRMED,
         availabilitySlotId: 'auto',
