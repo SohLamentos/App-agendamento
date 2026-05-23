@@ -21,6 +21,72 @@ import {
 import { auditService } from './auditService';
 import * as XLSX from 'xlsx';
 
+type OperationalTimeType = ExpertiseType.VIRTUAL | ExpertiseType.PRESENTIAL;
+
+function normalizeTextForTimeRule(value?: string): string {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase();
+}
+
+function getOperationalTimeGroup(uf?: string, city?: string, type?: OperationalTimeType): 'DEFAULT' | 'RS' | 'FUSO_1' | 'AC' {
+  const state = normalizeTextForTimeRule(uf);
+  const normalizedCity = normalizeTextForTimeRule(city);
+
+  if (state === 'RS') return 'RS';
+
+  if (state === 'AC') return 'AC';
+
+  if (type === ExpertiseType.PRESENTIAL) {
+    if (normalizedCity === 'CUIABA' || normalizedCity === 'MANAUS') {
+      return 'FUSO_1';
+    }
+
+    return 'DEFAULT';
+  }
+
+  if (['AM', 'RO', 'RR', 'MT', 'MS'].includes(state)) {
+    return 'FUSO_1';
+  }
+
+  return 'DEFAULT';
+}
+
+function getOperationalStartTime(params: {
+  uf?: string;
+  city?: string;
+  type: OperationalTimeType;
+  shift: Shift;
+}): string {
+  const group = getOperationalTimeGroup(params.uf, params.city, params.type);
+
+  if (params.shift === Shift.MORNING) {
+    if (group === 'RS') return '09:00:00';
+    if (group === 'FUSO_1') return '09:30:00';
+    if (group === 'AC') return '10:30:00';
+    return '08:30:00';
+  }
+
+  if (params.shift === Shift.AFTERNOON) {
+    if (group === 'FUSO_1') return '14:30:00';
+    if (group === 'AC') return '15:30:00';
+    return '13:30:00';
+  }
+
+  return '08:30:00';
+}
+
+function addMinutesToTime(time: string, minutesToAdd: number): string {
+  const [hourRaw, minuteRaw] = time.split(':');
+  const total = Number(hourRaw) * 60 + Number(minuteRaw) + minutesToAdd;
+  const hour = Math.floor(total / 60);
+  const minute = total % 60;
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+}
+
 export interface ImportError {
   line: number;
   field: string;
@@ -2813,13 +2879,19 @@ const scheduleTime =
   isFullCertificationDay &&
   shift === Shift.MORNING &&
   shiftSchedules.length === 0
-    ? '08:30:00'
-    : this.getManualScheduleTime(
-        lotOwner.id,
-        dateIso,
-        shift,
-        targetType
-      );
+    ? getOperationalStartTime({
+    uf: nextTech?.state,
+    city: nextTech?.city,
+    type: targetType,
+    shift
+  })
+: this.getManualScheduleTime(
+    lotOwner.id,
+    dateIso,
+    shift,
+    targetType,
+    nextTech
+  );
 
       const resolvedBase = this.resolveBaseForScheduling({
         city: nextTech.city,
@@ -3040,12 +3112,14 @@ const safeDate = (value: string | null | undefined) => value || '9999-12-31';
       while (shiftSchedules.length < limitPerShift && scheduledEntries.length < lotTechs.length) {
         const nextTech = lotTechs[scheduledEntries.length];
 
-        const scheduleTime = this.getManualScheduleTime(
-          lotOwner.id,
-          dateIso,
-          shift,
-          targetType
-        );
+        const scheduleTime = 
+          this.getManualScheduleTime(
+  lotOwner.id,
+  dateIso,
+  shift,
+  targetType,
+  nextTech
+);
 
         const newSch: CertificationSchedule = {
           id: `sch-auto-${Date.now()}-${Math.random()}`,
@@ -3245,7 +3319,8 @@ if (hasFullDayEvent) {
   analystId: string,
   dateIso: string,
   shift: Shift,
-  type: ExpertiseType
+  type: ExpertiseType,
+  tech?: Technician
 ): string {
   const sameDaySchedules = this.schedules.filter(s =>
     s.analystId === analystId &&
@@ -3267,62 +3342,80 @@ if (hasFullDayEvent) {
   const hasOtherEventOnDay = dayEvents.length > 0;
 
   const isPresential = type === ExpertiseType.PRESENTIAL;
-  const hasMorningPresential = sameDaySchedules.some(s => s.shift === Shift.MORNING);
-  const hasAfternoonPresential = sameDaySchedules.some(s => s.shift === Shift.AFTERNOON);
-
-  const willHaveFullCertificationDay =
-    isPresential &&
-    !hasOtherEventOnDay &&
-    (
-      hasMorningPresential ||
-      shift === Shift.MORNING
-    ) &&
-    (
-      hasAfternoonPresential ||
-      shift === Shift.AFTERNOON
-    );
-
   const position = sameSlotSchedules.length + 1;
 
+  const theoreticalStart = getOperationalStartTime({
+    uf: tech?.state,
+    city: tech?.city,
+    type,
+    shift
+  });
+
   if (isPresential) {
+    const firstPracticeTime = addMinutesToTime(theoreticalStart, 30);
+
     if (shift === Shift.MORNING) {
-      if (willHaveFullCertificationDay && position === 1) return '08:30:00';
-      if (position === 1) return '09:00:00';
-      if (position === 2) return '10:00:00';
-      if (position === 3) return '11:00:00';
-      if (position === 4) return '11:30:00';
+      if (position === 1) return firstPracticeTime;
+      if (position === 2) return addMinutesToTime(firstPracticeTime, 60);
+      if (position === 3) return addMinutesToTime(firstPracticeTime, 120);
+      if (position === 4) return addMinutesToTime(firstPracticeTime, 150);
     }
 
     if (shift === Shift.AFTERNOON) {
-      if (position === 1) return '14:00:00';
-      if (position === 2) return '15:00:00';
-      if (position === 3) return '16:00:00';
-      if (position === 4) return '16:30:00';
-    }
-  } else {
-    if (shift === Shift.MORNING) {
-      if (position === 1) return '09:30:00';
-      if (position === 2) return '10:30:00';
-    }
+      const afternoonStart = getOperationalStartTime({
+        uf: tech?.state,
+        city: tech?.city,
+        type,
+        shift: Shift.AFTERNOON
+      });
 
-    if (shift === Shift.AFTERNOON) {
-      if (position === 1) return '14:30:00';
-      if (position === 2) return '15:30:00';
+      const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, 30);
+
+      if (position === 1) return firstAfternoonPracticeTime;
+      if (position === 2) return addMinutesToTime(firstAfternoonPracticeTime, 60);
+      if (position === 3) return addMinutesToTime(firstAfternoonPracticeTime, 120);
+      if (position === 4) return addMinutesToTime(firstAfternoonPracticeTime, 150);
     }
   }
 
-  return shift === Shift.MORNING ? '09:00:00' : '14:00:00';
+  if (type === ExpertiseType.VIRTUAL) {
+    const firstPracticeTime = addMinutesToTime(theoreticalStart, 60);
+
+    if (shift === Shift.MORNING) {
+      if (position === 1) return firstPracticeTime;
+      if (position === 2) return addMinutesToTime(firstPracticeTime, 60);
+    }
+
+    if (shift === Shift.AFTERNOON) {
+      const afternoonStart = getOperationalStartTime({
+        uf: tech?.state,
+        city: tech?.city,
+        type,
+        shift: Shift.AFTERNOON
+      });
+
+      const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, 60);
+
+      if (position === 1) return firstAfternoonPracticeTime;
+      if (position === 2) return addMinutesToTime(firstAfternoonPracticeTime, 60);
+    }
+  }
+
+  return addMinutesToTime(theoreticalStart, isPresential ? 30 : 60);
 }
+
   public manualScheduleReinforced(params: { techId: string, analystId: string, dateIso: string, shift: Shift, type: ExpertiseType, forced: boolean, brokenRules?: string[] }) {
     const tech = this.technicians.find(t => t.id === params.techId);
     const currentUser = this.getCurrentUser();
     if (tech) {
-      const scheduleTime = this.getManualScheduleTime(
-    params.analystId,
-    params.dateIso,
-    params.shift,
-    params.type
-  );
+      const scheduleTime = 
+        this.getManualScheduleTime(
+  params.analystId,
+  params.dateIso,
+  params.shift,
+  params.type,
+  tech
+);
       const newSch: CertificationSchedule = {
   id: `sch-man-${Date.now()}`,
   groupId: tech.groupId,
