@@ -4315,8 +4315,6 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
 
   const nomeOk =
   nomeApp === nomeExcel;
-    nomeApp.includes(nomeExcel) ||
-    nomeExcel.includes(nomeApp);
 
   const empresaOk =
     !empresaExcel ||
@@ -4349,16 +4347,18 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
 });
 
     if (candidatos.length === 0) {
-      resumo.naoLocalizados++;
-      resumo.erros.push(`Não localizado: ${row.NomeTecnico}`);
-      continue;
-    }
-    console.log('NÃO LOCALIZADO:', {
-  nome: row['NomeTecnico'],
-  empresa: row['Empresa'],
-  cidade: row['Município'],
-  uf: row['UF']
-});
+  resumo.naoLocalizados++;
+  resumo.erros.push(`Não localizado / já processado: ${row.NomeTecnico}`);
+
+  console.log('NÃO LOCALIZADO / JÁ PROCESSADO:', {
+    nome: row['NomeTecnico'],
+    empresa: row['Empresa'],
+    cidade: row['Município'],
+    uf: row['UF']
+  });
+
+  continue;
+}
 
     if (candidatos.length > 1) {
       resumo.duplicados++;
