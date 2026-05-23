@@ -4314,7 +4314,7 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
   const empresaExcel = normalize(row['Empresa']);
 
   const nomeOk =
-    nomeApp === nomeExcel ||
+  nomeApp === nomeExcel;
     nomeApp.includes(nomeExcel) ||
     nomeExcel.includes(nomeApp);
 
