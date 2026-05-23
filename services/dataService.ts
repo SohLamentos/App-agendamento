@@ -77,6 +77,19 @@ function getOperationalStartTime(params: {
 
   return '08:30:00';
 }
+function isFusoMinusOneGroup(group?: string): boolean {
+  return group === 'FUSO_1';
+}
+
+function hasFusoMinusOneConflict(
+  currentGroup: string,
+  incomingGroup: string
+): boolean {
+  return (
+    isFusoMinusOneGroup(currentGroup) !==
+    isFusoMinusOneGroup(incomingGroup)
+  );
+}
 
 function addMinutesToTime(time: string, minutesToAdd: number): string {
   const [hourRaw, minuteRaw] = time.split(':');
@@ -2272,6 +2285,36 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
       (e.shift === Shift.FULL_DAY || e.shift === shift)
   );
 };
+
+    const isScheduleCompatibleWithTechFuso = (
+  schedule: CertificationSchedule,
+  incomingTech: Technician,
+  targetType: ExpertiseType
+): boolean => {
+  const scheduledTech = this.technicians.find(t => t.id === schedule.technicianId);
+
+  const scheduledGroup = getOperationalTimeGroup(
+    scheduledTech?.state,
+    scheduledTech?.city,
+    targetType
+  );
+
+  const incomingGroup = getOperationalTimeGroup(
+    incomingTech.state,
+    incomingTech.city,
+    targetType
+  );
+
+  if (incomingGroup === 'AC') {
+    return scheduledGroup === 'AC';
+  }
+
+  if (scheduledGroup === 'AC') {
+    return false;
+  }
+
+  return !hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
+};
     
   const getAvailableSlotsForAnalystOnDate = (
   analystId: string,
@@ -2862,6 +2905,13 @@ const shiftLimitWithCq = isBlocked
       }
 
       const nextTech = lotTechs[scheduledEntries.length];
+      const hasIncompatibleFusoOnShift = shiftSchedules.some(s =>
+  !isScheduleCompatibleWithTechFuso(s, nextTech, targetType)
+);
+
+if (hasIncompatibleFusoOnShift) {
+  break;
+}
 
       const hasOtherEventOnDay = this.events.some(
   e =>
@@ -3109,8 +3159,17 @@ const safeDate = (value: string | null | undefined) => value || '9999-12-31';
           s.status !== ScheduleStatus.CANCELLED
       );
 
-      while (shiftSchedules.length < limitPerShift && scheduledEntries.length < lotTechs.length) {
-        const nextTech = lotTechs[scheduledEntries.length];
+      while (scheduledEntries.length < lotTechs.length) {
+  const nextTech = lotTechs[scheduledEntries.length];
+
+  const compatibleCount = shiftSchedules.filter(s =>
+    isScheduleCompatibleWithTechFuso(s, nextTech, targetType)
+  ).length;
+
+  if (compatibleCount >= limitPerShift) {
+    break;
+  }
+        
 
         const scheduleTime = 
           this.getManualScheduleTime(
@@ -3312,6 +3371,30 @@ if (hasFullDayEvent) {
     brokenRules.push(`Não existe regra/base presencial válida para esta empresa/analista (${tech?.company || 'sem empresa'}).`);
   }
 }
+    const incomingGroup = tech
+  ? getOperationalTimeGroup(tech.state, tech.city, type)
+  : 'DEFAULT';
+
+const hasFusoConflict = daySchedules.some(s => {
+  if (s.shift !== shift) return false;
+  if (s.type !== type) return false;
+
+  const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
+
+  const scheduledGroup = getOperationalTimeGroup(
+    scheduledTech?.state,
+    scheduledTech?.city,
+    type
+  );
+
+  return hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
+});
+
+if (hasFusoConflict) {
+  brokenRules.push(
+    'Este período já possui técnico de outro fuso operacional. Não é permitido misturar fuso -1 com outros fusos no mesmo período.'
+  );
+}
     return { canSchedule: brokenRules.length === 0, brokenRules, needsForce: brokenRules.length > 0 };
   }
 
@@ -3342,7 +3425,33 @@ if (hasFullDayEvent) {
   const hasOtherEventOnDay = dayEvents.length > 0;
 
   const isPresential = type === ExpertiseType.PRESENTIAL;
-  const position = sameSlotSchedules.length + 1;
+  const incomingGroup = getOperationalTimeGroup(
+  tech?.state,
+  tech?.city,
+  type
+);
+
+const compatibleSlotSchedules = sameSlotSchedules.filter(s => {
+  const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
+
+  const scheduledGroup = getOperationalTimeGroup(
+    scheduledTech?.state,
+    scheduledTech?.city,
+    type
+  );
+
+  if (incomingGroup === 'AC') {
+    return scheduledGroup === 'AC';
+  }
+
+  if (scheduledGroup === 'AC') {
+    return false;
+  }
+
+  return !hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
+});
+
+const position = compatibleSlotSchedules.length + 1;
 
   const theoreticalStart = getOperationalStartTime({
     uf: tech?.state,
@@ -3379,7 +3488,8 @@ if (hasFullDayEvent) {
   }
 
   if (type === ExpertiseType.VIRTUAL) {
-    const firstPracticeTime = addMinutesToTime(theoreticalStart, 60);
+  const theoryMinutes = incomingGroup === 'AC' ? 30 : 60;
+  const firstPracticeTime = addMinutesToTime(theoreticalStart, theoryMinutes);
 
     if (shift === Shift.MORNING) {
       if (position === 1) return firstPracticeTime;
@@ -3394,7 +3504,7 @@ if (hasFullDayEvent) {
         shift: Shift.AFTERNOON
       });
 
-      const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, 60);
+      const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, theoryMinutes);
 
       if (position === 1) return firstAfternoonPracticeTime;
       if (position === 2) return addMinutesToTime(firstAfternoonPracticeTime, 60);
