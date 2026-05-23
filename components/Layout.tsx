@@ -107,6 +107,7 @@ const formatHeaderTicketTime = (value?: string) => {
   { id: 'score', label: 'Score / Carga', icon: '📈', roles: [ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST] },
 
   { id: 'audit', label: 'Tickets (Auditoria)', icon: '🛡️', roles: [ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST] },
+    { id: 'powerapps-import', label: 'Importar Resultados', icon: '📥', roles: [ROLE_ADMIN, ROLE_MANAGER] },
 ];
 
   const reportSubTabs = [
