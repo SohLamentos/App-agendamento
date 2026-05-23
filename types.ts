@@ -33,7 +33,9 @@ export enum ApprovalStatus {
 export enum CertificationProcessStatus {
   QUALIFIED_AWAITING = 'Qualificado - Aguardando Agendamento',
   SCHEDULED = 'Agendado',
+
   AWAITING_RESULT = 'Aguardando Resultado',
+
   BACKLOG_PENDING = 'Backlog - Pendente de Slot',
   CANCELLED_RESCHEDULE = 'Cancelado - Reagendar Posteriormente',
   CERTIFIED_APPROVED = 'Certificado - Aprovado',
