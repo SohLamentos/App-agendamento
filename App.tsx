@@ -18,6 +18,7 @@ import AdminManagement from './components/AdminManagement';
 import { dataService } from './services/dataService';
 import { authService } from './services/authService';
 import { UserRole } from './types';
+import PowerAppsImport from './components/PowerAppsImport';
 
 
 const App: React.FC = () => {
@@ -213,6 +214,8 @@ window.dispatchEvent(new Event('data-updated'));
       case 'reports-quality': return <QualityReport />;
       case 'reports-capacity-risk': return <CapacityRiskReport />;
       case 'reports-brazil-map': return <BrazilMapReport />;
+      case 'powerapps-import':
+  return <PowerAppsImport />;
       case 'admin': return <AdminManagement />;
       default: return <Dashboard user={currentUser} />;
     }
