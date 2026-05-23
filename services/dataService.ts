@@ -123,15 +123,9 @@ class DataService {
   private cloudLoaded: boolean = false;
   private processAwaitingResults() {
   const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
 
   this.technicians.forEach((tech: Technician) => {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Apenas AGENDADOS
-    |--------------------------------------------------------------------------
-    */
-
     if (
       tech.certificationProcessStatus !==
       CertificationProcessStatus.SCHEDULED
@@ -143,12 +137,6 @@ class DataService {
       return;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Busca agenda
-    |--------------------------------------------------------------------------
-    */
-
     const schedule = this.schedules.find(
       s => s.id === tech.scheduledCertificationId
     );
@@ -157,87 +145,18 @@ class DataService {
       return;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Diferença em dias
-    |--------------------------------------------------------------------------
-    */
+    const dataCert = new Date(schedule.datetime);
+    dataCert.setHours(0, 0, 0, 0);
 
-    const hoje = new Date();
-hoje.setHours(0, 0, 0, 0);
-
-this.technicians.forEach((tech: Technician) => {
-
-  if (
-    tech.certificationProcessStatus !==
-    CertificationProcessStatus.SCHEDULED
-  ) {
-    return;
-  }
-
-  if (!tech.scheduledCertificationId) {
-    return;
-  }
-
-  const schedule = this.schedules.find(
-    s => s.id === tech.scheduledCertificationId
-  );
-
-  if (!schedule?.datetime) {
-    return;
-  }
-
-  const dataCert = new Date(schedule.datetime);
-  dataCert.setHours(0, 0, 0, 0);
-
-  const diffMs =
-    hoje.getTime() - dataCert.getTime();
-
-  const dias = Math.floor(
-    diffMs / (1000 * 60 * 60 * 24)
-  );
-
-  if (dias >= 3) {
-
-    tech.status_principal =
-      'AGUARDANDO_RESULTADO';
-
-    tech.certificationProcessStatus =
-      CertificationProcessStatus.AWAITING_RESULT;
-
-    tech.status_observacao =
-      'Resultado não recebido via PowerApps/Excel';
-
-    tech.status_updated_at =
-      new Date().toISOString();
-
-    tech.status_updated_by =
-      'SISTEMA';
-  }
-});
-
-    /*
-    |--------------------------------------------------------------------------
-    | D+3 SEM RESULTADO
-    |--------------------------------------------------------------------------
-    */
+    const diffMs = hoje.getTime() - dataCert.getTime();
+    const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     if (dias >= 3) {
-
-      tech.status_principal =
-        'AGUARDANDO_RESULTADO';
-
-      tech.certificationProcessStatus =
-        CertificationProcessStatus.AWAITING_RESULT;
-
-      tech.status_observacao =
-        'Resultado não recebido via PowerApps/Excel';
-
-      tech.status_updated_at =
-        new Date().toISOString();
-
-      tech.status_updated_by =
-        'SISTEMA';
+      tech.status_principal = 'AGUARDANDO_RESULTADO';
+      tech.certificationProcessStatus = CertificationProcessStatus.AWAITING_RESULT;
+      tech.status_observacao = 'Resultado não recebido via PowerApps/Excel';
+      tech.status_updated_at = new Date().toISOString();
+      tech.status_updated_by = 'SISTEMA';
     }
   });
 }
