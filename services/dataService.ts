@@ -2905,6 +2905,9 @@ const shiftLimitWithCq = isBlocked
       }
 
       const nextTech = lotTechs[scheduledEntries.length];
+      if (!nextTech) {
+  break;
+}
       const hasIncompatibleFusoOnShift = shiftSchedules.some(s =>
   !isScheduleCompatibleWithTechFuso(s, nextTech, targetType)
 );
