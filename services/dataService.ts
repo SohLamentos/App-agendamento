@@ -4298,17 +4298,41 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
     const uf = normalize(row.UF);
     const empresa = normalize(row.Empresa);
 
-    const candidatos = this.technicians.filter(t =>
-      t.groupId === ctx.groupId &&
-      normalize(t.name) === nome &&
-      normalize(t.city) === municipio &&
-      normalize(t.state) === uf &&
-      normalize(t.company) === empresa &&
-      (
-        t.status_principal === 'AGENDADOS' ||
-        t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED
-      )
-    );
+    const candidatos = this.technicians.filter(t => {
+  const mesmoGrupo = t.groupId === ctx.groupId;
+
+  const nomeOk = normalize(t.name) === nome;
+
+  const empresaApp = normalize(t.company);
+  const empresaExcel = empresa;
+
+  const empresaOk =
+    !empresaExcel ||
+    empresaApp === empresaExcel ||
+    empresaApp.includes(empresaExcel) ||
+    empresaExcel.includes(empresaApp);
+
+  const cidadeOk =
+    !municipio ||
+    normalize(t.city) === municipio;
+
+  const ufOk =
+    !uf ||
+    normalize(t.state) === uf;
+
+  const estaAgendado =
+    t.status_principal === 'AGENDADOS' ||
+    t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED;
+
+  return (
+    mesmoGrupo &&
+    nomeOk &&
+    empresaOk &&
+    cidadeOk &&
+    ufOk &&
+    estaAgendado
+  );
+});
 
     if (candidatos.length === 0) {
       resumo.naoLocalizados++;
