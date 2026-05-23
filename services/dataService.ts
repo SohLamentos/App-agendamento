@@ -121,6 +121,126 @@ class DataService {
   private persistVersion: number = 0;
   private cloudUpdatedAt: string | null = null;
   private cloudLoaded: boolean = false;
+  private processAwaitingResults() {
+  const hoje = new Date();
+
+  this.technicians.forEach((tech: Technician) => {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Apenas AGENDADOS
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      tech.certificationProcessStatus !==
+      CertificationProcessStatus.SCHEDULED
+    ) {
+      return;
+    }
+
+    if (!tech.scheduledCertificationId) {
+      return;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Busca agenda
+    |--------------------------------------------------------------------------
+    */
+
+    const schedule = this.schedules.find(
+      s => s.id === tech.scheduledCertificationId
+    );
+
+    if (!schedule?.datetime) {
+      return;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Diferença em dias
+    |--------------------------------------------------------------------------
+    */
+
+    const hoje = new Date();
+hoje.setHours(0, 0, 0, 0);
+
+this.technicians.forEach((tech: Technician) => {
+
+  if (
+    tech.certificationProcessStatus !==
+    CertificationProcessStatus.SCHEDULED
+  ) {
+    return;
+  }
+
+  if (!tech.scheduledCertificationId) {
+    return;
+  }
+
+  const schedule = this.schedules.find(
+    s => s.id === tech.scheduledCertificationId
+  );
+
+  if (!schedule?.datetime) {
+    return;
+  }
+
+  const dataCert = new Date(schedule.datetime);
+  dataCert.setHours(0, 0, 0, 0);
+
+  const diffMs =
+    hoje.getTime() - dataCert.getTime();
+
+  const dias = Math.floor(
+    diffMs / (1000 * 60 * 60 * 24)
+  );
+
+  if (dias >= 3) {
+
+    tech.status_principal =
+      'AGUARDANDO_RESULTADO';
+
+    tech.certificationProcessStatus =
+      CertificationProcessStatus.AWAITING_RESULT;
+
+    tech.status_observacao =
+      'Resultado não recebido via PowerApps/Excel';
+
+    tech.status_updated_at =
+      new Date().toISOString();
+
+    tech.status_updated_by =
+      'SISTEMA';
+  }
+});
+
+    /*
+    |--------------------------------------------------------------------------
+    | D+3 SEM RESULTADO
+    |--------------------------------------------------------------------------
+    */
+
+    if (dias >= 3) {
+
+      tech.status_principal =
+        'AGUARDANDO_RESULTADO';
+
+      tech.certificationProcessStatus =
+        CertificationProcessStatus.AWAITING_RESULT;
+
+      tech.status_observacao =
+        'Resultado não recebido via PowerApps/Excel';
+
+      tech.status_updated_at =
+        new Date().toISOString();
+
+      tech.status_updated_by =
+        'SISTEMA';
+    }
+  });
+}
 
   private users: User[];
   private groups: Group[];
@@ -354,9 +474,30 @@ this.analystMappings = payload.analystMappings ?? this.analystMappings;
     localStorage.setItem('g_score_adjustments_v15', JSON.stringify(this.scoreAdjustments));
     localStorage.setItem('g_integration_bases_v1', JSON.stringify(this.integrationBases));
 localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
-localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings));
+localStorage.setItem(
+  'g_analyst_mapping_v1',
+  JSON.stringify(this.analystMappings)
+);
 
-    return true;
+/*
+|--------------------------------------------------------------------------
+| PROCESSA AGENDAMENTOS SEM RESULTADO
+|--------------------------------------------------------------------------
+*/
+
+this.processAwaitingResults();
+
+/*
+|--------------------------------------------------------------------------
+| PERSISTE ALTERAÇÕES AUTOMÁTICAS
+|--------------------------------------------------------------------------
+*/
+
+this.persist();
+
+window.dispatchEvent(new Event('data-updated'));
+
+return true;
   } catch (error: any) {
   console.error('ERRO REAL initializeFromCloud:', error);
 
