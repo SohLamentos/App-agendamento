@@ -4371,31 +4371,81 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
 
     const tech = candidatos[0];
 
-    if (status === 'APROVADO') {
-      this.approveScheduledTechnician(tech.id);
-      resumo.aprovados++;
-      continue;
-    }
+    const tech = candidatos[0];
 
-    if (status === 'REPROVADO') {
-      this.reproveScheduledTechnician({
-        techId: tech.id,
-        outcome: 'REPROVADO_1_CERTIFICACAO',
-        observation: 'Resultado recebido via integração Excel.'
-      });
-      resumo.reprovados++;
-      continue;
-    }
+/*
+|--------------------------------------------------------------------------
+| AGUARDANDO RESULTADO
+|--------------------------------------------------------------------------
+| Se existir qualquer retorno do PowerApps/Excel,
+| o técnico sai imediatamente de AGENDADOS.
+|--------------------------------------------------------------------------
+*/
 
-    if (status === 'NOSHOW' || status === 'NO SHOW') {
-      this.reproveScheduledTechnician({
-        techId: tech.id,
-        outcome: 'NOSHOW',
-        observation: 'No-show recebido via integração Excel.'
-      });
-      resumo.noshow++;
-      continue;
-    }
+tech.status_principal = 'AGUARDANDO_RESULTADO';
+tech.certificationProcessStatus =
+  CertificationProcessStatus.AWAITING_RESULT;
+
+tech.status_updated_at = new Date().toISOString();
+tech.status_updated_by = currentUser.fullName;
+
+/*
+|--------------------------------------------------------------------------
+| APROVADO
+|--------------------------------------------------------------------------
+*/
+
+if (status === 'APROVADO') {
+  this.approveScheduledTechnician(tech.id);
+
+  resumo.aprovados++;
+  continue;
+}
+
+/*
+|--------------------------------------------------------------------------
+| REPROVADO
+|--------------------------------------------------------------------------
+*/
+
+if (status === 'REPROVADO') {
+  this.reproveScheduledTechnician({
+    techId: tech.id,
+    outcome: 'REPROVADO_1_CERTIFICACAO',
+    observation: 'Resultado recebido via integração Excel.'
+  });
+
+  resumo.reprovados++;
+  continue;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NOSHOW
+|--------------------------------------------------------------------------
+*/
+
+if (status === 'NOSHOW' || status === 'NO SHOW') {
+  this.reproveScheduledTechnician({
+    techId: tech.id,
+    outcome: 'NOSHOW',
+    observation: 'No-show recebido via integração Excel.'
+  });
+
+  resumo.noshow++;
+  continue;
+}
+
+/*
+|--------------------------------------------------------------------------
+| RESULTADO AINDA NÃO DEFINIDO
+|--------------------------------------------------------------------------
+| Mantém em AGUARDANDO RESULTADO.
+|--------------------------------------------------------------------------
+*/
+
+resumo.pendentes++;
+continue;
 
     resumo.erros.push(`Status inválido para ${row.NomeTecnico}: ${row.StatusTecnico}`);
   }
