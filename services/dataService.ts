@@ -4371,8 +4371,6 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
 
     const tech = candidatos[0];
 
-    const tech = candidatos[0];
-
 /*
 |--------------------------------------------------------------------------
 | AGUARDANDO RESULTADO
