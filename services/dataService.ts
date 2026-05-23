@@ -4301,10 +4301,22 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
     const candidatos = this.technicians.filter(t => {
   const mesmoGrupo = t.groupId === ctx.groupId;
 
-  const nomeOk = normalize(t.name) === nome;
+  const nomeApp = normalize(t.name);
+  const nomeExcel = normalize(row['NomeTecnico']);
+
+  const cidadeApp = normalize(t.city);
+  const cidadeExcel = normalize(row['Município']);
+
+  const ufApp = normalize(t.state);
+  const ufExcel = normalize(row['UF']);
 
   const empresaApp = normalize(t.company);
-  const empresaExcel = empresa;
+  const empresaExcel = normalize(row['Empresa']);
+
+  const nomeOk =
+    nomeApp === nomeExcel ||
+    nomeApp.includes(nomeExcel) ||
+    nomeExcel.includes(nomeApp);
 
   const empresaOk =
     !empresaExcel ||
@@ -4313,12 +4325,14 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
     empresaExcel.includes(empresaApp);
 
   const cidadeOk =
-    !municipio ||
-    normalize(t.city) === municipio;
+    !cidadeExcel ||
+    cidadeApp === cidadeExcel ||
+    cidadeApp.includes(cidadeExcel) ||
+    cidadeExcel.includes(cidadeApp);
 
   const ufOk =
-    !uf ||
-    normalize(t.state) === uf;
+    !ufExcel ||
+    ufApp === ufExcel;
 
   const estaAgendado =
     t.status_principal === 'AGENDADOS' ||
@@ -4329,7 +4343,7 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
     nomeOk &&
     empresaOk &&
     cidadeOk &&
-    ufOk &&
+   ufOk &&
     estaAgendado
   );
 });
@@ -4339,6 +4353,12 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
       resumo.erros.push(`Não localizado: ${row.NomeTecnico}`);
       continue;
     }
+    console.log('NÃO LOCALIZADO:', {
+  nome: row['NomeTecnico'],
+  empresa: row['Empresa'],
+  cidade: row['Município'],
+  uf: row['UF']
+});
 
     if (candidatos.length > 1) {
       resumo.duplicados++;
