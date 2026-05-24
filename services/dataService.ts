@@ -2333,7 +2333,12 @@ const activeAdjustments = this.scoreAdjustments.filter(
   ExpertiseType.VIRTUAL
 );
 
+    if (targetType === ExpertiseType.VIRTUAL && fusoGroup === 'AC') {
+  return `${targetType}__${fusoGroup}__${city}__${state}__${classId}`;
+}
+
 return `${targetType}__${fusoGroup}__${company}__${city}__${state}__${classId}`;
+
 };
 
   const getScheduledTechBySchedule = (schedule: CertificationSchedule) =>
@@ -2811,10 +2816,21 @@ const lotKey = getLotKey(tech, targetType);
   lotsMap.get(lotKey)!.push(tech);
 }
 
-const lots = Array.from(lotsMap.entries()).map(([lotKey, techs]) => ({
-  lotKey,
-  techs
-}));
+const lots = Array.from(lotsMap.entries())
+  .map(([lotKey, techs]) => ({
+    lotKey,
+    techs
+  }))
+  .sort((a, b) => {
+    const aIsPresential = a.lotKey.startsWith(`${ExpertiseType.PRESENTIAL}__`);
+    const bIsPresential = b.lotKey.startsWith(`${ExpertiseType.PRESENTIAL}__`);
+
+    if (aIsPresential !== bIsPresential) {
+      return aIsPresential ? -1 : 1;
+    }
+
+    return b.techs.length - a.techs.length;
+  });
 
     
    for (const lot of lots) {
