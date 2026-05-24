@@ -5399,8 +5399,10 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
     ufApp === ufExcel;
 
   const estaAgendado =
-    t.status_principal === 'AGENDADOS' ||
-    t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED;
+  t.status_principal === 'AGENDADOS' ||
+  t.status_principal === 'AGUARDANDO_RESULTADO' ||
+  t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED ||
+  t.certificationProcessStatus === CertificationProcessStatus.AWAITING_RESULT;
 
   return (
     mesmoGrupo &&
