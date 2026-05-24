@@ -136,21 +136,24 @@ function getOperationalTimeGroup(
   const state = normalizeTextForTimeRule(uf);
   const normalizedCity = normalizeTextForTimeRule(city);
 
-  if (state === 'RS') return 'RS';
-  if (state === 'AC') return 'AC';
-
-  // Presencial: AC não tem regra presencial; fuso -1 só para Cuiabá e Manaus.
   if (type === ExpertiseType.PRESENTIAL) {
-    if (normalizedCity === 'CUIABA' || normalizedCity === 'MANAUS') {
+    if (state === 'RS') return 'RS';
+
+    if (normalizedCity === 'MANAUS' || state === 'AM') {
       return 'FUSO_1';
     }
 
     return 'DEFAULT';
   }
 
-  // Virtual: estados operacionais com -1h em relação a Brasília.
-  if (['AM', 'RO', 'RR', 'MT', 'MS'].includes(state)) {
-    return 'FUSO_1';
+  if (type === ExpertiseType.VIRTUAL) {
+    if (state === 'AC') return 'AC';
+
+    if (['AM', 'RO', 'RR', 'MT', 'MS'].includes(state)) {
+      return 'FUSO_1';
+    }
+
+    return 'DEFAULT';
   }
 
   return 'DEFAULT';
@@ -165,13 +168,14 @@ function getOperationalStartTime(params: {
   const group = getOperationalTimeGroup(params.uf, params.city, params.type);
 
   if (params.shift === Shift.MORNING) {
-    if (group === 'RS') return '09:00:00';
+    if (params.type === ExpertiseType.PRESENTIAL && group === 'RS') return '09:00:00';
     if (group === 'FUSO_1') return '09:30:00';
     if (group === 'AC') return '10:30:00';
     return '08:30:00';
   }
 
   if (params.shift === Shift.AFTERNOON) {
+    if (params.type === ExpertiseType.PRESENTIAL && group === 'RS') return '14:00:00';
     if (group === 'FUSO_1') return '14:30:00';
     if (group === 'AC') return '15:30:00';
     return '13:30:00';
