@@ -2172,7 +2172,13 @@ const activeAdjustments = this.scoreAdjustments.filter(
     return `${targetType}__${baseKey}__${ruleKey}__${analystKey}__${company}__${city}__${state}__${classId}`;
   }
 
-  return `${targetType}__${company}__${city}__${state}__${classId}`;
+  const fusoGroup = getOperationalTimeGroup(
+  tech.state,
+  tech.city,
+  ExpertiseType.VIRTUAL
+);
+
+return `${targetType}__${fusoGroup}__${company}__${city}__${state}__${classId}`;
 };
 
   const getScheduledTechBySchedule = (schedule: CertificationSchedule) =>
@@ -3139,13 +3145,46 @@ continue;
     if (isVirtualShiftBlocked(analystId, dateIso, shift)) {
       return false;
     }
+    
 
-    const shiftSchedules = getVirtualShiftSchedules(
-      analystId,
-      dateIso,
-      shift,
-      tempSchedules
-    );
+// FUSO_1 não mistura com DEFAULT nem AC no mesmo dia.
+
+const shiftSchedules = getVirtualShiftSchedules(
+  analystId,
+  dateIso,
+  shift,
+  tempSchedules
+);
+
+const dayVirtualSchedules = [...this.schedules, ...tempSchedules].filter(
+  s =>
+    s.groupId === context.groupId &&
+    s.analystId === analystId &&
+    s.datetime.startsWith(dateIso) &&
+    s.type === ExpertiseType.VIRTUAL &&
+    s.status !== ScheduleStatus.CANCELLED
+);
+
+const dayGroups = dayVirtualSchedules.map(getScheduleOperationalGroup);
+
+const incomingDayGroup = getOperationalTimeGroup(
+  candidateTech.state,
+  candidateTech.city,
+  ExpertiseType.VIRTUAL
+);
+
+if (incomingDayGroup === 'FUSO_1') {
+  if (!dayGroups.every(g => g === 'FUSO_1')) {
+    return false;
+  }
+}
+
+if (incomingDayGroup !== 'FUSO_1') {
+  if (dayGroups.includes('FUSO_1')) {
+    return false;
+  }
+}
+    
 
     // Regra física: virtual nunca passa de 2 por turno.
     if (shiftSchedules.length >= 2) {
