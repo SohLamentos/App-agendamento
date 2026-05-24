@@ -1165,7 +1165,58 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
 
   return { success: true };
 }
-  getTechnicians() { return this.technicians.filter(t => t.groupId === this.getContext().groupId); }
+  getTechnicians() {
+  const ctx = this.getContext();
+
+  const activeScheduleByTechId = new Map<string, CertificationSchedule>();
+
+  this.schedules
+    .filter(
+      s =>
+        s.groupId === ctx.groupId &&
+        s.status !== ScheduleStatus.CANCELLED &&
+        !!s.technicianId &&
+        ['auto', 'manual', 'base-fixed'].includes(String(s.availabilitySlotId || ''))
+    )
+    .forEach(s => {
+      activeScheduleByTechId.set(String(s.technicianId), s);
+    });
+
+  let changed = false;
+
+  this.technicians = this.technicians.map(t => {
+    if (t.groupId !== ctx.groupId) return t;
+
+    const schedule = activeScheduleByTechId.get(String(t.id));
+
+    if (!schedule) return t;
+
+    if (
+      t.status_principal === 'AGENDADOS' &&
+      t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED &&
+      t.scheduledCertificationId === schedule.id
+    ) {
+      return t;
+    }
+
+    changed = true;
+
+    return {
+      ...t,
+      status_principal: 'AGENDADOS',
+      certificationProcessStatus: CertificationProcessStatus.SCHEDULED,
+      scheduledCertificationId: schedule.id,
+      status_updated_at: new Date().toISOString(),
+      status_updated_by: 'SISTEMA - RECONCILIAÇÃO'
+    };
+  });
+
+  if (changed) {
+    this.persist();
+  }
+
+  return this.technicians.filter(t => t.groupId === ctx.groupId);
+}
   getTrainingClasses() { return this.trainingClasses.filter(c => c.groupId === this.getContext().groupId); }
   
   public async getBackupHistory(limit = 50): Promise<AppStateHistoryEntry[]> {
