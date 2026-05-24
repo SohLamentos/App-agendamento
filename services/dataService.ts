@@ -2824,13 +2824,20 @@ const lotRoutingMatch = this.resolveBaseForScheduling({
   shift: Shift,
   tempSchedules: CertificationSchedule[]
 ) => {
-  const allSchedules = [...this.schedules, ...tempSchedules].filter(
-    s =>
-      s.groupId === context.groupId &&
-      s.analystId === analystId &&
-      s.datetime.startsWith(dateIso) &&
-      s.status !== ScheduleStatus.CANCELLED
-  );
+  const allSchedulesMap = new Map<string, CertificationSchedule>();
+
+[...this.schedules, ...tempSchedules].forEach(s => {
+  if (
+    s.groupId === context.groupId &&
+    s.analystId === analystId &&
+    s.datetime.startsWith(dateIso) &&
+    s.status !== ScheduleStatus.CANCELLED
+  ) {
+    allSchedulesMap.set(String(s.id), s);
+  }
+});
+
+const allSchedules = Array.from(allSchedulesMap.values());
 
   const hasVirtual = allSchedules.some(s => s.type === ExpertiseType.VIRTUAL);
 
