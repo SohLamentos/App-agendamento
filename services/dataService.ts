@@ -3411,18 +3411,6 @@ continue;
     ExpertiseType.VIRTUAL
   );
 
-  if (incomingGroup === 'FUSO_1') {
-    if (!ctxDay.virtualGroups.every(g => g === 'FUSO_1')) {
-      return false;
-    }
-  }
-
-  if (incomingGroup !== 'FUSO_1') {
-    if (ctxDay.virtualGroups.includes('FUSO_1')) {
-      return false;
-    }
-  }
-
   const shiftSchedules = getVirtualShiftSchedules(
     analystId,
     dateIso,
@@ -3432,13 +3420,22 @@ continue;
 
   const existingGroups = shiftSchedules.map(getScheduleOperationalGroup);
 
+  // FUSO_1 não mistura com DEFAULT nem AC no MESMO PERÍODO
+  if (incomingGroup === 'FUSO_1') {
+    return existingGroups.every(g => g === 'FUSO_1');
+  }
+
+  // AC pode coexistir com DEFAULT, mas só 1 AC por período
   if (incomingGroup === 'AC') {
+    if (existingGroups.includes('FUSO_1')) return false;
     if (existingGroups.includes('AC')) return false;
     return true;
   }
 
-  if (existingGroups.includes('AC')) {
-    return incomingGroup === 'DEFAULT';
+  // DEFAULT não mistura com FUSO_1 no mesmo período
+  if (incomingGroup === 'DEFAULT') {
+    if (existingGroups.includes('FUSO_1')) return false;
+    return true;
   }
 
   return true;
@@ -3489,85 +3486,197 @@ continue;
   };
 
   let finalSchedules: CertificationSchedule[] = [];
-  let finalOwner: User | null = null;
 
-  const analystsToTry = allowedAnalysts;
+const getUfRegion = (uf?: string) => {
+  const state = this.safeNormalize(uf || '');
 
-  for (const analyst of analystsToTry) {
-    const tempSchedules: CertificationSchedule[] = [];
-    let allScheduled = true;
+  if (['PR', 'SC', 'RS'].includes(state)) return 'SUL';
+  if (['MT', 'MS', 'GO', 'DF'].includes(state)) return 'CENTRO_OESTE';
+  if (['AC', 'AM', 'RO', 'RR', 'PA', 'AP', 'TO'].includes(state)) return 'NORTE';
 
-    for (const nextTech of lotTechs) {
-      let scheduledThisTech = false;
+  return 'OUTROS';
+};
 
-      for (const dateIso of businessDays) {
-        if (scheduledThisTech) break;
+const getVirtualAnalystRegionScore = (
+  analyst: User,
+  candidateTech: Technician
+) => {
+  const techCity = this.safeNormalize(candidateTech.city || '');
+  const techUf = this.safeNormalize(candidateTech.state || '');
+  const techRegion = getUfRegion(techUf);
 
-        for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
-          if (
-            !canUseVirtualShift(
-              analyst.id,
-              dateIso,
-              shift,
-              nextTech,
-              tempSchedules
-            )
-          ) {
-            continue;
-          }
+  const analystProfileId = analyst.analystProfileId || analyst.id;
 
-          const theoreticalTime = getOperationalStartTime({
-            uf: nextTech.state,
-            city: nextTech.city,
-            type: ExpertiseType.VIRTUAL,
-            shift
-          });
+  const assignedCities = this.cities.filter(c =>
+    (c.responsibleAnalystIds || []).includes(analystProfileId)
+  );
 
-          const practicalTime = getVirtualPracticalTime(
+  const hasSameCity = assignedCities.some(c =>
+    this.safeNormalize(c.name) === techCity &&
+    this.safeNormalize(c.uf) === techUf
+  );
+
+  if (hasSameCity) return 0;
+
+  const hasSameUf = assignedCities.some(c =>
+    this.safeNormalize(c.uf) === techUf
+  );
+
+  if (hasSameUf) return 1;
+
+  const hasSameRegion = assignedCities.some(c =>
+    getUfRegion(c.uf) === techRegion
+  );
+
+  if (hasSameRegion) return 2;
+
+  return 3;
+};
+
+const getVirtualAnalystsToTry = (
+  candidateTech: Technician,
+  dateIso: string,
+  tempSchedules: CertificationSchedule[]
+) => {
+  return [...allowedAnalysts].sort((a, b) => {
+    const regionA = getVirtualAnalystRegionScore(a, candidateTech);
+    const regionB = getVirtualAnalystRegionScore(b, candidateTech);
+
+    if (regionA !== regionB) {
+      return regionA - regionB;
+    }
+
+    const dayCountA = [...this.schedules, ...tempSchedules].filter(
+      s =>
+        s.groupId === context.groupId &&
+        s.analystId === a.id &&
+        s.datetime.startsWith(dateIso) &&
+        s.status !== ScheduleStatus.CANCELLED
+    ).length;
+
+    const dayCountB = [...this.schedules, ...tempSchedules].filter(
+      s =>
+        s.groupId === context.groupId &&
+        s.analystId === b.id &&
+        s.datetime.startsWith(dateIso) &&
+        s.status !== ScheduleStatus.CANCELLED
+    ).length;
+
+    if (dayCountA !== dayCountB) {
+      return dayCountA - dayCountB;
+    }
+
+    const windowCountA = [...this.schedules, ...tempSchedules].filter(
+      s =>
+        s.groupId === context.groupId &&
+        s.analystId === a.id &&
+        businessDaySet.has(s.datetime.split('T')[0]) &&
+        s.status !== ScheduleStatus.CANCELLED
+    ).length;
+
+    const windowCountB = [...this.schedules, ...tempSchedules].filter(
+      s =>
+        s.groupId === context.groupId &&
+        s.analystId === b.id &&
+        businessDaySet.has(s.datetime.split('T')[0]) &&
+        s.status !== ScheduleStatus.CANCELLED
+    ).length;
+
+    if (windowCountA !== windowCountB) {
+      return windowCountA - windowCountB;
+    }
+
+    const metricsA = this.getAnalystDemandMetrics(a.id);
+    const metricsB = this.getAnalystDemandMetrics(b.id);
+
+    if (metricsA.demandIndex !== metricsB.demandIndex) {
+      return metricsA.demandIndex - metricsB.demandIndex;
+    }
+
+    return this.safeNormalize(a.fullName || '').localeCompare(
+      this.safeNormalize(b.fullName || '')
+    );
+  });
+};
+
+let allScheduled = true;
+
+for (const nextTech of lotTechs) {
+  let scheduledThisTech = false;
+
+  for (const dateIso of businessDays) {
+    if (scheduledThisTech) break;
+
+    for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
+      if (scheduledThisTech) break;
+
+      const analystsToTry = getVirtualAnalystsToTry(
+        nextTech,
+        dateIso,
+        finalSchedules
+      );
+
+      for (const analyst of analystsToTry) {
+        if (
+          !canUseVirtualShift(
             analyst.id,
             dateIso,
             shift,
             nextTech,
-            tempSchedules
-          );
-
-          const newSch: CertificationSchedule = {
-            id: `sch-auto-${Date.now()}-${Math.random()}`,
-            groupId: nextTech.groupId,
-            title: `CERTIFICAÇÃO AUTOMÁTICA - ${nextTech.name}`,
-            technicianId: nextTech.id,
-            analystId: analyst.id,
-            trainingClassId: nextTech.trainingClassId,
-            datetime: `${dateIso}T${practicalTime}`,
-            theoreticalDatetime: `${dateIso}T${theoreticalTime}`,
-            theoreticalTime,
-            practicalDatetime: `${dateIso}T${practicalTime}`,
-            practicalTime,
-            type: ExpertiseType.VIRTUAL,
-            status: ScheduleStatus.CONFIRMED,
-            availabilitySlotId: 'auto',
-            shift,
-            technology: nextTech.technology || 'GPON'
-          };
-
-          tempSchedules.push(newSch);
-          scheduledThisTech = true;
-          break;
+            finalSchedules
+          )
+        ) {
+          continue;
         }
-      }
 
-      if (!scheduledThisTech) {
-        allScheduled = false;
+        const theoreticalTime = getOperationalStartTime({
+          uf: nextTech.state,
+          city: nextTech.city,
+          type: ExpertiseType.VIRTUAL,
+          shift
+        });
+
+        const practicalTime = getVirtualPracticalTime(
+          analyst.id,
+          dateIso,
+          shift,
+          nextTech,
+          finalSchedules
+        );
+
+        const newSch: CertificationSchedule = {
+          id: `sch-auto-${Date.now()}-${Math.random()}`,
+          groupId: nextTech.groupId,
+          title: `CERTIFICAÇÃO AUTOMÁTICA - ${nextTech.name}`,
+          technicianId: nextTech.id,
+          analystId: analyst.id,
+          trainingClassId: nextTech.trainingClassId,
+          datetime: `${dateIso}T${practicalTime}`,
+          theoreticalDatetime: `${dateIso}T${theoreticalTime}`,
+          theoreticalTime,
+          practicalDatetime: `${dateIso}T${practicalTime}`,
+          practicalTime,
+          type: ExpertiseType.VIRTUAL,
+          status: ScheduleStatus.CONFIRMED,
+          availabilitySlotId: 'auto',
+          shift,
+          technology: nextTech.technology || 'GPON'
+        };
+
+        finalSchedules.push(newSch);
+        scheduledThisTech = true;
         break;
       }
     }
-
-    if (allScheduled && tempSchedules.length === lotTechs.length) {
-      finalSchedules = tempSchedules;
-      finalOwner = analyst;
-      break;
-    }
   }
+
+  if (!scheduledThisTech) {
+    allScheduled = false;
+    break;
+  }
+}
+
+const finalOwner = allScheduled ? { id: 'virtual-balanced' } : null;
 
   if (finalOwner && finalSchedules.length === lotTechs.length) {
     this.schedules.push(...finalSchedules);
