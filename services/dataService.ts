@@ -617,24 +617,30 @@ return true;
   const groupId = this.getActiveGroupId();
 
   const channel = supabase
-    .channel(`app_state_changes_${groupId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'app_state',
-        filter: `group_id=eq.${groupId}`,
-      },
-      async () => {
-        const updated = await this.initializeFromCloud();
+  .channel(`app_state_changes_${groupId}`)
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'app_state',
+      filter: `app_id=eq.agendamento_certificacao`,
+    },
+    async (payload) => {
+      const row: any = payload.new || payload.old;
 
-        if (updated) {
-          window.dispatchEvent(new Event('data-updated'));
-        }
+      if (row?.group_id !== groupId) {
+        return;
       }
-    )
-    .subscribe();
+
+      const updated = await this.initializeFromCloud();
+
+      if (updated) {
+        window.dispatchEvent(new Event('data-updated'));
+      }
+    }
+  )
+  .subscribe();
 
   return () => {
     supabase.removeChannel(channel);
