@@ -3131,6 +3131,73 @@ continue;
     );
   };
 
+      const getOperationalDayContext = (
+  analystId: string,
+  dateIso: string,
+  tempSchedules: CertificationSchedule[] = []
+) => {
+  const allSchedules = [...this.schedules, ...tempSchedules].filter(
+    s =>
+      s.groupId === context.groupId &&
+      s.analystId === analystId &&
+      s.datetime.startsWith(dateIso) &&
+      s.status !== ScheduleStatus.CANCELLED
+  );
+
+  const virtualSchedules = allSchedules.filter(
+    s => s.type === ExpertiseType.VIRTUAL
+  );
+
+  const presentialSchedules = allSchedules.filter(
+    s => s.type === ExpertiseType.PRESENTIAL
+  );
+
+  const virtualMorning = virtualSchedules.filter(
+    s => s.shift === Shift.MORNING
+  ).length;
+
+  const virtualAfternoon = virtualSchedules.filter(
+    s => s.shift === Shift.AFTERNOON
+  ).length;
+
+  const presentialMorning = presentialSchedules.filter(
+    s => s.shift === Shift.MORNING
+  ).length;
+
+  const presentialAfternoon = presentialSchedules.filter(
+    s => s.shift === Shift.AFTERNOON
+  ).length;
+
+  const virtualGroups = virtualSchedules.map(s =>
+    getScheduleOperationalGroup(s)
+  );
+
+  return {
+    hasVirtual: virtualSchedules.length > 0,
+    hasPresential: presentialSchedules.length > 0,
+
+    virtualMorning,
+    virtualAfternoon,
+
+    presentialMorning,
+    presentialAfternoon,
+
+    virtualGroups,
+
+    blockedMorning: isVirtualShiftBlocked(
+      analystId,
+      dateIso,
+      Shift.MORNING
+    ),
+
+    blockedAfternoon: isVirtualShiftBlocked(
+      analystId,
+      dateIso,
+      Shift.AFTERNOON
+    )
+  };
+};
+
   const canUseVirtualShift = (
     analystId: string,
     dateIso: string,
@@ -3615,27 +3682,27 @@ if (hasFusoConflict) {
     type
   );
 
-  const compatibleSlotSchedules = sameSlotSchedules.filter(s => {
-    const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
+  const compatibleSlotSchedules = isPresential
+  ? sameSlotSchedules
+  : sameSlotSchedules.filter(s => {
+      const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
 
-    const scheduledGroup = getOperationalTimeGroup(
-      scheduledTech?.state,
-      scheduledTech?.city,
-      type
-    );
+      const scheduledGroup = getOperationalTimeGroup(
+        scheduledTech?.state,
+        scheduledTech?.city,
+        type
+      );
 
-    // AC ocupa uma faixa própria no segundo horário do período.
-    if (incomingGroup === 'AC') {
-      return scheduledGroup === 'AC';
-    }
+      if (incomingGroup === 'AC') {
+        return scheduledGroup === 'AC';
+      }
 
-    if (scheduledGroup === 'AC') {
-      return false;
-    }
+      if (scheduledGroup === 'AC') {
+        return false;
+      }
 
-    // Não mistura fuso -1 com fuso 0/RS no mesmo período.
-    return !hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
-  });
+      return !hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
+    });
 
   const position = compatibleSlotSchedules.length + 1;
 
