@@ -912,6 +912,8 @@ setImportStatusSummary(summary);
 
       refreshData();
       setLastClassCreated(classObj);
+      setSelectedClassId(classObj.id);
+setActiveSubTab('technicians');
 
       setImportResult({
         ...importRes,
