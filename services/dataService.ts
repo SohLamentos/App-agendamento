@@ -3303,8 +3303,35 @@ const safeDate = (value: string | null | undefined) => value || '9999-12-31';
 }
   }
 
-  this.persist();
-  auditService.logTicket({
+  const confirmedScheduleByTechId = new Map<string, CertificationSchedule>();
+
+this.schedules
+  .filter(s =>
+    s.groupId === context.groupId &&
+    s.status !== ScheduleStatus.CANCELLED &&
+    s.availabilitySlotId === 'auto'
+  )
+  .forEach(s => {
+    confirmedScheduleByTechId.set(String(s.technicianId), s);
+  });
+
+this.technicians = this.technicians.map(t => {
+  const schedule = confirmedScheduleByTechId.get(String(t.id));
+
+  if (!schedule) return t;
+
+  return {
+    ...t,
+    status_principal: 'AGENDADOS',
+    certificationProcessStatus: CertificationProcessStatus.SCHEDULED,
+    scheduledCertificationId: schedule.id,
+    status_updated_at: new Date().toISOString(),
+    status_updated_by: 'SISTEMA'
+  };
+});
+
+this.persist();
+auditService.logTicket({
     user: this.getCurrentUser(),
     action: 'GERAR_AGENDAMENTO_AUTOMATICO',
     targetType: 'Sistema',
