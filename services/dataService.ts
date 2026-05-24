@@ -2157,27 +2157,42 @@ const windowDaysCount = 10;
 
         const scheduleTime = getCollectiveScheduleTime(shift, positionInShift);
 
-        const newSch = {
-          id: `sch-base-fixed-${Date.now()}-${Math.random()}`,
-          groupId: tech.groupId,
-          title: `CERTIFICAÇÃO DATA FIXA - ${tech.name}`,
-          technicianId: tech.id,
-          analystId: collectiveRule.analystId,
-          trainingClassId: tech.trainingClassId,
-          datetime: `${dateIso}T${scheduleTime}`,
-          type: ExpertiseType.PRESENTIAL,
-          status: ScheduleStatus.CONFIRMED,
-          availabilitySlotId: 'base-fixed',
-          shift,
-          technology: tech.technology || 'GPON',
-          baseId: routingMatch.base?.id,
-          baseName: routingMatch.base?.name || collectiveRule.baseName,
-          baseAddress: routingMatch.base?.address,
-          baseNotes: collectiveRule.notes || routingMatch.base?.notes,
-          powerAppsBaseId: routingMatch.base?.powerAppsBaseId,
-          routingRuleId: routingMatch.rule?.id
-        };
+const theoreticalTime = getPresentialTheoryTimeByRegion({
+  uf: tech.state,
+  city: tech.city
+});
 
+const practicalTime = scheduleTime;
+
+const newSch = {
+  id: `sch-base-fixed-${Date.now()}-${Math.random()}`,
+  groupId: tech.groupId,
+  title: `CERTIFICAÇÃO DATA FIXA - ${tech.name}`,
+  technicianId: tech.id,
+  analystId: collectiveRule.analystId,
+  trainingClassId: tech.trainingClassId,
+
+  datetime: `${dateIso}T${practicalTime}`,
+
+  theoreticalDatetime: `${dateIso}T${theoreticalTime}`,
+  theoreticalTime,
+
+  practicalDatetime: `${dateIso}T${practicalTime}`,
+  practicalTime,
+
+  type: ExpertiseType.PRESENTIAL,
+  status: ScheduleStatus.CONFIRMED,
+  availabilitySlotId: 'base-fixed',
+  shift,
+  technology: tech.technology || 'GPON',
+  baseId: routingMatch.base?.id,
+  baseName: routingMatch.base?.name || collectiveRule.baseName,
+  baseAddress: routingMatch.base?.address,
+  baseNotes: collectiveRule.notes || routingMatch.base?.notes,
+  powerAppsBaseId: routingMatch.base?.powerAppsBaseId,
+  routingRuleId: routingMatch.rule?.id
+};
+        
         this.schedules.push(newSch);
 
         tech.status_principal = 'AGENDADOS';
