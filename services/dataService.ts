@@ -60,22 +60,23 @@ export interface AppStateHistoryEntry {
 
 export const StatusEngine = [
   { 
-    key: 'technicians', 
-    label: 'FILA — TREINAMENTO COM CERTIFICAÇÃO', 
-    filter: (t: Technician) => t.status_principal === 'PENDENTE_CERTIFICAÇÃO' || t.status_principal === 'PENDENTE_TRATAMENTO' || t.status_principal === 'BACKLOG AGUARDANDO' 
-  },
-  
-  { 
-    key: 'scheduled', 
-    label: 'AGENDADOS', 
-    filter: (t: Technician) => t.status_principal === 'AGENDADOS' || t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED 
-  },
-  {
-  key: 'awaiting_result',
-  label: 'AGUARDANDO RESULTADO',
-  filter: (t: Technician) =>
-    t.status_principal === 'AGUARDANDO_RESULTADO' ||
-    t.certificationProcessStatus === CertificationProcessStatus.AWAITING_RESULT
+  key: 'technicians', 
+  label: 'FILA — TREINAMENTO COM CERTIFICAÇÃO', 
+  filter: (t: Technician) => {
+    const status = normalizeText(t.status_principal || '');
+    const cert = String(t.certificationProcessStatus || '');
+
+    return (
+      status === 'PENDENTE_CERTIFICACAO' ||
+      status === 'PENDENTE_CERTIFICAÇÃO' ||
+      status === 'PENDENTE_TRATAMENTO' ||
+      status === 'BACKLOG AGUARDANDO' ||
+      status === 'FILA' ||
+      status === 'FILA CERTIFICACAO' ||
+      status === 'FILA CERTIFICAÇÃO' ||
+      cert === CertificationProcessStatus.QUALIFIED_AWAITING
+    );
+  }
 },
   { 
     key: 'approved', 
