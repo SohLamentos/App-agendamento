@@ -3156,30 +3156,23 @@ continue;
     const existingGroups = shiftSchedules.map(getScheduleOperationalGroup);
 
     // AC usa somente o segundo horário do turno.
-    // Pode dividir o turno com fuso 0, mas não com fuso -1 nem RS.
-    if (incomingGroup === 'AC') {
-      if (existingGroups.includes('AC')) return false;
-      if (existingGroups.includes('FUSO_1')) return false;
-      if (existingGroups.includes('RS')) return false;
-      return true;
-    }
+// Pode coexistir com fuso 0, mas não mistura com fuso -1.
+if (incomingGroup === 'AC') {
+  if (existingGroups.includes('AC')) return false;
+  if (existingGroups.includes('FUSO_1')) return false;
+  return true;
+}
 
-    // Fuso -1 não mistura com fuso 0, RS ou AC.
-    if (incomingGroup === 'FUSO_1') {
-      return existingGroups.every(g => g === 'FUSO_1');
-    }
+// Fuso -1 não mistura com fuso 0 nem AC.
+if (incomingGroup === 'FUSO_1') {
+  return existingGroups.every(g => g === 'FUSO_1');
+}
 
-    // RS fica isolado para respeitar regra 09:00.
-    if (incomingGroup === 'RS') {
-      return existingGroups.every(g => g === 'RS');
-    }
+// DEFAULT pode dividir com DEFAULT ou AC.
+// DEFAULT não pode dividir com fuso -1.
+if (existingGroups.includes('FUSO_1')) return false;
 
-    // DEFAULT pode dividir com DEFAULT ou AC.
-    if (existingGroups.includes('FUSO_1')) return false;
-    if (existingGroups.includes('RS')) return false;
-
-    return true;
-  };
+return true;
 
   const getVirtualPracticalTime = (
     analystId: string,
