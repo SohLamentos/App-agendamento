@@ -128,74 +128,32 @@ function normalizeTextForTimeRule(value?: string): string {
     .toUpperCase();
 }
 
-function getOperationalStartTime(params: {
-  uf?: string;
-  city?: string;
-  type: OperationalTimeType;
-  shift: Shift;
-}): string {
+function getOperationalTimeGroup(
+  uf?: string,
+  city?: string,
+  type?: OperationalTimeType
+): OperationalTimeGroup {
+  const state = normalizeTextForTimeRule(uf);
+  const normalizedCity = normalizeTextForTimeRule(city);
 
-  const group = getOperationalTimeGroup(
-    params.uf,
-    params.city,
-    params.type
-  );
+  if (state === 'RS') return 'RS';
+  if (state === 'AC') return 'AC';
 
-  // =========================
-  // MANHÃ
-  // =========================
-  if (params.shift === Shift.MORNING) {
-
-    // RS presencial
-    if (
-      params.type === ExpertiseType.PRESENTIAL &&
-      group === 'RS'
-    ) {
-      return '09:00:00';
+  // Presencial: AC não tem regra presencial; fuso -1 só para Cuiabá e Manaus.
+  if (type === ExpertiseType.PRESENTIAL) {
+    if (normalizedCity === 'CUIABA' || normalizedCity === 'MANAUS') {
+      return 'FUSO_1';
     }
 
-    // Fuso -1
-    if (group === 'FUSO_1') {
-      return '09:30:00';
-    }
-
-    // AC
-    if (group === 'AC') {
-      return '10:30:00';
-    }
-
-    // Brasília
-    return '08:30:00';
+    return 'DEFAULT';
   }
 
-  // =========================
-  // TARDE
-  // =========================
-  if (params.shift === Shift.AFTERNOON) {
-
-    // RS presencial
-    if (
-      params.type === ExpertiseType.PRESENTIAL &&
-      group === 'RS'
-    ) {
-      return '14:00:00';
-    }
-
-    // Fuso -1
-    if (group === 'FUSO_1') {
-      return '14:30:00';
-    }
-
-    // AC
-    if (group === 'AC') {
-      return '15:30:00';
-    }
-
-    // Brasília
-    return '13:30:00';
+  // Virtual: estados operacionais com -1h em relação a Brasília.
+  if (['AM', 'RO', 'RR', 'MT', 'MS'].includes(state)) {
+    return 'FUSO_1';
   }
 
-  return '08:30:00';
+  return 'DEFAULT';
 }
 
 function getOperationalStartTime(params: {
