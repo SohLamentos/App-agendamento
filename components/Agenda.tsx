@@ -348,7 +348,7 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
     );
   });
 
-  if (!matchedTech) return true;
+  if (!matchedTech) return false;
 
   const currentScheduleId = String(
     matchedTech?.scheduledCertificationId ||
