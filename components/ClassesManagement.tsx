@@ -199,9 +199,9 @@ const refreshData = () => {
         shiftValue.includes('TARDE');
 
       const provaTeorica =
-        isMorning ? '08:30' :
-        isAfternoon ? '13:30' :
-        'N/D';
+  (sch as any).theoreticalTime
+    ? String((sch as any).theoreticalTime).slice(0, 5)
+    : 'N/D';
 
       const solicitante =
         (tech as any).solicitante ||
@@ -1204,78 +1204,16 @@ const getScheduledExportTime = (tech: Technician) => {
   if (!tech.scheduledCertificationId) return 'N/D';
 
   const sch = schedules.find(s => s.id === tech.scheduledCertificationId);
-  if (!sch?.datetime || !sch?.analystId || !sch?.shift) return 'N/D';
 
-  const shiftValue = String(sch.shift ?? '').toUpperCase();
-  const isMorning =
-    shiftValue === String(Shift.MORNING).toUpperCase() ||
-    shiftValue.includes('MORNING') ||
-    shiftValue.includes('MANHA');
-  const isAfternoon =
-    shiftValue === String(Shift.AFTERNOON).toUpperCase() ||
-    shiftValue.includes('AFTERNOON') ||
-    shiftValue.includes('TARDE');
+  if (!sch) return 'N/D';
 
-  const sameSlotSchedules = schedules
-    .filter(s => {
-      if (!s.datetime || !s.analystId || !s.shift) return false;
-
-      const sameDay = s.datetime.split('T')[0] === sch.datetime.split('T')[0];
-      const sameAnalyst = s.analystId === sch.analystId;
-
-      const sShift = String(s.shift ?? '').toUpperCase();
-      const sameShift =
-        (isMorning && (
-          sShift === String(Shift.MORNING).toUpperCase() ||
-          sShift.includes('MORNING') ||
-          sShift.includes('MANHA')
-        )) ||
-        (isAfternoon && (
-          sShift === String(Shift.AFTERNOON).toUpperCase() ||
-          sShift.includes('AFTERNOON') ||
-          sShift.includes('TARDE')
-        ));
-
-      return sameDay && sameAnalyst && sameShift;
-    })
-    .sort((a, b) => {
-      const dateDiff = new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
-      if (dateDiff !== 0) return dateDiff;
-      return String(a.id).localeCompare(String(b.id));
-    });
-
-  const slotIndex = sameSlotSchedules.findIndex(s => s.id === sch.id);
-  if (slotIndex < 0) return 'N/D';
-
-  const position = slotIndex + 1;
-  const isPresential =
-    sch.type === ExpertiseType.PRESENTIAL ||
-    String(sch.type ?? '').toUpperCase().includes('PRES');
-
-  if (isPresential) {
-    if (isMorning) {
-      if (position === 1) return '09:00';
-      if (position === 2) return '10:00';
-      if (position === 3) return '11:00';
-    }
-
-    if (isAfternoon) {
-      if (position === 1) return '14:00';
-      if (position === 2) return '15:00';
-      if (position === 3) return '16:00';
-    }
-  } else {
-    if (isMorning) {
-      if (position === 1) return '09:30';
-      if (position === 2) return '10:30';
-    }
-
-    if (isAfternoon) {
-      if (position === 1) return '14:30';
-      if (position === 2) return '15:30';
-    }
+  if ((sch as any).practicalTime) {
+    return String((sch as any).practicalTime).slice(0, 5);
   }
-  
+
+  if (sch.datetime) {
+    return String(sch.datetime).split('T')[1]?.replace('Z', '').slice(0, 5) || 'N/D';
+  }
 
   return 'N/D';
 };
