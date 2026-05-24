@@ -89,11 +89,12 @@ export const StatusEngine = [
 },
 
       { 
+  
   key: 'scheduled', 
   label: 'AGENDADOS', 
   filter: (t: Technician) =>
-    t.status_principal === 'AGENDADOS' ||
-    t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED ||
+    t.status_principal === 'AGENDADOS' &&
+    t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED &&
     !!t.scheduledCertificationId
 },
 
