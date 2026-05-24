@@ -116,6 +116,97 @@ const normalizeUF = (value?: string): string => {
   return String(value || '').toUpperCase().trim();
 };
 
+
+type OperationalTimeType = ExpertiseType.VIRTUAL | ExpertiseType.PRESENTIAL;
+type OperationalTimeGroup = 'DEFAULT' | 'RS' | 'FUSO_1' | 'AC';
+
+function normalizeTextForTimeRule(value?: string): string {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase();
+}
+
+function getOperationalTimeGroup(
+  uf?: string,
+  city?: string,
+  type?: OperationalTimeType
+): OperationalTimeGroup {
+  const state = normalizeTextForTimeRule(uf);
+  const normalizedCity = normalizeTextForTimeRule(city);
+
+  if (state === 'RS') return 'RS';
+  if (state === 'AC') return 'AC';
+
+  // Presencial: AC não tem regra presencial; fuso -1 só para Cuiabá e Manaus.
+  if (type === ExpertiseType.PRESENTIAL) {
+    if (normalizedCity === 'CUIABA' || normalizedCity === 'MANAUS') {
+      return 'FUSO_1';
+    }
+
+    return 'DEFAULT';
+  }
+
+  // Virtual: estados operacionais com -1h em relação a Brasília.
+  if (['AM', 'RO', 'RR', 'MT', 'MS'].includes(state)) {
+    return 'FUSO_1';
+  }
+
+  return 'DEFAULT';
+}
+
+function getOperationalStartTime(params: {
+  uf?: string;
+  city?: string;
+  type: OperationalTimeType;
+  shift: Shift;
+}): string {
+  const group = getOperationalTimeGroup(params.uf, params.city, params.type);
+
+  if (params.shift === Shift.MORNING) {
+    if (group === 'RS') return '09:00:00';
+    if (group === 'FUSO_1') return '09:30:00';
+    if (group === 'AC') return '10:30:00';
+    return '08:30:00';
+  }
+
+  if (params.shift === Shift.AFTERNOON) {
+    if (group === 'FUSO_1') return '14:30:00';
+    if (group === 'AC') return '15:30:00';
+    return '13:30:00';
+  }
+
+  return '08:30:00';
+}
+
+function isFusoMinusOneGroup(group?: string): boolean {
+  return group === 'FUSO_1';
+}
+
+function hasFusoMinusOneConflict(
+  currentGroup: string,
+  incomingGroup: string
+): boolean {
+  return isFusoMinusOneGroup(currentGroup) !== isFusoMinusOneGroup(incomingGroup);
+}
+
+function addMinutesToTime(time: string, minutesToAdd: number): string {
+  const [hourRaw, minuteRaw] = time.split(':');
+  const total = Number(hourRaw) * 60 + Number(minuteRaw) + minutesToAdd;
+  const hour = Math.floor(total / 60);
+  const minute = total % 60;
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+}
+
+function hasRequiredAppStateShape(payload: any): boolean {
+  return !!payload &&
+    Array.isArray(payload.technicians) &&
+    Array.isArray(payload.trainingClasses) &&
+    Array.isArray(payload.schedules);
+}
+
 class DataService {
   private persistQueue: Promise<void> = Promise.resolve();
   private persistVersion: number = 0;
@@ -324,7 +415,6 @@ payload.analystMappings = Array.isArray(payload.analystMappings) ? payload.analy
   : [];
 
 localStorage.setItem(
-  'g_analyst_mapping_v1',
   'certitech_base_fixed_dates_v1',
   JSON.stringify(payload.baseFixedDates)
 );
@@ -504,6 +594,13 @@ return true;
 }
 
   const payload = this.buildFullPayload();
+
+  if (!hasRequiredAppStateShape(payload)) {
+    console.error('Persistência bloqueada: payload obrigatório incompleto.', payload);
+    alert('Persistência bloqueada: estado obrigatório incompleto. Nenhuma alteração foi salva na nuvem.');
+    return;
+  }
+
   const groupId = this.getActiveGroupId();
   const currentUser = this.getCurrentUser();
   const version = ++this.persistVersion;
@@ -1935,7 +2032,7 @@ const windowDaysCount = 10;
 
         const scheduleTime = getCollectiveScheduleTime(shift, positionInShift);
 
-        const newSch: CertificationSchedule = {
+        const newSch = {
           id: `sch-base-fixed-${Date.now()}-${Math.random()}`,
           groupId: tech.groupId,
           title: `CERTIFICAÇÃO DATA FIXA - ${tech.name}`,
@@ -2125,13 +2222,45 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
       (e.shift === Shift.FULL_DAY || e.shift === shift)
   );
 };
+
+
+const isScheduleCompatibleWithTechFuso = (
+  schedule: CertificationSchedule,
+  incomingTech: Technician,
+  targetType: ExpertiseType
+): boolean => {
+  const scheduledTech = this.technicians.find(t => t.id === schedule.technicianId);
+
+  const scheduledGroup = getOperationalTimeGroup(
+    scheduledTech?.state,
+    scheduledTech?.city,
+    targetType
+  );
+
+  const incomingGroup = getOperationalTimeGroup(
+    incomingTech.state,
+    incomingTech.city,
+    targetType
+  );
+
+  if (incomingGroup === 'AC') {
+    return scheduledGroup === 'AC';
+  }
+
+  if (scheduledGroup === 'AC') {
+    return false;
+  }
+
+  return !hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
+};
     
   const getAvailableSlotsForAnalystOnDate = (
   analystId: string,
   dateIso: string,
   targetType: ExpertiseType,
   limitPerShiftToUse: number,
-  baseIdToUse?: string
+  baseIdToUse?: string,
+  incomingTech?: Technician
 ) => {
   const daySchedules = getDaySchedulesForAnalyst(analystId, dateIso);
 
@@ -2185,6 +2314,40 @@ const isShiftBlockedForAnalyst = (analystId: string, dateIso: string, shift: Shi
   const shiftLimitWithCq = blocked
     ? cqExtraSlots
     : limitPerShiftToUse + cqExtraSlots;
+
+  if (incomingTech && targetType === ExpertiseType.VIRTUAL) {
+    const incomingGroup = getOperationalTimeGroup(
+      incomingTech.state,
+      incomingTech.city,
+      targetType
+    );
+
+    const incompatible = shiftSchedules.some(s =>
+      !isScheduleCompatibleWithTechFuso(s, incomingTech, targetType)
+    );
+
+    // AC pode usar o segundo horário do período junto com fuso 0.
+    if (incomingGroup === 'AC') {
+      const compatibleCount = shiftSchedules.filter(s =>
+        isScheduleCompatibleWithTechFuso(s, incomingTech, targetType)
+      ).length;
+
+      totalFreeSlots += Math.max(0, 1 + cqExtraSlots - compatibleCount);
+      continue;
+    }
+
+    // Fuso -1 não mistura com fuso 0/RS no mesmo período.
+    if (incompatible) {
+      continue;
+    }
+
+    const compatibleCount = shiftSchedules.filter(s =>
+      isScheduleCompatibleWithTechFuso(s, incomingTech, targetType)
+    ).length;
+
+    totalFreeSlots += Math.max(0, shiftLimitWithCq - compatibleCount);
+    continue;
+  }
 
   const shiftCount = shiftSchedules.length;
   const freeSlots = Math.max(0, shiftLimitWithCq - shiftCount);
@@ -2324,7 +2487,8 @@ const simulateLotCapacityForAnalyst = (
   targetType: ExpertiseType,
   businessDaysToUse: string[],
   limitPerShiftToUse: number,
-  lotSize: number
+  lotSize: number,
+  incomingTech?: Technician
 ): LotSimulationResult => {
   let capacity = 0;
   let startDate: string | null = null;
@@ -2337,7 +2501,9 @@ const simulateLotCapacityForAnalyst = (
       analyst.id,
       dateIso,
       targetType,
-      limitPerShiftToUse
+      limitPerShiftToUse,
+      undefined,
+      incomingTech
     );
 
     if (freeSlots <= 0) continue;
@@ -2716,29 +2882,44 @@ const shiftLimitWithCq = isBlocked
 
       const nextTech = lotTechs[scheduledEntries.length];
 
-      const hasOtherEventOnDay = this.events.some(
-  e =>
-    e.involvedUserIds.includes(lotOwner.id) &&
-    e.startDatetime.startsWith(dateIso) &&
-    (e as any).type !== 'CQ_SUPPORT'
-);
+      if (!nextTech) {
+        break;
+      }
 
-const isFullCertificationDay =
-  targetType === ExpertiseType.PRESENTIAL &&
-  !hasOtherEventOnDay &&
-  dayTarget > limitPerShift;
+      const hasIncompatibleFusoOnShift = shiftSchedules.some(s =>
+        !isScheduleCompatibleWithTechFuso(s, nextTech, targetType)
+      );
 
-const scheduleTime =
-  isFullCertificationDay &&
-  shift === Shift.MORNING &&
-  shiftSchedules.length === 0
-    ? '08:30:00'
-    : this.getManualScheduleTime(
+      if (hasIncompatibleFusoOnShift) {
+        break;
+      }
+
+      const scheduleTime = this.getManualScheduleTime(
         lotOwner.id,
         dateIso,
         shift,
-        targetType
+        targetType,
+        nextTech
       );
+
+      if (!scheduleTime) {
+        break;
+      }
+
+      const theoreticalTime =
+        targetType === ExpertiseType.PRESENTIAL
+          ? getOperationalStartTime({
+              uf: nextTech.state,
+              city: nextTech.city,
+              type: targetType,
+              shift: Shift.MORNING
+            })
+          : getOperationalStartTime({
+              uf: nextTech.state,
+              city: nextTech.city,
+              type: targetType,
+              shift
+            });
 
       const resolvedBase = this.resolveBaseForScheduling({
         city: nextTech.city,
@@ -2747,7 +2928,7 @@ const scheduleTime =
         company: nextTech.company
       });
 
-      const newSch: CertificationSchedule = {
+      const newSch = {
         id: `sch-auto-${Date.now()}-${Math.random()}`,
         groupId: nextTech.groupId,
         title: `CERTIFICAÇÃO AUTOMÁTICA - ${nextTech.name}`,
@@ -2755,6 +2936,10 @@ const scheduleTime =
         analystId: lotOwner.id,
         trainingClassId: nextTech.trainingClassId,
         datetime: `${dateIso}T${scheduleTime}`,
+        theoreticalDatetime: `${dateIso}T${theoreticalTime}`,
+        theoreticalTime,
+        practicalDatetime: `${dateIso}T${scheduleTime}`,
+        practicalTime: scheduleTime,
         type: targetType,
         status: ScheduleStatus.CONFIRMED,
         availabilitySlotId: 'auto',
@@ -2864,7 +3049,8 @@ const simulations = analystsToSimulate.map((analyst, index) => ({
     targetType,
     businessDays,
     limitPerShift,
-    lotSize
+    lotSize,
+    tech
   )
 }));
 
@@ -2956,17 +3142,41 @@ const safeDate = (value: string | null | undefined) => value || '9999-12-31';
           s.status !== ScheduleStatus.CANCELLED
       );
 
-      while (shiftSchedules.length < limitPerShift && scheduledEntries.length < lotTechs.length) {
+      while (scheduledEntries.length < lotTechs.length) {
         const nextTech = lotTechs[scheduledEntries.length];
+
+        if (!nextTech) {
+          break;
+        }
+
+        const compatibleCount = shiftSchedules.filter(s =>
+          isScheduleCompatibleWithTechFuso(s, nextTech, targetType)
+        ).length;
+
+        if (compatibleCount >= limitPerShift) {
+          break;
+        }
 
         const scheduleTime = this.getManualScheduleTime(
           lotOwner.id,
           dateIso,
           shift,
-          targetType
+          targetType,
+          nextTech
         );
 
-        const newSch: CertificationSchedule = {
+        if (!scheduleTime) {
+          break;
+        }
+
+        const theoreticalTime = getOperationalStartTime({
+          uf: nextTech.state,
+          city: nextTech.city,
+          type: targetType,
+          shift
+        });
+
+        const newSch = {
           id: `sch-auto-${Date.now()}-${Math.random()}`,
           groupId: nextTech.groupId,
           title: `CERTIFICAÇÃO AUTOMÁTICA - ${nextTech.name}`,
@@ -2974,6 +3184,10 @@ const safeDate = (value: string | null | undefined) => value || '9999-12-31';
           analystId: lotOwner.id,
           trainingClassId: nextTech.trainingClassId,
           datetime: `${dateIso}T${scheduleTime}`,
+          theoreticalDatetime: `${dateIso}T${theoreticalTime}`,
+          theoreticalTime,
+          practicalDatetime: `${dateIso}T${scheduleTime}`,
+          practicalTime: scheduleTime,
           type: targetType,
           status: ScheduleStatus.CONFIRMED,
           availabilitySlotId: 'auto',
@@ -3148,14 +3362,61 @@ if (hasFullDayEvent) {
     const hasOppositeType = type === ExpertiseType.VIRTUAL ? daySchedules.some(s => s.type === ExpertiseType.PRESENTIAL) : daySchedules.some(s => s.type === ExpertiseType.VIRTUAL);
     if (hasOppositeType) brokenRules.push(`O analista já possui agendamentos de tipo oposto (${type === ExpertiseType.VIRTUAL ? 'PRESENCIAL' : 'VIRTUAL'}) neste dia.`);
     const limit = type === ExpertiseType.VIRTUAL ? 2 : 3;
-    const currentCount = daySchedules.filter(s => s.shift === shift).length;
-    if (currentCount >= limit) brokenRules.push(`Capacidade esgotada para este turno (${currentCount}/${limit}).`);
+    const currentShiftSchedules = daySchedules.filter(s => s.shift === shift);
+    const currentCount = currentShiftSchedules.length;
+
+    const incomingGroup = tech
+      ? getOperationalTimeGroup(tech.state, tech.city, type)
+      : 'DEFAULT';
+
+    if (type === ExpertiseType.VIRTUAL && incomingGroup === 'AC') {
+      const acAlreadyInShift = currentShiftSchedules.some(s => {
+        const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
+        return getOperationalTimeGroup(scheduledTech?.state, scheduledTech?.city, type) === 'AC';
+      });
+
+      if (acAlreadyInShift) {
+        brokenRules.push('Capacidade AC esgotada para este período. AC usa apenas o segundo horário do período.');
+      }
+    } else if (currentCount >= limit) {
+      brokenRules.push(`Capacidade esgotada para este turno (${currentCount}/${limit}).`);
+    }
     if (type === ExpertiseType.PRESENTIAL) {
   if (!routingMatch?.hasCityCoverage) {
     brokenRules.push(`Cidade não possui regra/base presencial ativa (${tech?.city}/${tech?.state}).`);
   } else if (!routingMatch?.base || !routingMatch?.rule) {
     brokenRules.push(`Não existe regra/base presencial válida para esta empresa/analista (${tech?.company || 'sem empresa'}).`);
   }
+}
+
+const hasFusoConflict = currentShiftSchedules.some(s => {
+  if (s.type !== type) return false;
+
+  const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
+
+  const scheduledGroup = getOperationalTimeGroup(
+    scheduledTech?.state,
+    scheduledTech?.city,
+    type
+  );
+
+  if (incomingGroup === 'AC') {
+    return scheduledGroup === 'AC';
+  }
+
+  if (scheduledGroup === 'AC') {
+    return false;
+  }
+
+  return hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
+});
+
+if (hasFusoConflict) {
+  brokenRules.push(
+    incomingGroup === 'AC'
+      ? 'Este período já possui técnico AC no segundo horário. AC permite apenas 1 técnico por período.'
+      : 'Este período já possui técnico de outro fuso operacional. Não é permitido misturar fuso -1 com outros fusos no mesmo período.'
+  );
 }
     return { canSchedule: brokenRules.length === 0, brokenRules, needsForce: brokenRules.length > 0 };
   }
@@ -3164,7 +3425,8 @@ if (hasFullDayEvent) {
   analystId: string,
   dateIso: string,
   shift: Shift,
-  type: ExpertiseType
+  type: ExpertiseType,
+  tech?: Technician
 ): string {
   const sameDaySchedules = this.schedules.filter(s =>
     s.analystId === analystId &&
@@ -3177,61 +3439,100 @@ if (hasFullDayEvent) {
     s.shift === shift
   );
 
-  const dayEvents = this.events.filter(e =>
-    e.involvedUserIds.includes(analystId) &&
-    e.startDatetime.startsWith(dateIso) &&
-    (e as any).type !== 'CQ_SUPPORT'
+  const isPresential = type === ExpertiseType.PRESENTIAL;
+  const incomingGroup = getOperationalTimeGroup(
+    tech?.state,
+    tech?.city,
+    type
   );
 
-  const hasOtherEventOnDay = dayEvents.length > 0;
+  const compatibleSlotSchedules = sameSlotSchedules.filter(s => {
+    const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
 
-  const isPresential = type === ExpertiseType.PRESENTIAL;
-  const hasMorningPresential = sameDaySchedules.some(s => s.shift === Shift.MORNING);
-  const hasAfternoonPresential = sameDaySchedules.some(s => s.shift === Shift.AFTERNOON);
-
-  const willHaveFullCertificationDay =
-    isPresential &&
-    !hasOtherEventOnDay &&
-    (
-      hasMorningPresential ||
-      shift === Shift.MORNING
-    ) &&
-    (
-      hasAfternoonPresential ||
-      shift === Shift.AFTERNOON
+    const scheduledGroup = getOperationalTimeGroup(
+      scheduledTech?.state,
+      scheduledTech?.city,
+      type
     );
 
-  const position = sameSlotSchedules.length + 1;
+    // AC ocupa uma faixa própria no segundo horário do período.
+    if (incomingGroup === 'AC') {
+      return scheduledGroup === 'AC';
+    }
+
+    if (scheduledGroup === 'AC') {
+      return false;
+    }
+
+    // Não mistura fuso -1 com fuso 0/RS no mesmo período.
+    return !hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
+  });
+
+  const position = compatibleSlotSchedules.length + 1;
+
+  const theoreticalStart = getOperationalStartTime({
+    uf: tech?.state,
+    city: tech?.city,
+    type,
+    shift
+  });
 
   if (isPresential) {
+    // Presencial: 30 minutos de teórica; prática começa 30 min depois.
+    const firstPracticeTime = addMinutesToTime(theoreticalStart, 30);
+
     if (shift === Shift.MORNING) {
-      if (willHaveFullCertificationDay && position === 1) return '08:30:00';
-      if (position === 1) return '09:00:00';
-      if (position === 2) return '10:00:00';
-      if (position === 3) return '11:00:00';
-      if (position === 4) return '11:30:00';
+      if (position === 1) return firstPracticeTime;
+      if (position === 2) return addMinutesToTime(firstPracticeTime, 60);
+      if (position === 3) return addMinutesToTime(firstPracticeTime, 120);
+      if (position === 4) return addMinutesToTime(firstPracticeTime, 150);
     }
 
     if (shift === Shift.AFTERNOON) {
-      if (position === 1) return '14:00:00';
-      if (position === 2) return '15:00:00';
-      if (position === 3) return '16:00:00';
-      if (position === 4) return '16:30:00';
-    }
-  } else {
-    if (shift === Shift.MORNING) {
-      if (position === 1) return '09:30:00';
-      if (position === 2) return '10:30:00';
-    }
+      const afternoonStart = getOperationalStartTime({
+        uf: tech?.state,
+        city: tech?.city,
+        type,
+        shift: Shift.AFTERNOON
+      });
 
-    if (shift === Shift.AFTERNOON) {
-      if (position === 1) return '14:30:00';
-      if (position === 2) return '15:30:00';
+      const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, 30);
+
+      if (position === 1) return firstAfternoonPracticeTime;
+      if (position === 2) return addMinutesToTime(firstAfternoonPracticeTime, 60);
+      if (position === 3) return addMinutesToTime(firstAfternoonPracticeTime, 120);
+      if (position === 4) return addMinutesToTime(firstAfternoonPracticeTime, 150);
     }
   }
 
-  return shift === Shift.MORNING ? '09:00:00' : '14:00:00';
+  if (type === ExpertiseType.VIRTUAL) {
+    // Virtual padrão: 1h de teórica; AC ocupa o segundo horário com 30 min de teórica.
+    const theoryMinutes = incomingGroup === 'AC' ? 30 : 60;
+    const firstPracticeTime = addMinutesToTime(theoreticalStart, theoryMinutes);
+
+    if (shift === Shift.MORNING) {
+      if (position === 1) return firstPracticeTime;
+      if (position === 2) return addMinutesToTime(firstPracticeTime, 60);
+    }
+
+    if (shift === Shift.AFTERNOON) {
+      const afternoonStart = getOperationalStartTime({
+        uf: tech?.state,
+        city: tech?.city,
+        type,
+        shift: Shift.AFTERNOON
+      });
+
+      const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, theoryMinutes);
+
+      if (position === 1) return firstAfternoonPracticeTime;
+      if (position === 2) return addMinutesToTime(firstAfternoonPracticeTime, 60);
+    }
+  }
+
+  return addMinutesToTime(theoreticalStart, isPresential ? 30 : 60);
 }
+
   public manualScheduleReinforced(params: { techId: string, analystId: string, dateIso: string, shift: Shift, type: ExpertiseType, forced: boolean, brokenRules?: string[] }) {
     const tech = this.technicians.find(t => t.id === params.techId);
     const currentUser = this.getCurrentUser();
@@ -3240,9 +3541,25 @@ if (hasFullDayEvent) {
     params.analystId,
     params.dateIso,
     params.shift,
-    params.type
+    params.type,
+    tech
   );
-      const newSch: CertificationSchedule = {
+      const theoreticalTime =
+        params.type === ExpertiseType.PRESENTIAL
+          ? getOperationalStartTime({
+              uf: tech.state,
+              city: tech.city,
+              type: params.type,
+              shift: Shift.MORNING
+            })
+          : getOperationalStartTime({
+              uf: tech.state,
+              city: tech.city,
+              type: params.type,
+              shift: params.shift
+            });
+
+      const newSch = {
   id: `sch-man-${Date.now()}`,
   groupId: tech.groupId,
   title: `MANUAL ${params.forced ? '(FORÇADO)' : ''} - ${tech.name}`,
@@ -3250,6 +3567,10 @@ if (hasFullDayEvent) {
   analystId: params.analystId,
   trainingClassId: tech.trainingClassId,
   datetime: `${params.dateIso}T${scheduleTime}`,
+  theoreticalDatetime: `${params.dateIso}T${theoreticalTime}`,
+  theoreticalTime,
+  practicalDatetime: `${params.dateIso}T${scheduleTime}`,
+  practicalTime: scheduleTime,
   type: params.type,
   status: ScheduleStatus.CONFIRMED,
   availabilitySlotId: 'manual',
