@@ -88,13 +88,14 @@ export const StatusEngine = [
   }
 },
 
-  { 
-    key: 'scheduled', 
-    label: 'AGENDADOS', 
-    filter: (t: Technician) =>
-      t.status_principal === 'AGENDADOS' ||
-      t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED
-  },
+      { 
+  key: 'scheduled', 
+  label: 'AGENDADOS', 
+  filter: (t: Technician) =>
+    t.status_principal === 'AGENDADOS' ||
+    t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED ||
+    !!t.scheduledCertificationId
+},
 
   {
     key: 'awaiting_result',
@@ -3763,13 +3764,16 @@ this.schedules
   .filter(s =>
     s.groupId === context.groupId &&
     s.status !== ScheduleStatus.CANCELLED &&
-    s.availabilitySlotId === 'auto'
+    !!s.technicianId &&
+    ['auto', 'manual', 'base-fixed'].includes(String(s.availabilitySlotId || ''))
   )
   .forEach(s => {
     confirmedScheduleByTechId.set(String(s.technicianId), s);
   });
 
 this.technicians = this.technicians.map(t => {
+  if (t.groupId !== context.groupId) return t;
+
   const schedule = confirmedScheduleByTechId.get(String(t.id));
 
   if (!schedule) return t;
