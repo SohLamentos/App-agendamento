@@ -2176,7 +2176,7 @@ setWithdrawObservation('');
               <div className="space-y-4">
                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Motivos do Backlog:</p>
                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-3">
-                    {Object.entries(schedulingSummary.reasons).length > 0 ? Object.entries(schedulingSummary.reasons).map(([reason, count]) => (
+                    {Object.entries(schedulingSummary?.reasons || {}).length > 0 ? Object.entries(schedulingSummary?.reasons || {}).map(([reason, count]) => (
                       <div key={reason} className="flex justify-between items-center text-[11px] font-black uppercase text-slate-700">
                         <span className="truncate mr-4">{reason}</span><span className="bg-slate-200 px-3 py-1 rounded-lg min-w-[30px] text-center">{count}</span>
                       </div>
