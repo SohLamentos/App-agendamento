@@ -3171,6 +3171,7 @@ if (incomingGroup === 'FUSO_1') {
 // DEFAULT pode dividir com DEFAULT ou AC.
 // DEFAULT não pode dividir com fuso -1.
 if (existingGroups.includes('FUSO_1')) return false;
+    };
 
 return true;
 
