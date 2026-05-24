@@ -3062,238 +3062,286 @@ continue;
   }
 
     if (targetType === ExpertiseType.VIRTUAL) {
-  const lotSize = lotTechs.length;
-
-  let lotOwner: User | null = null;
-
-      const virtualAffinityKey = `${this.safeNormalize(tech.company || '')}__${this.safeNormalize((tech.city || '').split('/')[0].trim())}__${this.safeNormalize(tech.state || '')}`;
-
-const getExistingVirtualOwnerForDate = (dateIso: string): string | null => {
-  const existing = this.schedules.find(s => {
-    if (s.status === ScheduleStatus.CANCELLED) return false;
-    if (s.type !== ExpertiseType.VIRTUAL) return false;
-    if (!s.datetime.startsWith(dateIso)) return false;
-
-    const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
-    if (!scheduledTech) return false;
-
-    const existingKey = `${this.safeNormalize(scheduledTech.company || '')}__${this.safeNormalize((scheduledTech.city || '').split('/')[0].trim())}__${this.safeNormalize(scheduledTech.state || '')}`;
-
-    return existingKey === virtualAffinityKey;
-  });
-
-  return existing?.analystId || null;
-};
-
-let forcedAnalystIdByAffinity: string | null = null;
-
-for (const dateIso of businessDays) {
-  const existingOwner = getExistingVirtualOwnerForDate(dateIso);
-  if (existingOwner) {
-    forcedAnalystIdByAffinity = existingOwner;
-    break;
-  }
-}
-
-const analystsToSimulate = forcedAnalystIdByAffinity
-  ? allowedAnalysts.filter(a => a.id === forcedAnalystIdByAffinity)
-  : allowedAnalysts;
-
-const simulations = analystsToSimulate.map((analyst, index) => ({
-  analyst,
-  orderIndex: index,
-  result: simulateVirtualLotCapacityForAnalyst(
-    analyst,
-    targetType,
-    businessDays,
-    limitPerShift,
-    lotSize,
-    tech
-  )
-}));
-
-const safeDate = (value: string | null | undefined) => value || '9999-12-31';
-
-  const fullCandidates = simulations
-    .filter(x => x.result.canComplete && x.result.plannedDates.length > 0)
-    .sort((a, b) => {
-      const startA = safeDate(a.result.startDate);
-      const startB = safeDate(b.result.startDate);
-
-      if (startA !== startB) {
-        return startA.localeCompare(startB);
-      }
-
-      const endA = safeDate(a.result.endDate);
-      const endB = safeDate(b.result.endDate);
-
-      if (endA !== endB) {
-        return endA.localeCompare(endB);
-      }
-
-      return a.orderIndex - b.orderIndex;
-    });
-
-  const chosenSimulation = fullCandidates.length > 0 ? fullCandidates[0] : null;
-  lotOwner = chosenSimulation ? chosenSimulation.analyst : null;
-
-  if (!lotOwner) {
-    const classLabel = tech.trainingClassId || 'SEM TURMA';
-    const companyLabel = tech.company || 'SEM EMPRESA';
-    const cityLabel = tech.city || 'SEM CIDADE';
-    const stateLabel = tech.state || '';
-
-    const analystNames = allowedAnalysts
-      .map(a => a.fullName)
-      .join(', ');
-
-    for (const lotTech of lotTechs) {
-      lotTech.status_principal = "BACKLOG AGUARDANDO";
-      lotTech.backlog_score_aplicado = true;
-      lotTech.backlog_motivo = `LOTE VIRTUAL SEM ANALISTA CAPAZ DE FECHAR 100% NA JANELA (${windowDaysCount} DIAS)`;
-    }
-
-    addReason(
-      `LOTE VIRTUAL EM BACKLOG: ${companyLabel} / ${cityLabel}${stateLabel ? `-${stateLabel}` : ''} / ${classLabel}. Responsáveis avaliados: ${analystNames}`
-    );
-
-    summary.backlog += lotTechs.length;
-    continue;
-  }
-
   const scheduledEntries: Array<{ tech: Technician; schedule: CertificationSchedule }> = [];
-  const plannedDatesToUse = chosenSimulation?.result.plannedDates || [];
 
-  for (const dateIso of plannedDatesToUse) {
-    const daySchedules = this.schedules.filter(
+  const getScheduleTech = (schedule: CertificationSchedule) =>
+    this.technicians.find(t => String(t.id) === String(schedule.technicianId));
+
+  const getScheduleOperationalGroup = (schedule: CertificationSchedule): OperationalTimeGroup => {
+    const scheduledTech = getScheduleTech(schedule);
+
+    return getOperationalTimeGroup(
+      scheduledTech?.state,
+      scheduledTech?.city,
+      ExpertiseType.VIRTUAL
+    );
+  };
+
+  const getVirtualShiftSchedules = (
+    analystId: string,
+    dateIso: string,
+    shift: Shift,
+    tempSchedules: CertificationSchedule[]
+  ) => {
+    return [...this.schedules, ...tempSchedules].filter(
       s =>
-        s.analystId === lotOwner.id &&
+        s.groupId === context.groupId &&
+        s.analystId === analystId &&
         s.datetime.startsWith(dateIso) &&
+        s.shift === shift &&
+        s.type === ExpertiseType.VIRTUAL &&
         s.status !== ScheduleStatus.CANCELLED
     );
+  };
 
-    const hasVirtual = daySchedules.some(s => s.type === ExpertiseType.VIRTUAL);
-    const hasPresential = daySchedules.some(s => s.type === ExpertiseType.PRESENTIAL);
+  const hasPresentialOnDay = (
+    analystId: string,
+    dateIso: string,
+    tempSchedules: CertificationSchedule[]
+  ) => {
+    return [...this.schedules, ...tempSchedules].some(
+      s =>
+        s.groupId === context.groupId &&
+        s.analystId === analystId &&
+        s.datetime.startsWith(dateIso) &&
+        s.type === ExpertiseType.PRESENTIAL &&
+        s.status !== ScheduleStatus.CANCELLED
+    );
+  };
 
-    if (
-      (targetType === ExpertiseType.VIRTUAL && hasPresential) ||
-      (targetType === ExpertiseType.PRESENTIAL && hasVirtual)
-    ) {
-      continue;
+  const isVirtualShiftBlocked = (
+    analystId: string,
+    dateIso: string,
+    shift: Shift
+  ) => {
+    return this.events.some(
+      e =>
+        e.involvedUserIds.includes(analystId) &&
+        e.startDatetime.startsWith(dateIso) &&
+        (e as any).type !== 'CQ_SUPPORT' &&
+        (e.shift === Shift.FULL_DAY || e.shift === shift)
+    );
+  };
+
+  const canUseVirtualShift = (
+    analystId: string,
+    dateIso: string,
+    shift: Shift,
+    candidateTech: Technician,
+    tempSchedules: CertificationSchedule[]
+  ) => {
+    if (hasPresentialOnDay(analystId, dateIso, tempSchedules)) {
+      return false;
     }
 
-    for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
-      const isBlocked = this.events.some(
-        e =>
-          e.involvedUserIds.includes(lotOwner.id) &&
-          e.startDatetime.startsWith(dateIso) &&
-          (e.shift === Shift.FULL_DAY || e.shift === shift)
-      );
+    if (isVirtualShiftBlocked(analystId, dateIso, shift)) {
+      return false;
+    }
 
-      if (isBlocked) continue;
+    const shiftSchedules = getVirtualShiftSchedules(
+      analystId,
+      dateIso,
+      shift,
+      tempSchedules
+    );
 
-      let shiftSchedules = this.schedules.filter(
-        s =>
-          s.analystId === lotOwner.id &&
-          s.datetime.startsWith(dateIso) &&
-          s.shift === shift &&
-          s.status !== ScheduleStatus.CANCELLED
-      );
+    // Regra física: virtual nunca passa de 2 por turno.
+    if (shiftSchedules.length >= 2) {
+      return false;
+    }
 
-      while (scheduledEntries.length < lotTechs.length) {
-        const nextTech = lotTechs[scheduledEntries.length];
+    const incomingGroup = getOperationalTimeGroup(
+      candidateTech.state,
+      candidateTech.city,
+      ExpertiseType.VIRTUAL
+    );
 
-        if (!nextTech) {
+    const existingGroups = shiftSchedules.map(getScheduleOperationalGroup);
+
+    // AC usa somente o segundo horário do turno.
+    // Pode dividir o turno com fuso 0, mas não com fuso -1 nem RS.
+    if (incomingGroup === 'AC') {
+      if (existingGroups.includes('AC')) return false;
+      if (existingGroups.includes('FUSO_1')) return false;
+      if (existingGroups.includes('RS')) return false;
+      return true;
+    }
+
+    // Fuso -1 não mistura com fuso 0, RS ou AC.
+    if (incomingGroup === 'FUSO_1') {
+      return existingGroups.every(g => g === 'FUSO_1');
+    }
+
+    // RS fica isolado para respeitar regra 09:00.
+    if (incomingGroup === 'RS') {
+      return existingGroups.every(g => g === 'RS');
+    }
+
+    // DEFAULT pode dividir com DEFAULT ou AC.
+    if (existingGroups.includes('FUSO_1')) return false;
+    if (existingGroups.includes('RS')) return false;
+
+    return true;
+  };
+
+  const getVirtualPracticalTime = (
+    analystId: string,
+    dateIso: string,
+    shift: Shift,
+    candidateTech: Technician,
+    tempSchedules: CertificationSchedule[]
+  ) => {
+    const incomingGroup = getOperationalTimeGroup(
+      candidateTech.state,
+      candidateTech.city,
+      ExpertiseType.VIRTUAL
+    );
+
+    if (incomingGroup === 'AC') {
+      return shift === Shift.MORNING ? '11:00:00' : '16:00:00';
+    }
+
+    const theoreticalStart = getOperationalStartTime({
+      uf: candidateTech.state,
+      city: candidateTech.city,
+      type: ExpertiseType.VIRTUAL,
+      shift
+    });
+
+    const shiftSchedules = getVirtualShiftSchedules(
+      analystId,
+      dateIso,
+      shift,
+      tempSchedules
+    );
+
+    const nonAcSchedules = shiftSchedules.filter(s => {
+      const group = getScheduleOperationalGroup(s);
+      return group !== 'AC';
+    });
+
+    const position = nonAcSchedules.length + 1;
+
+    const firstPractice = addMinutesToTime(theoreticalStart, 60);
+
+    if (position === 1) return firstPractice;
+    return addMinutesToTime(firstPractice, 60);
+  };
+
+  let finalSchedules: CertificationSchedule[] = [];
+  let finalOwner: User | null = null;
+
+  const analystsToTry = allowedAnalysts;
+
+  for (const analyst of analystsToTry) {
+    const tempSchedules: CertificationSchedule[] = [];
+    let allScheduled = true;
+
+    for (const nextTech of lotTechs) {
+      let scheduledThisTech = false;
+
+      for (const dateIso of businessDays) {
+        if (scheduledThisTech) break;
+
+        for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
+          if (
+            !canUseVirtualShift(
+              analyst.id,
+              dateIso,
+              shift,
+              nextTech,
+              tempSchedules
+            )
+          ) {
+            continue;
+          }
+
+          const theoreticalTime = getOperationalStartTime({
+            uf: nextTech.state,
+            city: nextTech.city,
+            type: ExpertiseType.VIRTUAL,
+            shift
+          });
+
+          const practicalTime = getVirtualPracticalTime(
+            analyst.id,
+            dateIso,
+            shift,
+            nextTech,
+            tempSchedules
+          );
+
+          const newSch: CertificationSchedule = {
+            id: `sch-auto-${Date.now()}-${Math.random()}`,
+            groupId: nextTech.groupId,
+            title: `CERTIFICAÇÃO AUTOMÁTICA - ${nextTech.name}`,
+            technicianId: nextTech.id,
+            analystId: analyst.id,
+            trainingClassId: nextTech.trainingClassId,
+            datetime: `${dateIso}T${practicalTime}`,
+            theoreticalDatetime: `${dateIso}T${theoreticalTime}`,
+            theoreticalTime,
+            practicalDatetime: `${dateIso}T${practicalTime}`,
+            practicalTime,
+            type: ExpertiseType.VIRTUAL,
+            status: ScheduleStatus.CONFIRMED,
+            availabilitySlotId: 'auto',
+            shift,
+            technology: nextTech.technology || 'GPON'
+          };
+
+          tempSchedules.push(newSch);
+          scheduledThisTech = true;
           break;
         }
-
-        const compatibleCount = shiftSchedules.filter(s =>
-          isScheduleCompatibleWithTechFuso(s, nextTech, targetType)
-        ).length;
-
-        if (compatibleCount >= limitPerShift) {
-          break;
-        }
-
-        const scheduleTime = this.getManualScheduleTime(
-          lotOwner.id,
-          dateIso,
-          shift,
-          targetType,
-          nextTech
-        );
-
-        if (!scheduleTime) {
-          break;
-        }
-
-        const theoreticalTime = getOperationalStartTime({
-          uf: nextTech.state,
-          city: nextTech.city,
-          type: targetType,
-          shift
-        });
-
-        const newSch = {
-          id: `sch-auto-${Date.now()}-${Math.random()}`,
-          groupId: nextTech.groupId,
-          title: `CERTIFICAÇÃO AUTOMÁTICA - ${nextTech.name}`,
-          technicianId: nextTech.id,
-          analystId: lotOwner.id,
-          trainingClassId: nextTech.trainingClassId,
-          datetime: `${dateIso}T${scheduleTime}`,
-          theoreticalDatetime: `${dateIso}T${theoreticalTime}`,
-          theoreticalTime,
-          practicalDatetime: `${dateIso}T${scheduleTime}`,
-          practicalTime: scheduleTime,
-          type: targetType,
-          status: ScheduleStatus.CONFIRMED,
-          availabilitySlotId: 'auto',
-          shift,
-          technology: nextTech.technology || 'GPON'
-        };
-
-        this.schedules.push(newSch);
-        scheduledEntries.push({ tech: nextTech, schedule: newSch });
-
-        shiftSchedules = this.schedules.filter(
-          s =>
-            s.analystId === lotOwner.id &&
-            s.datetime.startsWith(dateIso) &&
-            s.shift === shift &&
-            s.status !== ScheduleStatus.CANCELLED
-        );
       }
+
+      if (!scheduledThisTech) {
+        allScheduled = false;
+        break;
+      }
+    }
+
+    if (allScheduled && tempSchedules.length === lotTechs.length) {
+      finalSchedules = tempSchedules;
+      finalOwner = analyst;
+      break;
     }
   }
 
-  if (scheduledEntries.length === lotTechs.length) {
-    for (const entry of scheduledEntries) {
-      entry.tech.status_principal = "AGENDADOS";
-      entry.tech.certificationProcessStatus = CertificationProcessStatus.SCHEDULED;
-      entry.tech.scheduledCertificationId = entry.schedule.id;
-      entry.tech.status_updated_at = new Date().toISOString();
-      entry.tech.status_updated_by = "SISTEMA";
+  if (finalOwner && finalSchedules.length === lotTechs.length) {
+    this.schedules.push(...finalSchedules);
+
+    for (const schedule of finalSchedules) {
+      const techScheduled = lotTechs.find(
+        t => String(t.id) === String(schedule.technicianId)
+      );
+
+      if (!techScheduled) continue;
+
+      techScheduled.status_principal = 'AGENDADOS';
+      techScheduled.certificationProcessStatus = CertificationProcessStatus.SCHEDULED;
+      techScheduled.scheduledCertificationId = schedule.id;
+      techScheduled.status_updated_at = new Date().toISOString();
+      techScheduled.status_updated_by = 'SISTEMA';
     }
 
     summary.scheduled += lotTechs.length;
   } else {
-    const createdScheduleIds = new Set(scheduledEntries.map(x => x.schedule.id));
-    this.schedules = this.schedules.filter(s => !createdScheduleIds.has(s.id));
-
     const classLabel = tech.trainingClassId || 'SEM TURMA';
     const companyLabel = tech.company || 'SEM EMPRESA';
     const cityLabel = tech.city || 'SEM CIDADE';
     const stateLabel = tech.state || '';
 
     for (const lotTech of lotTechs) {
-      lotTech.status_principal = "BACKLOG AGUARDANDO";
+      lotTech.status_principal = 'BACKLOG AGUARDANDO';
       lotTech.backlog_score_aplicado = true;
-      lotTech.backlog_motivo = `LOTE VIRTUAL SEM VAGA SUFICIENTE NO ANALISTA ${lotOwner.fullName}`;
+      lotTech.backlog_motivo =
+        'LOTE VIRTUAL SEM VAGA SEGURA RESPEITANDO FUSO, CAPACIDADE E AGENDA EXISTENTE';
     }
 
     addReason(
-      `LOTE VIRTUAL EM BACKLOG: ${companyLabel} / ${cityLabel}${stateLabel ? `-${stateLabel}` : ''} / ${classLabel}. Analista selecionado: ${lotOwner.fullName}`
+      `LOTE VIRTUAL EM BACKLOG: ${companyLabel} / ${cityLabel}${stateLabel ? `-${stateLabel}` : ''} / ${classLabel}. Sem vaga segura respeitando fuso/capacidade.`
     );
 
     summary.backlog += lotTechs.length;
