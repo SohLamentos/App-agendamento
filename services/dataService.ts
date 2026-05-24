@@ -3282,20 +3282,37 @@ continue;
   };
 
   const isVirtualShiftBlocked = (
-    analystId: string,
-    dateIso: string,
-    shift: Shift
-  ) => {
-    return this.events.some(
-      e =>
-        e.involvedUserIds.includes(analystId) &&
-        e.startDatetime.startsWith(dateIso) &&
-        (e as any).type !== 'CQ_SUPPORT' &&
-        (e.shift === Shift.FULL_DAY || e.shift === shift)
-    );
-  };
+  analystId: string,
+  dateIso: string,
+  shift: Shift
+) => {
+  return this.events.some(
+    e =>
+      e.involvedUserIds.includes(analystId) &&
+      e.startDatetime.startsWith(dateIso) &&
+      (e as any).type !== 'CQ_SUPPORT' &&
+      (e.shift === Shift.FULL_DAY || e.shift === shift)
+  );
+};
 
-      const getOperationalDayContext = (
+const getScheduleTech = (schedule: CertificationSchedule) =>
+  (this.technicians || []).find(
+    t => String(t.id) === String(schedule.technicianId)
+  );
+
+const getScheduleOperationalGroup = (
+  schedule: CertificationSchedule
+): OperationalTimeGroup => {
+  const scheduledTech = getScheduleTech(schedule);
+
+  return getOperationalTimeGroup(
+    scheduledTech?.state || '',
+    scheduledTech?.city || '',
+    ExpertiseType.VIRTUAL
+  );
+};
+
+const getOperationalDayContext = (
   analystId: string,
   dateIso: string,
   tempSchedules: CertificationSchedule[] = []
