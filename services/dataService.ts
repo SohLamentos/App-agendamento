@@ -60,24 +60,33 @@ export interface AppStateHistoryEntry {
 
 export const StatusEngine = [
   { 
-    key: 'technicians', 
-    label: 'FILA — TREINAMENTO COM CERTIFICAÇÃO', 
-    filter: (t: Technician) => {
-      const status = normalizeText(t.status_principal || '');
-      const cert = String(t.certificationProcessStatus || '');
+  key: 'technicians', 
+  label: 'FILA — TREINAMENTO COM CERTIFICAÇÃO', 
+  filter: (t: Technician) => {
+    const status = normalizeText(t.status_principal || '');
+    const cert = String(t.certificationProcessStatus || '');
 
-      return (
-        status === 'PENDENTE_CERTIFICACAO' ||
-        status === 'PENDENTE_CERTIFICAÇÃO' ||
-        status === 'PENDENTE_TRATAMENTO' ||
-        status === 'BACKLOG AGUARDANDO' ||
-        status === 'FILA' ||
-        status === 'FILA CERTIFICACAO' ||
-        status === 'FILA CERTIFICAÇÃO' ||
-        cert === CertificationProcessStatus.QUALIFIED_AWAITING
-      );
+    const isAlreadyScheduled =
+      status === 'AGENDADOS' ||
+      cert === CertificationProcessStatus.SCHEDULED ||
+      !!t.scheduledCertificationId;
+
+    if (isAlreadyScheduled) {
+      return false;
     }
-  },
+
+    return (
+      status === 'PENDENTE_CERTIFICACAO' ||
+      status === 'PENDENTE_CERTIFICAÇÃO' ||
+      status === 'PENDENTE_TRATAMENTO' ||
+      status === 'BACKLOG AGUARDANDO' ||
+      status === 'FILA' ||
+      status === 'FILA CERTIFICACAO' ||
+      status === 'FILA CERTIFICAÇÃO' ||
+      cert === CertificationProcessStatus.QUALIFIED_AWAITING
+    );
+  }
+},
 
   { 
     key: 'scheduled', 
