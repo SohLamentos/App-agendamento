@@ -1828,35 +1828,15 @@ const match =
   private splitPresentialLotBySmartCapacity(total: number): number[] {
   if (total <= 0) return [];
 
-  const baseCapacity = 6;
-  const maxCapacity = 7;
+  const capacityPerDay = 6;
+  const result: number[] = [];
 
-  const days = Math.ceil(total / maxCapacity);
-  const result = Array(days).fill(baseCapacity);
+  let remaining = total;
 
-  let currentTotal = result.reduce((sum, value) => sum + value, 0);
-
-  if (currentTotal < total) {
-    let remaining = total - currentTotal;
-    let index = 0;
-
-    while (remaining > 0 && index < result.length) {
-      if (result[index] < maxCapacity) {
-        result[index] += 1;
-        remaining -= 1;
-      }
-      index += 1;
-    }
-  }
-
-  if (currentTotal > total || result.reduce((sum, value) => sum + value, 0) > total) {
-    let excess = result.reduce((sum, value) => sum + value, 0) - total;
-
-    for (let i = result.length - 1; i >= 0 && excess > 0; i--) {
-      const removable = Math.min(excess, result[i] - 1);
-      result[i] -= removable;
-      excess -= removable;
-    }
+  while (remaining > 0) {
+    const dayLoad = Math.min(capacityPerDay, remaining);
+    result.push(dayLoad);
+    remaining -= dayLoad;
   }
 
   return result;
@@ -2291,7 +2271,14 @@ const isScheduleCompatibleWithTechFuso = (
   incomingTech: Technician,
   targetType: ExpertiseType
 ): boolean => {
-  const scheduledTech = this.technicians.find(t => t.id === schedule.technicianId);
+  // Segurança principal: nunca comparar/agrupar schedules de tipo diferente
+  if (schedule.type !== targetType) {
+    return false;
+  }
+
+  const scheduledTech = this.technicians.find(
+    t => t.id === schedule.technicianId
+  );
 
   const scheduledGroup = getOperationalTimeGroup(
     scheduledTech?.state,
@@ -2305,14 +2292,22 @@ const isScheduleCompatibleWithTechFuso = (
     targetType
   );
 
+  // PRESENCIAL: não separa por fuso no turno.
+  // Todos do mesmo analista/dia/turno fazem teórica juntos.
+  if (targetType === ExpertiseType.PRESENTIAL) {
+    return true;
+  }
+
+  // VIRTUAL: AC pode coexistir com DEFAULT, mas nunca com FUSO_1.
   if (incomingGroup === 'AC') {
-    return scheduledGroup === 'AC';
+    return scheduledGroup === 'DEFAULT';
   }
 
   if (scheduledGroup === 'AC') {
-    return false;
+    return incomingGroup === 'DEFAULT';
   }
 
+  // VIRTUAL: FUSO_1 não mistura com DEFAULT nem AC.
   return !hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
 };
     
