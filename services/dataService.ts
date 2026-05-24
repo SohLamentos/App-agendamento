@@ -136,24 +136,121 @@ function getOperationalTimeGroup(
   const state = normalizeTextForTimeRule(uf);
   const normalizedCity = normalizeTextForTimeRule(city);
 
-  if (state === 'RS') return 'RS';
-  if (state === 'AC') return 'AC';
-
-  // Presencial: AC não tem regra presencial; fuso -1 só para Cuiabá e Manaus.
+  // =========================
+  // PRESENCIAL
+  // =========================
   if (type === ExpertiseType.PRESENTIAL) {
-    if (normalizedCity === 'CUIABA' || normalizedCity === 'MANAUS') {
+
+    // RS possui regra própria
+    if (state === 'RS') {
+      return 'RS';
+    }
+
+    // Manaus / AM possui regra própria
+    if (normalizedCity === 'MANAUS' || state === 'AM') {
       return 'FUSO_1';
     }
 
+    // restante presencial
     return 'DEFAULT';
   }
 
-  // Virtual: estados operacionais com -1h em relação a Brasília.
-  if (['AM', 'RO', 'RR', 'MT', 'MS'].includes(state)) {
-    return 'FUSO_1';
+  // =========================
+  // VIRTUAL
+  // =========================
+  if (type === ExpertiseType.VIRTUAL) {
+
+    // AC regra exclusiva
+    if (state === 'AC') {
+      return 'AC';
+    }
+
+    // estados fuso -1
+    if ([
+      'AM',
+      'RO',
+      'RR',
+      'MT',
+      'MS'
+    ].includes(state)) {
+      return 'FUSO_1';
+    }
+
+    // restante fuso 0
+    return 'DEFAULT';
   }
 
   return 'DEFAULT';
+}
+
+function getOperationalStartTime(params: {
+  uf?: string;
+  city?: string;
+  type: OperationalTimeType;
+  shift: Shift;
+}): string {
+
+  const group = getOperationalTimeGroup(
+    params.uf,
+    params.city,
+    params.type
+  );
+
+  // =========================
+  // MANHÃ
+  // =========================
+  if (params.shift === Shift.MORNING) {
+
+    // RS presencial
+    if (
+      params.type === ExpertiseType.PRESENTIAL &&
+      group === 'RS'
+    ) {
+      return '09:00:00';
+    }
+
+    // Fuso -1
+    if (group === 'FUSO_1') {
+      return '09:30:00';
+    }
+
+    // AC
+    if (group === 'AC') {
+      return '10:30:00';
+    }
+
+    // Brasília
+    return '08:30:00';
+  }
+
+  // =========================
+  // TARDE
+  // =========================
+  if (params.shift === Shift.AFTERNOON) {
+
+    // RS presencial
+    if (
+      params.type === ExpertiseType.PRESENTIAL &&
+      group === 'RS'
+    ) {
+      return '14:00:00';
+    }
+
+    // Fuso -1
+    if (group === 'FUSO_1') {
+      return '14:30:00';
+    }
+
+    // AC
+    if (group === 'AC') {
+      return '15:30:00';
+    }
+
+    // Brasília
+    return '13:30:00';
+  }
+
+  return '08:30:00';
 }
 
 function getOperationalStartTime(params: {
