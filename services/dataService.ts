@@ -3247,20 +3247,7 @@ continue;
   }
 
     if (targetType === ExpertiseType.VIRTUAL) {
-  const scheduledEntries: Array<{ tech: Technician; schedule: CertificationSchedule }> = [];
 
-  const getScheduleTech = (schedule: CertificationSchedule) =>
-    this.technicians.find(t => String(t.id) === String(schedule.technicianId));
-
-  const getScheduleOperationalGroup = (schedule: CertificationSchedule): OperationalTimeGroup => {
-    const scheduledTech = getScheduleTech(schedule);
-
-    return getOperationalTimeGroup(
-      scheduledTech?.state,
-      scheduledTech?.city,
-      ExpertiseType.VIRTUAL
-    );
-  };
 
   const getVirtualShiftSchedules = (
     analystId: string,
@@ -3601,7 +3588,31 @@ const getVirtualAnalystsToTry = (
 
 let allScheduled = true;
 
-for (const nextTech of lotTechs) {
+const sortedLotTechs = [...lotTechs].sort((a, b) => {
+  const companyCityCount = (tech: Technician) => {
+    return lotTechs.filter(
+      t =>
+        this.safeNormalize(t.company) === this.safeNormalize(tech.company) &&
+        this.safeNormalize(t.city) === this.safeNormalize(tech.city)
+    ).length;
+  };
+
+  const countA = companyCityCount(a);
+  const countB = companyCityCount(b);
+
+  // PRIORIDADE:
+  // grupos maiores primeiro
+  if (countA !== countB) {
+    return countB - countA;
+  }
+
+  // depois ordena nome
+  return this.safeNormalize(a.name).localeCompare(
+    this.safeNormalize(b.name)
+  );
+});
+
+for (const nextTech of sortedLotTechs) {
   let scheduledThisTech = false;
 
   for (const dateIso of businessDays) {
