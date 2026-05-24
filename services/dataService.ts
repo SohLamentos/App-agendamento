@@ -2368,9 +2368,14 @@ const isScheduleCompatibleWithTechFuso = (
     if (hasDifferentBaseOnShift) continue;
   }
 
-  const shiftLimitWithCq = blocked
-    ? cqExtraSlots
-    : limitPerShiftToUse + cqExtraSlots;
+  const physicalShiftLimit =
+  targetType === ExpertiseType.VIRTUAL
+    ? 2
+    : 3;
+
+const shiftLimitWithCq = blocked
+  ? 0
+  : physicalShiftLimit;
 
   if (incomingTech && targetType === ExpertiseType.VIRTUAL) {
     const incomingGroup = getOperationalTimeGroup(
@@ -2886,21 +2891,14 @@ for (let dateIndex = 0; dateIndex < plannedDatesToUse.length; dateIndex++) {
 
     if (isBlocked && cqExtraSlots <= 0) continue;
 
-    const dailyExtraSlots =
-  targetType === ExpertiseType.PRESENTIAL
-    ? Math.max(0, dayTarget - 6)
-    : 0;
-
-const smartOverflowForShift =
-  targetType === ExpertiseType.PRESENTIAL &&
-  shift === Shift.AFTERNOON &&
-  !isBlocked
-    ? dailyExtraSlots
-    : 0;
+    const physicalShiftLimit =
+  targetType === ExpertiseType.VIRTUAL
+    ? 2
+    : 3;
 
 const shiftLimitWithCq = isBlocked
-  ? cqExtraSlots
-  : limitPerShift + cqExtraSlots + smartOverflowForShift;
+  ? 0
+  : physicalShiftLimit;
 
     let shiftSchedules = this.schedules.filter(
       s =>
@@ -3197,8 +3195,8 @@ continue;
     );
 
     if (incomingGroup === 'AC') {
-      return shift === Shift.MORNING ? '11:00:00' : '16:00:00';
-    }
+  return shift === Shift.MORNING ? '11:30:00' : '16:30:00';
+}
 
     const theoreticalStart = getOperationalStartTime({
       uf: candidateTech.state,
@@ -3639,14 +3637,14 @@ if (hasFusoConflict) {
 
   if (type === ExpertiseType.VIRTUAL) {
   if (incomingGroup === 'AC') {
-    if (shift === Shift.MORNING) {
-      return '11:00:00';
-    }
-
-    if (shift === Shift.AFTERNOON) {
-      return '16:00:00';
-    }
+  if (shift === Shift.MORNING) {
+    return '11:30:00';
   }
+
+  if (shift === Shift.AFTERNOON) {
+    return '16:30:00';
+  }
+}
 
   const firstPracticeTime = addMinutesToTime(theoreticalStart, 60);
 
