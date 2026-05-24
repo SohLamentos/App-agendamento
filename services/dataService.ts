@@ -1875,16 +1875,21 @@ const windowDaysCount = 10;
   const businessDays = this.getBusinessDays(effectiveStart, windowDaysCount);
   const businessDaySet = new Set(businessDays);
     let techniciansPool = this.technicians
-  .filter(
-    t =>
-      t.groupId === context.groupId &&
-      (
-        t.status_principal === "PENDENTE_TRATAMENTO" ||
-        t.status_principal === "PENDENTE_CERTIFICAÇÃO" ||
-        t.status_principal === "BACKLOG AGUARDANDO" ||
-        t.status_principal === "PENDENTE"
-      )
-  )
+  .filter(t => {
+    if (t.groupId !== context.groupId) return false;
+
+    const statusPrincipal = this.safeNormalize(t.status_principal || '');
+    const certStatus = String(t.certificationProcessStatus || '');
+
+    return (
+      statusPrincipal === 'PENDENTE_TRATAMENTO' ||
+      statusPrincipal === 'PENDENTE_CERTIFICACAO' ||
+      statusPrincipal === 'PENDENTE_CERTIFICAÇÃO' ||
+      statusPrincipal === 'BACKLOG AGUARDANDO' ||
+      statusPrincipal === 'PENDENTE' ||
+      certStatus === CertificationProcessStatus.QUALIFIED_AWAITING
+    );
+  })
   .sort((a, b) => {
     const companyA = this.safeNormalize(a.company || '');
     const companyB = this.safeNormalize(b.company || '');
