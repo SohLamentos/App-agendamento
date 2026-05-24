@@ -3604,59 +3604,93 @@ const getVirtualAnalystsToTry = (
   dateIso: string,
   tempSchedules: CertificationSchedule[]
 ) => {
+  const incomingGroup = getOperationalTimeGroup(
+    candidateTech.state,
+    candidateTech.city,
+    ExpertiseType.VIRTUAL
+  );
+
   return [...allowedAnalysts].sort((a, b) => {
     const regionA = getVirtualAnalystRegionScore(a, candidateTech);
     const regionB = getVirtualAnalystRegionScore(b, candidateTech);
 
+    // 1) Prioriza mesma cidade/UF/região
     if (regionA !== regionB) {
       return regionA - regionB;
     }
 
-    const dayCountA = [...this.schedules, ...tempSchedules].filter(
+    const schedulesA = [...this.schedules, ...tempSchedules].filter(
       s =>
         s.groupId === context.groupId &&
         s.analystId === a.id &&
         s.datetime.startsWith(dateIso) &&
         s.status !== ScheduleStatus.CANCELLED
-    ).length;
+    );
 
-    const dayCountB = [...this.schedules, ...tempSchedules].filter(
+    const schedulesB = [...this.schedules, ...tempSchedules].filter(
       s =>
         s.groupId === context.groupId &&
         s.analystId === b.id &&
         s.datetime.startsWith(dateIso) &&
         s.status !== ScheduleStatus.CANCELLED
-    ).length;
+    );
 
-    if (dayCountA !== dayCountB) {
-      return dayCountA - dayCountB;
+    const sameFusoA = schedulesA.some(
+      s =>
+        s.type === ExpertiseType.VIRTUAL &&
+        getScheduleOperationalGroup(s) === incomingGroup
+    );
+
+    const sameFusoB = schedulesB.some(
+      s =>
+        s.type === ExpertiseType.VIRTUAL &&
+        getScheduleOperationalGroup(s) === incomingGroup
+    );
+
+    // 2) Se o analista já está trabalhando aquele fuso, tenta completar nele
+    if (sameFusoA !== sameFusoB) {
+      return sameFusoA ? -1 : 1;
     }
 
-    const windowCountA = [...this.schedules, ...tempSchedules].filter(
-      s =>
-        s.groupId === context.groupId &&
-        s.analystId === a.id &&
-        businessDaySet.has(s.datetime.split('T')[0]) &&
-        s.status !== ScheduleStatus.CANCELLED
-    ).length;
+    const sameCompanyCityA = schedulesA.some(s => {
+      const scheduledTech = getScheduleTech(s);
 
-    const windowCountB = [...this.schedules, ...tempSchedules].filter(
-      s =>
-        s.groupId === context.groupId &&
-        s.analystId === b.id &&
-        businessDaySet.has(s.datetime.split('T')[0]) &&
-        s.status !== ScheduleStatus.CANCELLED
-    ).length;
+      return (
+        s.type === ExpertiseType.VIRTUAL &&
+        this.safeNormalize(scheduledTech?.company || '') === this.safeNormalize(candidateTech.company || '') &&
+        this.safeNormalize(scheduledTech?.city || '') === this.safeNormalize(candidateTech.city || '')
+      );
+    });
 
-    if (windowCountA !== windowCountB) {
-      return windowCountA - windowCountB;
+    const sameCompanyCityB = schedulesB.some(s => {
+      const scheduledTech = getScheduleTech(s);
+
+      return (
+        s.type === ExpertiseType.VIRTUAL &&
+        this.safeNormalize(scheduledTech?.company || '') === this.safeNormalize(candidateTech.company || '') &&
+        this.safeNormalize(scheduledTech?.city || '') === this.safeNormalize(candidateTech.city || '')
+      );
+    });
+
+    // 3) Mantém mesma empresa + mesma cidade junto quando couber
+    if (sameCompanyCityA !== sameCompanyCityB) {
+      return sameCompanyCityA ? -1 : 1;
     }
 
     const metricsA = this.getAnalystDemandMetrics(a.id);
     const metricsB = this.getAnalystDemandMetrics(b.id);
 
+    // 4) Preserva quem tem score presencial alto
     if (metricsA.demandIndex !== metricsB.demandIndex) {
       return metricsA.demandIndex - metricsB.demandIndex;
+    }
+
+    const dayCountA = schedulesA.length;
+    const dayCountB = schedulesB.length;
+
+    // 5) Depois balanceia carga do dia
+    if (dayCountA !== dayCountB) {
+      return dayCountA - dayCountB;
     }
 
     return this.safeNormalize(a.fullName || '').localeCompare(
