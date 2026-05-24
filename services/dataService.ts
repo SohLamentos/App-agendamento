@@ -1285,6 +1285,28 @@ this.analystMappings = Array.isArray(parsed.analystMappings) ? parsed.analystMap
     this.trainingClasses = this.trainingClasses.filter(
       c => !(c.groupId === ctx.groupId && c.id === classId)
     );
+    const remainingTechIds = new Set(
+  this.technicians
+    .filter(t => t.groupId === ctx.groupId)
+    .map(t => String(t.id))
+);
+
+this.schedules = this.schedules.filter(s => {
+  if (s.groupId !== ctx.groupId) return true;
+  if (s.status === ScheduleStatus.CANCELLED) return false;
+
+  const slot = String(s.availabilitySlotId || '').toLowerCase();
+
+  if (
+    slot === 'auto' ||
+    slot === 'manual' ||
+    slot === 'base-fixed'
+  ) {
+    return remainingTechIds.has(String(s.technicianId));
+  }
+
+  return true;
+});
 
     this.persist({ allowScheduleDeletion: true });
 
