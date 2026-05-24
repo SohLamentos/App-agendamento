@@ -2725,7 +2725,58 @@ const lotRoutingMatch = this.resolveBaseForScheduling({
   company: tech.company
 });
 
-  
+  const canUsePresentialShift = (
+  analystId: string,
+  dateIso: string,
+  shift: Shift,
+  tempSchedules: CertificationSchedule[]
+) => {
+  const allSchedules = [...this.schedules, ...tempSchedules].filter(
+    s =>
+      s.groupId === context.groupId &&
+      s.analystId === analystId &&
+      s.datetime.startsWith(dateIso) &&
+      s.status !== ScheduleStatus.CANCELLED
+  );
+
+  const hasVirtual = allSchedules.some(s => s.type === ExpertiseType.VIRTUAL);
+
+  if (hasVirtual) {
+    return false;
+  }
+
+  const isBlocked = this.events.some(
+    e =>
+      e.involvedUserIds.includes(analystId) &&
+      e.startDatetime.startsWith(dateIso) &&
+      (e as any).type !== 'CQ_SUPPORT' &&
+      (e.shift === Shift.FULL_DAY || e.shift === shift)
+  );
+
+  if (isBlocked) {
+    return false;
+  }
+
+  const presentialSchedules = allSchedules.filter(
+    s => s.type === ExpertiseType.PRESENTIAL
+  );
+
+  const presentialInDay = presentialSchedules.length;
+
+  if (presentialInDay >= 6) {
+    return false;
+  }
+
+  const presentialInShift = presentialSchedules.filter(
+    s => s.shift === shift
+  ).length;
+
+  if (presentialInShift >= 3) {
+    return false;
+  }
+
+  return true;
+};
   
 const simulations = allowedAnalysts.map((analyst, index) => ({
   analyst,
@@ -2937,6 +2988,18 @@ const shiftLimitWithCq = isBlocked
       shiftSchedules.length < shiftLimitWithCq &&
       scheduledEntries.length < lotTechs.length
     ) {
+
+      if (
+  targetType === ExpertiseType.PRESENTIAL &&
+  !canUsePresentialShift(
+    lotOwner.id,
+    dateIso,
+    shift,
+    scheduledEntries.map(x => x.schedule)
+  )
+) {
+  break;
+}
       const alreadyScheduledTodayLoop = scheduledEntries.length - dayStartCount;
 
       if (
@@ -3199,93 +3262,73 @@ continue;
 };
 
   const canUseVirtualShift = (
-    analystId: string,
-    dateIso: string,
-    shift: Shift,
-    candidateTech: Technician,
-    tempSchedules: CertificationSchedule[]
-  ) => {
-    if (hasPresentialOnDay(analystId, dateIso, tempSchedules)) {
-      return false;
-    }
+  analystId: string,
+  dateIso: string,
+  shift: Shift,
+  candidateTech: Technician,
+  tempSchedules: CertificationSchedule[]
+) => {
+  const ctxDay = getOperationalDayContext(
+    analystId,
+    dateIso,
+    tempSchedules
+  );
 
-    if (isVirtualShiftBlocked(analystId, dateIso, shift)) {
-      return false;
-    }
-    
+  if (ctxDay.hasPresential) return false;
 
-// FUSO_1 não mistura com DEFAULT nem AC no mesmo dia.
+  if (shift === Shift.MORNING && ctxDay.blockedMorning) return false;
+  if (shift === Shift.AFTERNOON && ctxDay.blockedAfternoon) return false;
 
-const shiftSchedules = getVirtualShiftSchedules(
-  analystId,
-  dateIso,
-  shift,
-  tempSchedules
-);
-
-const dayVirtualSchedules = [...this.schedules, ...tempSchedules].filter(
-  s =>
-    s.groupId === context.groupId &&
-    s.analystId === analystId &&
-    s.datetime.startsWith(dateIso) &&
-    s.type === ExpertiseType.VIRTUAL &&
-    s.status !== ScheduleStatus.CANCELLED
-);
-
-const dayGroups = dayVirtualSchedules.map(getScheduleOperationalGroup);
-
-const incomingDayGroup = getOperationalTimeGroup(
-  candidateTech.state,
-  candidateTech.city,
-  ExpertiseType.VIRTUAL
-);
-
-if (incomingDayGroup === 'FUSO_1') {
-  if (!dayGroups.every(g => g === 'FUSO_1')) {
+  if (ctxDay.virtualMorning + ctxDay.virtualAfternoon >= 4) {
     return false;
   }
-}
 
-if (incomingDayGroup !== 'FUSO_1') {
-  if (dayGroups.includes('FUSO_1')) {
+  if (shift === Shift.MORNING && ctxDay.virtualMorning >= 2) {
     return false;
   }
-}
-    
 
-    // Regra física: virtual nunca passa de 2 por turno.
-    if (shiftSchedules.length >= 2) {
+  if (shift === Shift.AFTERNOON && ctxDay.virtualAfternoon >= 2) {
+    return false;
+  }
+
+  const incomingGroup = getOperationalTimeGroup(
+    candidateTech.state,
+    candidateTech.city,
+    ExpertiseType.VIRTUAL
+  );
+
+  if (incomingGroup === 'FUSO_1') {
+    if (!ctxDay.virtualGroups.every(g => g === 'FUSO_1')) {
       return false;
     }
+  }
 
-    const incomingGroup = getOperationalTimeGroup(
-      candidateTech.state,
-      candidateTech.city,
-      ExpertiseType.VIRTUAL
-    );
+  if (incomingGroup !== 'FUSO_1') {
+    if (ctxDay.virtualGroups.includes('FUSO_1')) {
+      return false;
+    }
+  }
 
-    const existingGroups = shiftSchedules.map(getScheduleOperationalGroup);
+  const shiftSchedules = getVirtualShiftSchedules(
+    analystId,
+    dateIso,
+    shift,
+    tempSchedules
+  );
 
-    // AC usa somente o segundo horário do turno.
-// Pode coexistir com fuso 0, mas não mistura com fuso -1.
-if (incomingGroup === 'AC') {
-  if (existingGroups.includes('AC')) return false;
-  if (existingGroups.includes('FUSO_1')) return false;
+  const existingGroups = shiftSchedules.map(getScheduleOperationalGroup);
+
+  if (incomingGroup === 'AC') {
+    if (existingGroups.includes('AC')) return false;
+    return true;
+  }
+
+  if (existingGroups.includes('AC')) {
+    return incomingGroup === 'DEFAULT';
+  }
+
   return true;
-}
-
-// Fuso -1 não mistura com fuso 0 nem AC.
-if (incomingGroup === 'FUSO_1') {
-  return existingGroups.every(g => g === 'FUSO_1');
-}
-
-// DEFAULT pode dividir com DEFAULT ou AC.
-// DEFAULT não pode dividir com fuso -1.
-if (existingGroups.includes('FUSO_1')) return false;
-    
-
-return true;
-    };
+};
 
   const getVirtualPracticalTime = (
     analystId: string,
