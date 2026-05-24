@@ -1,10 +1,12 @@
-
 import { supabase } from './supabase';
+
+const APP_ID = 'agendamento_certificacao';
 
 export async function loadAppState(groupId: string) {
   const { data, error } = await supabase
     .from('app_state')
     .select('*')
+    .eq('app_id', APP_ID)
     .eq('group_id', groupId)
     .single();
 
@@ -20,15 +22,16 @@ export async function loadAppState(groupId: string) {
 
 export async function saveAppState(groupId: string, payload: any) {
   const row = {
+    app_id: APP_ID,
     group_id: groupId,
     data: payload,
     updated_at: new Date().toISOString(),
   };
 
-  // Não depende de UNIQUE em group_id. Primeiro tenta atualizar; se não existir, insere.
   const { data: updated, error: updateError } = await supabase
     .from('app_state')
     .update(row)
+    .eq('app_id', APP_ID)
     .eq('group_id', groupId)
     .select()
     .maybeSingle();
@@ -64,6 +67,7 @@ export async function saveAppStateHistory(params: {
     .from('app_state_history')
     .insert([
       {
+        app_id: APP_ID,
         group_id: params.groupId,
         data: params.data,
         created_by: params.createdBy ?? 'SYSTEM',
@@ -84,6 +88,7 @@ export async function listAppStateHistory(groupId: string, limit = 50) {
   const { data, error } = await supabase
     .from('app_state_history')
     .select('*')
+    .eq('app_id', APP_ID)
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -94,10 +99,12 @@ export async function listAppStateHistory(groupId: string, limit = 50) {
 
   return data;
 }
+
 export async function getAppStateHistoryEntry(historyId: string) {
   const { data, error } = await supabase
     .from('app_state_history')
     .select('*')
+    .eq('app_id', APP_ID)
     .eq('id', historyId)
     .single();
 
