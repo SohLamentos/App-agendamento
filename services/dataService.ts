@@ -184,6 +184,67 @@ function getOperationalStartTime(params: {
   return '08:30:00';
 }
 
+function getPresentialTheoryTimeByRegion(params: {
+  uf?: string;
+  city?: string;
+}): string {
+  const state = normalizeTextForTimeRule(params.uf);
+  const city = normalizeTextForTimeRule(params.city);
+
+  // RS — regra própria
+  if (state === 'RS') {
+    return '09:00:00';
+  }
+
+  // Manaus / AM — regra própria
+  if (city === 'MANAUS' || state === 'AM') {
+    return '09:30:00';
+  }
+
+  // Demais cidades fuso 0
+  return '08:30:00';
+}
+function getPresentialPracticeTimeByRegion(params: {
+  uf?: string;
+  city?: string;
+  shift: Shift;
+  position: number;
+}): string {
+  const state = normalizeTextForTimeRule(params.uf);
+  const city = normalizeTextForTimeRule(params.city);
+
+  const isRS = state === 'RS';
+  const isManaus = city === 'MANAUS' || state === 'AM';
+
+  if (params.shift === Shift.AFTERNOON) {
+    if (isRS || isManaus) {
+      if (params.position === 1) return '15:00:00';
+      if (params.position === 2) return '16:00:00';
+      return '17:00:00';
+    }
+
+    if (params.position === 1) return '14:00:00';
+    if (params.position === 2) return '15:00:00';
+    return '16:00:00';
+  }
+
+  if (isRS) {
+    if (params.position === 1) return '09:30:00';
+    if (params.position === 2) return '10:30:00';
+    return '11:30:00';
+  }
+
+  if (isManaus) {
+    if (params.position === 1) return '10:00:00';
+    if (params.position === 2) return '11:00:00';
+    return '12:00:00';
+  }
+
+  if (params.position === 1) return '09:00:00';
+  if (params.position === 2) return '10:00:00';
+  return '11:00:00';
+}
+
 function isFusoMinusOneGroup(group?: string): boolean {
   return group === 'FUSO_1';
 }
@@ -3036,13 +3097,12 @@ const shiftLimitWithCq = isBlocked
       }
 
       const theoreticalTime =
-        targetType === ExpertiseType.PRESENTIAL
-          ? getOperationalStartTime({
-              uf: nextTech.state,
-              city: nextTech.city,
-              type: targetType,
-              shift: Shift.MORNING
-            })
+  targetType === ExpertiseType.PRESENTIAL
+    ? getPresentialTheoryTimeByRegion({
+  uf: nextTech.state,
+  city: nextTech.city
+})
+      
           : getOperationalStartTime({
               uf: nextTech.state,
               city: nextTech.city,
@@ -3757,32 +3817,13 @@ if (hasFusoConflict) {
   });
 
   if (isPresential) {
-    // Presencial: 30 minutos de teórica; prática começa 30 min depois.
-    const firstPracticeTime = addMinutesToTime(theoreticalStart, 30);
-
-    if (shift === Shift.MORNING) {
-      if (position === 1) return firstPracticeTime;
-      if (position === 2) return addMinutesToTime(firstPracticeTime, 60);
-      if (position === 3) return addMinutesToTime(firstPracticeTime, 120);
-      if (position === 4) return addMinutesToTime(firstPracticeTime, 150);
-    }
-
-    if (shift === Shift.AFTERNOON) {
-      const afternoonStart = getOperationalStartTime({
-        uf: tech?.state,
-        city: tech?.city,
-        type,
-        shift: Shift.AFTERNOON
-      });
-
-      const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, 30);
-
-      if (position === 1) return firstAfternoonPracticeTime;
-      if (position === 2) return addMinutesToTime(firstAfternoonPracticeTime, 60);
-      if (position === 3) return addMinutesToTime(firstAfternoonPracticeTime, 120);
-      if (position === 4) return addMinutesToTime(firstAfternoonPracticeTime, 150);
-    }
-  }
+  return getPresentialPracticeTimeByRegion({
+    uf: tech?.state,
+    city: tech?.city,
+    shift,
+    position
+  });
+}
 
   if (type === ExpertiseType.VIRTUAL) {
   if (incomingGroup === 'AC') {
@@ -3833,12 +3874,10 @@ if (hasFusoConflict) {
   );
       const theoreticalTime =
         params.type === ExpertiseType.PRESENTIAL
-          ? getOperationalStartTime({
-              uf: tech.state,
-              city: tech.city,
-              type: params.type,
-              shift: Shift.MORNING
-            })
+          ? getPresentialTheoryTimeByRegion({
+    uf: tech.state,
+    city: tech.city
+  })
           : getOperationalStartTime({
               uf: tech.state,
               city: tech.city,
