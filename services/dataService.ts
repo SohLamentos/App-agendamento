@@ -1708,8 +1708,49 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
    * Executada ao carregar o app.
    */
   public processAutoApprovals() {
-  console.log('Regra D+1 desativada');
-  return;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let changed = false;
+
+  this.technicians.forEach((tech: Technician) => {
+    if (
+      tech.status_principal !== 'AGENDADOS' ||
+      tech.certificationProcessStatus !== CertificationProcessStatus.SCHEDULED ||
+      !tech.scheduledCertificationId
+    ) {
+      return;
+    }
+
+    const schedule = this.schedules.find(
+      s =>
+        s.id === tech.scheduledCertificationId &&
+        s.status !== ScheduleStatus.CANCELLED
+    );
+
+    if (!schedule?.datetime) return;
+
+    const scheduleDate = new Date(schedule.datetime);
+    scheduleDate.setHours(0, 0, 0, 0);
+
+    if (scheduleDate < today) {
+      schedule.status = ScheduleStatus.COMPLETED;
+
+      tech.status_principal = 'APROVADOS';
+      tech.certificationProcessStatus =
+        CertificationProcessStatus.CERTIFIED_APPROVED;
+      tech.status_updated_at = new Date().toISOString();
+      tech.status_updated_by = 'SISTEMA - LIMPEZA INICIAL';
+      tech.aprovado_manual = false;
+
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    this.persist();
+    window.dispatchEvent(new Event('data-updated'));
+  }
 }
 
   public saveScoreAdjustment(
