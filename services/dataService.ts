@@ -234,11 +234,11 @@ function getPresentialPracticeTimeByRegion(params: {
   const isManaus = city === 'MANAUS' || state === 'AM';
 
   if (params.shift === Shift.AFTERNOON) {
-    if (isRS || isManaus) {
-      if (params.position === 1) return '15:00:00';
-      if (params.position === 2) return '16:00:00';
-      return '17:00:00';
-    }
+  if (isRS || isManaus) {
+    if (params.position === 1) return '14:00:00';
+    if (params.position === 2) return '15:00:00';
+    return '16:00:00';
+  }
 
     if (params.position === 1) return '14:00:00';
     if (params.position === 2) return '15:00:00';
@@ -2424,6 +2424,21 @@ const isScheduleCompatibleWithTechFuso = (
   incomingTech?: Technician
 ) => {
   const daySchedules = getDaySchedulesForAnalyst(analystId, dateIso);
+  if (targetType === ExpertiseType.PRESENTIAL && baseIdToUse) {
+  const sameBaseOtherAnalystOnDay = this.schedules.some(
+    s =>
+      s.groupId === context.groupId &&
+      s.status !== ScheduleStatus.CANCELLED &&
+      s.type === ExpertiseType.PRESENTIAL &&
+      s.datetime.startsWith(dateIso) &&
+      String(s.baseId || '') === String(baseIdToUse) &&
+      String(s.analystId) !== String(analystId)
+  );
+
+  if (sameBaseOtherAnalystOnDay) {
+    return 0;
+  }
+}
 
   const hasVirtual = daySchedules.some(s => s.type === ExpertiseType.VIRTUAL);
   const hasPresential = daySchedules.some(s => s.type === ExpertiseType.PRESENTIAL);
