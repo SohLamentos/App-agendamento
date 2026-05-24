@@ -3591,29 +3591,37 @@ if (hasFusoConflict) {
   }
 
   if (type === ExpertiseType.VIRTUAL) {
-    // Virtual padrão: 1h de teórica; AC ocupa o segundo horário com 30 min de teórica.
-    const theoryMinutes = incomingGroup === 'AC' ? 30 : 60;
-    const firstPracticeTime = addMinutesToTime(theoreticalStart, theoryMinutes);
-
+  if (incomingGroup === 'AC') {
     if (shift === Shift.MORNING) {
-      if (position === 1) return firstPracticeTime;
-      if (position === 2) return addMinutesToTime(firstPracticeTime, 60);
+      return '11:00:00';
     }
 
     if (shift === Shift.AFTERNOON) {
-      const afternoonStart = getOperationalStartTime({
-        uf: tech?.state,
-        city: tech?.city,
-        type,
-        shift: Shift.AFTERNOON
-      });
-
-      const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, theoryMinutes);
-
-      if (position === 1) return firstAfternoonPracticeTime;
-      if (position === 2) return addMinutesToTime(firstAfternoonPracticeTime, 60);
+      return '16:00:00';
     }
   }
+
+  const firstPracticeTime = addMinutesToTime(theoreticalStart, 60);
+
+  if (shift === Shift.MORNING) {
+    if (position === 1) return firstPracticeTime;
+    if (position === 2) return addMinutesToTime(firstPracticeTime, 60);
+  }
+
+  if (shift === Shift.AFTERNOON) {
+    const afternoonStart = getOperationalStartTime({
+      uf: tech?.state,
+      city: tech?.city,
+      type,
+      shift: Shift.AFTERNOON
+    });
+
+    const firstAfternoonPracticeTime = addMinutesToTime(afternoonStart, 60);
+
+    if (position === 1) return firstAfternoonPracticeTime;
+    if (position === 2) return addMinutesToTime(firstAfternoonPracticeTime, 60);
+  }
+}
 
   return addMinutesToTime(theoreticalStart, isPresential ? 30 : 60);
 }
