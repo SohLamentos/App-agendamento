@@ -3728,27 +3728,29 @@ if (hasFullDayEvent) {
   }
 }
 
-const hasFusoConflict = currentShiftSchedules.some(s => {
-  if (s.type !== type) return false;
+const hasFusoConflict =
+  type === ExpertiseType.VIRTUAL &&
+  currentShiftSchedules.some(s => {
+    if (s.type !== type) return false;
 
-  const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
+    const scheduledTech = this.technicians.find(t => t.id === s.technicianId);
 
-  const scheduledGroup = getOperationalTimeGroup(
-    scheduledTech?.state,
-    scheduledTech?.city,
-    type
-  );
+    const scheduledGroup = getOperationalTimeGroup(
+      scheduledTech?.state,
+      scheduledTech?.city,
+      type
+    );
 
-  if (incomingGroup === 'AC') {
-    return scheduledGroup === 'AC';
-  }
+    if (incomingGroup === 'AC') {
+      return scheduledGroup === 'AC';
+    }
 
-  if (scheduledGroup === 'AC') {
-    return false;
-  }
+    if (scheduledGroup === 'AC') {
+      return false;
+    }
 
-  return hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
-});
+    return hasFusoMinusOneConflict(scheduledGroup, incomingGroup);
+  });
 
 if (hasFusoConflict) {
   brokenRules.push(
