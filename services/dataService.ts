@@ -128,61 +128,6 @@ function normalizeTextForTimeRule(value?: string): string {
     .toUpperCase();
 }
 
-function getOperationalTimeGroup(
-  uf?: string,
-  city?: string,
-  type?: OperationalTimeType
-): OperationalTimeGroup {
-  const state = normalizeTextForTimeRule(uf);
-  const normalizedCity = normalizeTextForTimeRule(city);
-
-  // =========================
-  // PRESENCIAL
-  // =========================
-  if (type === ExpertiseType.PRESENTIAL) {
-
-    // RS possui regra própria
-    if (state === 'RS') {
-      return 'RS';
-    }
-
-    // Manaus / AM possui regra própria
-    if (normalizedCity === 'MANAUS' || state === 'AM') {
-      return 'FUSO_1';
-    }
-
-    // restante presencial
-    return 'DEFAULT';
-  }
-
-  // =========================
-  // VIRTUAL
-  // =========================
-  if (type === ExpertiseType.VIRTUAL) {
-
-    // AC regra exclusiva
-    if (state === 'AC') {
-      return 'AC';
-    }
-
-    // estados fuso -1
-    if ([
-      'AM',
-      'RO',
-      'RR',
-      'MT',
-      'MS'
-    ].includes(state)) {
-      return 'FUSO_1';
-    }
-
-    // restante fuso 0
-    return 'DEFAULT';
-  }
-
-  return 'DEFAULT';
-}
-
 function getOperationalStartTime(params: {
   uf?: string;
   city?: string;
