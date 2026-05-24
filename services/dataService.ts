@@ -1714,11 +1714,7 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
   let changed = false;
 
   this.technicians.forEach((tech: Technician) => {
-    if (
-      tech.status_principal !== 'AGENDADOS' ||
-      tech.certificationProcessStatus !== CertificationProcessStatus.SCHEDULED ||
-      !tech.scheduledCertificationId
-    ) {
+    if (!tech.scheduledCertificationId) {
       return;
     }
 
@@ -1728,7 +1724,9 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
         s.status !== ScheduleStatus.CANCELLED
     );
 
-    if (!schedule?.datetime) return;
+    if (!schedule?.datetime) {
+      return;
+    }
 
     const scheduleDate = new Date(schedule.datetime);
     scheduleDate.setHours(0, 0, 0, 0);
@@ -1737,11 +1735,12 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
       schedule.status = ScheduleStatus.COMPLETED;
 
       tech.status_principal = 'APROVADOS';
+
       tech.certificationProcessStatus =
         CertificationProcessStatus.CERTIFIED_APPROVED;
+
       tech.status_updated_at = new Date().toISOString();
       tech.status_updated_by = 'SISTEMA - LIMPEZA INICIAL';
-      tech.aprovado_manual = false;
 
       changed = true;
     }
@@ -1749,7 +1748,14 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
 
   if (changed) {
     this.persist();
-    window.dispatchEvent(new Event('data-updated'));
+
+    window.dispatchEvent(
+      new CustomEvent('data-updated', {
+        detail: {
+          type: 'auto-approval-cleanup'
+        }
+      })
+    );
   }
 }
 
