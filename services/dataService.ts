@@ -874,9 +874,28 @@ this.analystMappings = [];
 }
 
   public safeNormalize(value: any): string {
-    const s = (value === null || value === undefined) ? "" : String(value);
-    return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ').trim().toUpperCase();
-  }
+  let s = (value === null || value === undefined) ? "" : String(value);
+
+  s = s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+  const aliases: Record<string, string> = {
+    "JOINVILE": "JOINVILLE",
+    "JOINVILE/SC": "JOINVILLE/SC",
+    "CASCAVEL": "CASCAVEL",
+    "CASCAVEL/PR": "CASCAVEL/PR",
+    "FOZ DO IGUACU": "FOZ DO IGUACU",
+    "FOZ DO IGUACU/PR": "FOZ DO IGUACU/PR",
+    "SAO JOSE DOS PINHAIS": "SAO JOSE DOS PINHAIS",
+    "S JOSE DOS PINHAIS": "SAO JOSE DOS PINHAIS"
+  };
+
+  return aliases[s] || s;
+}
   private ensureFixedAdmin() {
   const adminPasswordHash = btoa('salt_Claro@123_G3');
 
@@ -1640,13 +1659,14 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
   analystId?: string;
   company?: string;
 }): { base: IntegrationBase | null; rule: RoutingRule | null; hasCityCoverage: boolean } {
-  const cleanCity = (value?: string) =>
-  this.safeNormalize(
-    (value || '')
-      .split('/')[0]
-      .replace(/\s+/g, ' ')
-      .trim()
-  );
+  const cleanCity = (value?: string) => {
+  const cityOnly = (value || '')
+    .split('/')[0]
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return this.safeNormalize(cityOnly);
+};
 
   const cityNorm = cleanCity(params.city);
   const ufNorm = this.safeNormalize(
@@ -1686,10 +1706,26 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
         : [r.city]
       ).map(c => cleanCity(c));
 
-      const coveredUfs = (r.coveredUfs && r.coveredUfs.length > 0
-        ? r.coveredUfs
-        : [r.uf]
-      ).map(uf => this.safeNormalize(uf));
+      const coveredUfs = (
+  r.coveredUfs && r.coveredUfs.length > 0
+    ? r.coveredUfs
+    : [r.uf]
+).map((uf, idx) => {
+  if (uf) {
+    return this.safeNormalize(uf);
+  }
+
+  const rawCity =
+    (r.coveredCities && r.coveredCities[idx]) ||
+    r.city ||
+    '';
+
+  if (rawCity.includes('/')) {
+    return this.safeNormalize(rawCity.split('/')[1]);
+  }
+
+  return '';
+});
 
       return coveredCities.some((city, index) => {
         const ruleUf = coveredUfs[index] || this.safeNormalize(r.uf || '');
