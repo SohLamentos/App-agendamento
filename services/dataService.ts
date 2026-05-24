@@ -587,6 +587,7 @@ localStorage.setItem(
 |--------------------------------------------------------------------------
 */
 
+this.processAutoApprovals();
 this.processAwaitingResults();
 
 /*
@@ -1175,7 +1176,7 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
     .filter(
       s =>
         s.groupId === ctx.groupId &&
-        s.status !== ScheduleStatus.CANCELLED &&
+        s.status === ScheduleStatus.CONFIRMED &&
         !!s.technicianId &&
         ['auto', 'manual', 'base-fixed'].includes(String(s.availabilitySlotId || ''))
     )
