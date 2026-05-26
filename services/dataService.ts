@@ -587,8 +587,9 @@ localStorage.setItem(
 |--------------------------------------------------------------------------
 */
 
-// Não processar nem persistir automaticamente ao carregar da nuvem.
-// Evita que uma aba aberta altere status e cause conflito com outra sessão.
+this.processAutoApprovals();
+this.processAwaitingResults();
+
 window.dispatchEvent(new Event('data-updated'));
 
 return true;
@@ -1707,55 +1708,53 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
    * Executada ao carregar o app.
    */
   processAutoApprovals() {
+  const ctx = this.getContext();
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   let changed = false;
 
-  this.technicians.forEach((tech: Technician) => {
-    if (!tech.scheduledCertificationId) {
-      return;
-    }
+  const pastConfirmedSchedules = this.schedules.filter(s => {
+    if (s.groupId !== ctx.groupId) return false;
+    if (s.status !== ScheduleStatus.CONFIRMED) return false;
+    if (!s.technicianId || !s.datetime) return false;
 
-    const schedule = this.schedules.find(
-      s =>
-        s.id === tech.scheduledCertificationId &&
-        s.status === ScheduleStatus.CONFIRMED
-    );
-
-    if (!schedule?.datetime) {
-      return;
-    }
-
-    const scheduleDate = new Date(schedule.datetime);
+    const scheduleDate = new Date(s.datetime);
     scheduleDate.setHours(0, 0, 0, 0);
 
-    // SOMENTE PASSADO
-    if (scheduleDate < today) {
-      schedule.status = ScheduleStatus.COMPLETED;
+    return scheduleDate < today;
+  });
 
-      tech.status_principal = 'APROVADOS';
+  const pastScheduleByTechId = new Map<string, CertificationSchedule>();
 
-      tech.certificationProcessStatus =
-        CertificationProcessStatus.CERTIFIED_APPROVED;
+  pastConfirmedSchedules.forEach(s => {
+    pastScheduleByTechId.set(String(s.technicianId), s);
+  });
 
-      tech.status_updated_at = new Date().toISOString();
-      tech.status_updated_by = 'SISTEMA - LIMPEZA INICIAL';
+  this.technicians = this.technicians.map(tech => {
+    if (tech.groupId !== ctx.groupId) return tech;
 
-      changed = true;
-    }
+    const schedule = pastScheduleByTechId.get(String(tech.id));
+    if (!schedule) return tech;
+
+    schedule.status = ScheduleStatus.COMPLETED;
+
+    changed = true;
+
+    return {
+      ...tech,
+      status_principal: 'APROVADOS',
+      certificationProcessStatus: CertificationProcessStatus.CERTIFIED_APPROVED,
+      scheduledCertificationId: schedule.id,
+      status_updated_at: new Date().toISOString(),
+      status_updated_by: 'SISTEMA - LIMPEZA INICIAL'
+    };
   });
 
   if (changed) {
     this.persist();
-
-    window.dispatchEvent(
-      new CustomEvent('data-updated', {
-        detail: {
-          type: 'auto-approval-cleanup'
-        }
-      })
-    );
+    window.dispatchEvent(new Event('data-updated'));
   }
 }
 
@@ -3912,7 +3911,7 @@ const finalOwner = allScheduled ? { id: 'virtual-balanced' } : null;
 this.schedules
   .filter(s =>
     s.groupId === context.groupId &&
-    s.status !== ScheduleStatus.CANCELLED &&
+    s.status === ScheduleStatus.CONFIRMED &&
     !!s.technicianId &&
     ['auto', 'manual', 'base-fixed'].includes(String(s.availabilitySlotId || ''))
   )
