@@ -587,20 +587,12 @@ localStorage.setItem(
 |--------------------------------------------------------------------------
 */
 
-this.processAutoApprovals();
-this.processAwaitingResults();
-
-/*
-|--------------------------------------------------------------------------
-| PERSISTE ALTERAÇÕES AUTOMÁTICAS
-|--------------------------------------------------------------------------
-*/
-
-this.persist();
-
+// Não processar nem persistir automaticamente ao carregar da nuvem.
+// Evita que uma aba aberta altere status e cause conflito com outra sessão.
 window.dispatchEvent(new Event('data-updated'));
 
 return true;
+    
   } catch (error: any) {
   console.error('ERRO REAL initializeFromCloud:', error);
 
@@ -1715,55 +1707,12 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
    * Executada ao carregar o app.
    */
   public processAutoApprovals() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  let changed = false;
-
-  this.technicians.forEach((tech: Technician) => {
-    if (!tech.scheduledCertificationId) {
-      return;
-    }
-
-    const schedule = this.schedules.find(
-      s =>
-        s.id === tech.scheduledCertificationId &&
-        s.status !== ScheduleStatus.CANCELLED
-    );
-
-    if (!schedule?.datetime) {
-      return;
-    }
-
-    const scheduleDate = new Date(schedule.datetime);
-    scheduleDate.setHours(0, 0, 0, 0);
-
-    if (scheduleDate < today) {
-      schedule.status = ScheduleStatus.COMPLETED;
-
-      tech.status_principal = 'APROVADOS';
-
-      tech.certificationProcessStatus =
-        CertificationProcessStatus.CERTIFIED_APPROVED;
-
-      tech.status_updated_at = new Date().toISOString();
-      tech.status_updated_by = 'SISTEMA - LIMPEZA INICIAL';
-
-      changed = true;
-    }
-  });
-
-  if (changed) {
-    this.persist();
-
-    window.dispatchEvent(
-      new CustomEvent('data-updated', {
-        detail: {
-          type: 'auto-approval-cleanup'
-        }
-      })
-    );
-  }
+  // DESATIVADO EM PRODUÇÃO.
+  // Regra antiga D+1 removida.
+  // Técnicos agendados não devem ir automaticamente para APROVADOS.
+  // O fluxo correto é:
+  // AGENDADOS -> AGUARDANDO RESULTADO -> importação Excel/PowerApps -> APROVADO/REPROVADO/NOSHOW.
+  return;
 }
 
   public saveScoreAdjustment(
@@ -3960,74 +3909,93 @@ auditService.logTicket({
 }
 
   public approveScheduledTechnician(techId: string) {
-    const tech = this.technicians.find(t => t.id === techId);
-    const currentUser = this.getCurrentUser();
-    if (!tech) return { success: false, message: 'Técnico não localizado.' };
-    const ctx = this.getContext();
-    if (tech.groupId !== ctx.groupId) return { success: false, message: 'Sem permissão para este grupo.' };
-    try {
-      if (tech.scheduledCertificationId) {
-        const sch = this.schedules.find(s => s.id === tech.scheduledCertificationId);
-        if (sch) sch.status = ScheduleStatus.COMPLETED;
-      }
-      tech.status_principal = "APROVADOS";
-      tech.certificationProcessStatus = CertificationProcessStatus.CERTIFIED_APPROVED;
-      tech.status_updated_at = new Date().toISOString();
-      tech.status_updated_by = currentUser.fullName;
-      tech.aprovado_manual = true; // Marca como ação manual para evitar re-processamento automático
-      
-      this.persist();
+  const tech = this.technicians.find(t => t.id === techId);
+  const currentUser = this.getCurrentUser();
 
-auditService.logTicket({
-  user: currentUser,
-  action: 'MARCAR_APROVADO',
-  targetType: 'CPF',
-  targetValue: tech.cpf,
-  reason: `Técnico ${tech.name} (${tech.cpf}) aprovado manualmente na aba AGENDADOS.`,
-  screen: 'Turmas e Técnicos',
-  groupId: tech.groupId
-});
-
-window.dispatchEvent(new Event('data-updated'));
-return { success: true };
-    } catch (e: any) {
-      return { success: false, message: e.message };
-    }
+  if (!tech) {
+    return { success: false, message: 'Técnico não localizado.' };
   }
 
-  public applyImprovisoCancellation(analystId: string, dateIso: string, shift: Shift) {
-    const currentUser = this.getCurrentUser();
-    const affectedSchedules = this.getSchedulesImpactedByImproviso(analystId, dateIso, shift);
-    affectedSchedules.forEach(sch => {
-      sch.status = ScheduleStatus.CANCELLED;
-      const tech = this.technicians.find(t => t.id === sch.technicianId);
-      if (tech) {
-        tech.status_principal = "CANCELADOS (ANALISTA)";
-        tech.status_submotivo = "ANALISTA INDISPONÍVEL";
-        tech.status_observacao = "CANCELADO POR IMPROVISO NA AGENDA";
-        tech.status_updated_at = new Date().toISOString();
-        tech.status_updated_by = currentUser.fullName;
-        tech.scheduledCertificationId = undefined;
-        tech.certificationProcessStatus = CertificationProcessStatus.CANCELLED_BY_ANALYST;
-        tech.cancelado_manual = true;
+  const ctx = this.getContext();
+
+  if (tech.groupId !== ctx.groupId) {
+    return { success: false, message: 'Sem permissão para este grupo.' };
+  }
+
+  try {
+    if (tech.scheduledCertificationId) {
+      const sch = this.schedules.find(s => s.id === tech.scheduledCertificationId);
+
+      if (sch) {
+        sch.status = ScheduleStatus.COMPLETED;
       }
+    }
+
+    tech.status_principal = 'APROVADOS';
+    tech.certificationProcessStatus = CertificationProcessStatus.CERTIFIED_APPROVED;
+    tech.status_updated_at = new Date().toISOString();
+    tech.status_updated_by = currentUser.fullName;
+    tech.aprovado_manual = true;
+
+    this.persist({
+      allowScheduleDeletion: true,
     });
 
-    this.persist();
+    auditService.logTicket({
+      user: currentUser,
+      action: 'MARCAR_APROVADO',
+      targetType: 'CPF',
+      targetValue: tech.cpf,
+      reason: `Técnico ${tech.name} (${tech.cpf}) aprovado manualmente na aba AGENDADOS/AGUARDANDO RESULTADO.`,
+      screen: 'Turmas e Técnicos',
+      groupId: tech.groupId
+    });
 
-auditService.logTicket({
-  user: currentUser,
-  action: 'CANCELAMENTO_POR_IMPROVISO',
-  targetType: 'Analista',
-  targetValue: analystId,
-  reason: `Improviso lançado para o analista ${analystId} em ${dateIso}, período ${shift}, com ${affectedSchedules.length} agendamento(s) cancelado(s).`,
-  screen: 'Agenda',
-  groupId: currentUser.groupId
-});
+    window.dispatchEvent(new Event('data-updated'));
 
-window.dispatchEvent(new Event('data-updated'));
-    
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, message: e.message };
   }
+}
+
+  public applyImprovisoCancellation(analystId: string, dateIso: string, shift: Shift) {
+  const currentUser = this.getCurrentUser();
+  const affectedSchedules = this.getSchedulesImpactedByImproviso(analystId, dateIso, shift);
+
+  affectedSchedules.forEach(sch => {
+    sch.status = ScheduleStatus.CANCELLED;
+
+    const tech = this.technicians.find(t => t.id === sch.technicianId);
+
+    if (tech) {
+      tech.status_principal = 'CANCELADOS (ANALISTA)';
+      tech.status_submotivo = 'ANALISTA INDISPONÍVEL';
+      tech.status_observacao = 'CANCELADO POR IMPROVISO NA AGENDA';
+      tech.status_updated_at = new Date().toISOString();
+      tech.status_updated_by = currentUser.fullName;
+      tech.scheduledCertificationId = undefined;
+      tech.certificationProcessStatus = CertificationProcessStatus.CANCELLED_BY_ANALYST;
+      tech.cancelado_manual = true;
+    }
+  });
+
+  this.persist({
+    allowScheduleDeletion: true,
+  });
+
+  auditService.logTicket({
+    user: currentUser,
+    action: 'CANCELAMENTO_POR_IMPROVISO',
+    targetType: 'Analista',
+    targetValue: analystId,
+    reason: `Improviso lançado para o analista ${analystId} em ${dateIso}, período ${shift}, com ${affectedSchedules.length} agendamento(s) cancelado(s).`,
+    screen: 'Agenda',
+    groupId: currentUser.groupId
+  });
+
+  window.dispatchEvent(new Event('data-updated'));
+}
 
   public getSchedulesImpactedByImproviso(uid: string, d: string, s: Shift) {
     return this.schedules.filter(sch => sch.analystId === uid && sch.datetime.startsWith(d) && sch.status === ScheduleStatus.CONFIRMED && (s === Shift.FULL_DAY || sch.shift === s));
@@ -4315,8 +4283,11 @@ return { success: true };
       if (params.statusPrincipal === "REPROVADO") tech.reprovado_manual = true;
       if (params.statusPrincipal === "CANCELADO_ANALISTA" || params.statusPrincipal === "INABILITADO") tech.cancelado_manual = true;
       
-      this.persist();
-      window.dispatchEvent(new Event('data-updated'));
+      this.persist({
+  allowScheduleDeletion: true,
+});
+
+window.dispatchEvent(new Event('data-updated'));
       return { success: true };
     }
     return { success: false };
@@ -5214,7 +5185,9 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
           tech.generateCertification = false;
         }
 
-        this.persist();
+        this.persist({
+  allowScheduleDeletion: true,
+});
         auditService.logTicket({
           user: currentUser,
           action: nextAttempts >= 2
@@ -5245,7 +5218,9 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
           tech.certificationProcessStatus = CertificationProcessStatus.INABILITADO;
           tech.generateCertification = false;
 
-          this.persist();
+          this.persist({
+  allowScheduleDeletion: true,
+});
           auditService.logTicket({
             user: currentUser,
             action: 'REPROVACAO_INTELIGENTE_2_TENTATIVA_INABILITADO',
@@ -5273,7 +5248,9 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
         tech.participationStatus = ParticipationStatus.ENROLLED;
         tech.certificationProcessStatus = CertificationProcessStatus.CERTIFIED_REPROVED_1;
 
-        this.persist();
+        this.persist({
+  allowScheduleDeletion: true,
+});
         auditService.logTicket({
           user: currentUser,
           action: 'REPROVACAO_1_CERTIFICACAO',
@@ -5306,7 +5283,9 @@ return { inserted, updated, ignored, duplicatedInClass, newInOtherClass, errors 
           tech.certificationReproofCount = 2;
         }
 
-        this.persist();
+        this.persist({
+  allowScheduleDeletion: true,
+});
         auditService.logTicket({
           user: currentUser,
           action: 'REPROVACAO_2_CERTIFICACAO_INABILITADO',
@@ -5507,16 +5486,23 @@ if (status === 'NOSHOW' || status === 'NO SHOW') {
 
 /*
 |--------------------------------------------------------------------------
-| RESULTADO AINDA NÃO DEFINIDO
+| RESULTADO AINDA NÃO DEFINIDO / STATUS INVÁLIDO
 |--------------------------------------------------------------------------
-| Mantém em AGUARDANDO RESULTADO.
+| Mantém em AGUARDANDO RESULTADO e salva a mudança.
 |--------------------------------------------------------------------------
 */
 
 resumo.pendentes++;
-continue;
 
-    resumo.erros.push(`Status inválido para ${row.NomeTecnico}: ${row.StatusTecnico}`);
+if (status) {
+  resumo.erros.push(`Status inválido para ${row.NomeTecnico}: ${row.StatusTecnico}`);
+}
+
+this.persist({
+  allowScheduleDeletion: true,
+});
+
+continue;
   }
 
   auditService.logTicket({
@@ -5529,7 +5515,8 @@ continue;
     groupId: ctx.groupId
   });
 
-  this.persist();
+    // Não persistir novamente aqui.
+  // approveScheduledTechnician/reproveScheduledTechnician já persistem com allowScheduleDeletion.
   window.dispatchEvent(new Event('data-updated'));
 
   return resumo;
