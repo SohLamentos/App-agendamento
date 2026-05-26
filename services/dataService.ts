@@ -1706,13 +1706,57 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
    * Rotina Automática: Move técnicos AGENDADOS para APROVADOS após a data de certificação passar (D+1).
    * Executada ao carregar o app.
    */
-  public processAutoApprovals() {
-  // DESATIVADO EM PRODUÇÃO.
-  // Regra antiga D+1 removida.
-  // Técnicos agendados não devem ir automaticamente para APROVADOS.
-  // O fluxo correto é:
-  // AGENDADOS -> AGUARDANDO RESULTADO -> importação Excel/PowerApps -> APROVADO/REPROVADO/NOSHOW.
-  return;
+  processAutoApprovals() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let changed = false;
+
+  this.technicians.forEach((tech: Technician) => {
+    if (!tech.scheduledCertificationId) {
+      return;
+    }
+
+    const schedule = this.schedules.find(
+      s =>
+        s.id === tech.scheduledCertificationId &&
+        s.status === ScheduleStatus.CONFIRMED
+    );
+
+    if (!schedule?.datetime) {
+      return;
+    }
+
+    const scheduleDate = new Date(schedule.datetime);
+    scheduleDate.setHours(0, 0, 0, 0);
+
+    // SOMENTE PASSADO
+    if (scheduleDate < today) {
+      schedule.status = ScheduleStatus.COMPLETED;
+
+      tech.status_principal = 'APROVADOS';
+
+      tech.certificationProcessStatus =
+        CertificationProcessStatus.CERTIFIED_APPROVED;
+
+      tech.status_updated_at = new Date().toISOString();
+      tech.status_updated_by = 'SISTEMA - LIMPEZA INICIAL';
+
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    this.persist();
+
+    window.dispatchEvent(
+      new CustomEvent('data-updated', {
+        detail: {
+          type: 'auto-approval-cleanup'
+        }
+      })
+    );
+  }
 }
 
   public saveScoreAdjustment(
