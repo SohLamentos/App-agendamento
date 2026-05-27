@@ -1,6 +1,6 @@
 
 import {
-  saveAppState,const canUseVirtualShift = (
+  saveAppState,
   loadAppState,
   saveAppStateHistory,
   listAppStateHistory,
