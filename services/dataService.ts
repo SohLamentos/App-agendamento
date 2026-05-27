@@ -188,7 +188,29 @@ function getOperationalTimeGroup(
 }
 
 function getOperationalStartTime(params: {
+  uf?: string;
+  city?: string;
+  type: OperationalTimeType;
+  shift: Shift;
+}): string {
+  const group = getOperationalTimeGroup(params.uf, params.city, params.type);
 
+  if (params.shift === Shift.MORNING) {
+    if (group === 'RS' || group === 'FUSO_1') return '09:00:00';
+    if (group === 'AC') return '10:30:00';
+    return '08:30:00';
+  }
+
+  if (params.shift === Shift.AFTERNOON) {
+    if (group === 'RS' || group === 'FUSO_1') return '14:00:00';
+    if (group === 'AC') return '15:30:00';
+    return '13:30:00';
+  }
+
+  return '08:30:00';
+}
+
+function getPresentialTheoryTimeByRegion(params: {
   uf?: string;
   city?: string;
 }): string {
@@ -199,7 +221,6 @@ function getOperationalStartTime(params: {
     city === 'MANAUS' ||
     ['AM', 'RO', 'RR', 'MT', 'MS'].includes(state);
 
-  // RS e cidades FUSO -1 seguem a mesma regra
   if (state === 'RS' || isFuso1) {
     return '09:00:00';
   }
