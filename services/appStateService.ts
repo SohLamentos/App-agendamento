@@ -6,7 +6,7 @@ export async function loadAppState(groupId: string) {
   const { data, error } = await supabase
     .from('app_state')
     .select('*')
-    .eq('app_id', 'agendamento_certificacao')
+    .eq('app_id', APP_ID)
     .eq('group_id', groupId)
     .maybeSingle();
 
@@ -15,11 +15,6 @@ export async function loadAppState(groupId: string) {
   }
 
   return data || null;
-}
-    throw error;
-  }
-
-  return data;
 }
 
 export async function saveAppState(groupId: string, payload: any) {
@@ -99,7 +94,7 @@ export async function listAppStateHistory(groupId: string, limit = 50) {
     throw error;
   }
 
-  return data;
+  return data || [];
 }
 
 export async function getAppStateHistoryEntry(historyId: string) {
@@ -108,11 +103,13 @@ export async function getAppStateHistoryEntry(historyId: string) {
     .select('*')
     .eq('app_id', APP_ID)
     .eq('id', historyId)
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
-  return data;
+  return data || null;
 }
 
 export async function restoreAppStateFromHistory(
