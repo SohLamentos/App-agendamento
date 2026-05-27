@@ -1,6 +1,6 @@
 
 import {
-  saveAppState,
+  saveAppState,const canUseVirtualShift = (
   loadAppState,
   saveAppStateHistory,
   listAppStateHistory,
@@ -3516,22 +3516,15 @@ const getOperationalDayContext = (
     tempSchedules
   );
 
+  // PRESENCIAL É PRIORIDADE: se já tem presencial no dia, não entra virtual
   if (ctxDay.hasPresential) return false;
 
   if (shift === Shift.MORNING && ctxDay.blockedMorning) return false;
   if (shift === Shift.AFTERNOON && ctxDay.blockedAfternoon) return false;
 
-  if (ctxDay.virtualMorning + ctxDay.virtualAfternoon >= 4) {
-    return false;
-  }
-
-  if (shift === Shift.MORNING && ctxDay.virtualMorning >= 2) {
-    return false;
-  }
-
-  if (shift === Shift.AFTERNOON && ctxDay.virtualAfternoon >= 2) {
-    return false;
-  }
+  if (ctxDay.virtualMorning + ctxDay.virtualAfternoon >= 4) return false;
+  if (shift === Shift.MORNING && ctxDay.virtualMorning >= 2) return false;
+  if (shift === Shift.AFTERNOON && ctxDay.virtualAfternoon >= 2) return false;
 
   const incomingGroup = getOperationalTimeGroup(
     candidateTech.state,
@@ -3539,31 +3532,11 @@ const getOperationalDayContext = (
     ExpertiseType.VIRTUAL
   );
 
-  const shiftSchedules = getVirtualShiftSchedules(
-    analystId,
-    dateIso,
-    shift,
-    tempSchedules
-  );
+  const existingDayGroups = Array.from(new Set(ctxDay.virtualGroups));
 
-  const existingGroups = shiftSchedules.map(getScheduleOperationalGroup);
-
-  // FUSO_1 não mistura com DEFAULT nem AC no MESMO PERÍODO
-  if (incomingGroup === 'FUSO_1') {
-    return existingGroups.every(g => g === 'FUSO_1');
-  }
-
-  // AC pode coexistir com DEFAULT, mas só 1 AC por período
-  if (incomingGroup === 'AC') {
-    if (existingGroups.includes('FUSO_1')) return false;
-    if (existingGroups.includes('AC')) return false;
-    return true;
-  }
-
-  // DEFAULT não mistura com FUSO_1 no mesmo período
-  if (incomingGroup === 'DEFAULT') {
-    if (existingGroups.includes('FUSO_1')) return false;
-    return true;
+  // REGRA FORTE: não mistura fuso no mesmo analista/dia
+  if (existingDayGroups.length > 0) {
+    return existingDayGroups.every(g => g === incomingGroup);
   }
 
   return true;
@@ -3673,13 +3646,8 @@ const getVirtualAnalystsToTry = (
   );
 
   return [...allowedAnalysts].sort((a, b) => {
-    const regionA = getVirtualAnalystRegionScore(a, candidateTech);
-    const regionB = getVirtualAnalystRegionScore(b, candidateTech);
-
-    // 1) Prioriza mesma cidade/UF/região
-    if (regionA !== regionB) {
-      return regionA - regionB;
-    }
+    const ctxA = getOperationalDayContext(a.id, dateIso, tempSchedules);
+    const ctxB = getOperationalDayContext(b.id, dateIso, tempSchedules);
 
     const schedulesA = [...this.schedules, ...tempSchedules].filter(
       s =>
@@ -3697,30 +3665,14 @@ const getVirtualAnalystsToTry = (
         s.status !== ScheduleStatus.CANCELLED
     );
 
-    const sameFusoA = schedulesA.some(
-      s =>
-        s.type === ExpertiseType.VIRTUAL &&
-        getScheduleOperationalGroup(s) === incomingGroup
-    );
-
-    const sameFusoB = schedulesB.some(
-      s =>
-        s.type === ExpertiseType.VIRTUAL &&
-        getScheduleOperationalGroup(s) === incomingGroup
-    );
-
-    // 2) Se o analista já está trabalhando aquele fuso, tenta completar nele
-    if (sameFusoA !== sameFusoB) {
-      return sameFusoA ? -1 : 1;
-    }
-
     const sameCompanyCityA = schedulesA.some(s => {
       const scheduledTech = getScheduleTech(s);
 
       return (
         s.type === ExpertiseType.VIRTUAL &&
         this.safeNormalize(scheduledTech?.company || '') === this.safeNormalize(candidateTech.company || '') &&
-        this.safeNormalize(scheduledTech?.city || '') === this.safeNormalize(candidateTech.city || '')
+        this.safeNormalize(scheduledTech?.city || '') === this.safeNormalize(candidateTech.city || '') &&
+        this.safeNormalize(scheduledTech?.state || '') === this.safeNormalize(candidateTech.state || '')
       );
     });
 
@@ -3730,29 +3682,50 @@ const getVirtualAnalystsToTry = (
       return (
         s.type === ExpertiseType.VIRTUAL &&
         this.safeNormalize(scheduledTech?.company || '') === this.safeNormalize(candidateTech.company || '') &&
-        this.safeNormalize(scheduledTech?.city || '') === this.safeNormalize(candidateTech.city || '')
+        this.safeNormalize(scheduledTech?.city || '') === this.safeNormalize(candidateTech.city || '') &&
+        this.safeNormalize(scheduledTech?.state || '') === this.safeNormalize(candidateTech.state || '')
       );
     });
 
-    // 3) Mantém mesma empresa + mesma cidade junto quando couber
+    // 1) Maior prioridade: manter empresa + cidade + UF juntas
     if (sameCompanyCityA !== sameCompanyCityB) {
       return sameCompanyCityA ? -1 : 1;
+    }
+
+    const sameFusoA =
+      ctxA.virtualGroups.length > 0 &&
+      ctxA.virtualGroups.every(g => g === incomingGroup);
+
+    const sameFusoB =
+      ctxB.virtualGroups.length > 0 &&
+      ctxB.virtualGroups.every(g => g === incomingGroup);
+
+    // 2) Depois mantém o mesmo fuso no analista/dia
+    if (sameFusoA !== sameFusoB) {
+      return sameFusoA ? -1 : 1;
+    }
+
+    const regionA = getVirtualAnalystRegionScore(a, candidateTech);
+    const regionB = getVirtualAnalystRegionScore(b, candidateTech);
+
+    // 3) Prioriza analista com cidade/UF/região compatível
+    if (regionA !== regionB) {
+      return regionA - regionB;
+    }
+
+    const dayCountA = ctxA.virtualMorning + ctxA.virtualAfternoon;
+    const dayCountB = ctxB.virtualMorning + ctxB.virtualAfternoon;
+
+    // 4) Compacta: completa o analista antes de abrir outro
+    if (dayCountA !== dayCountB) {
+      return dayCountB - dayCountA;
     }
 
     const metricsA = this.getAnalystDemandMetrics(a.id);
     const metricsB = this.getAnalystDemandMetrics(b.id);
 
-    // 4) Preserva quem tem score presencial alto
     if (metricsA.demandIndex !== metricsB.demandIndex) {
       return metricsA.demandIndex - metricsB.demandIndex;
-    }
-
-    const dayCountA = schedulesA.length;
-    const dayCountB = schedulesB.length;
-
-    // 5) Depois balanceia carga do dia
-    if (dayCountA !== dayCountB) {
-      return dayCountA - dayCountB;
     }
 
     return this.safeNormalize(a.fullName || '').localeCompare(
@@ -3790,19 +3763,49 @@ const sortedLotTechs = [...lotTechs].sort((a, b) => {
 for (const nextTech of sortedLotTechs) {
   let scheduledThisTech = false;
 
+  const incomingGroup = getOperationalTimeGroup(
+    nextTech.state,
+    nextTech.city,
+    ExpertiseType.VIRTUAL
+  );
+
   for (const dateIso of businessDays) {
     if (scheduledThisTech) break;
 
-    for (const shift of [Shift.MORNING, Shift.AFTERNOON]) {
+    const analystsToTry = getVirtualAnalystsToTry(
+      nextTech,
+      dateIso,
+      finalSchedules
+    );
+
+    for (const analyst of analystsToTry) {
       if (scheduledThisTech) break;
 
-      const analystsToTry = getVirtualAnalystsToTry(
-        nextTech,
+      const ctxDay = getOperationalDayContext(
+        analyst.id,
         dateIso,
         finalSchedules
       );
 
-      for (const analyst of analystsToTry) {
+      let shiftsToTry: Shift[];
+
+      // FUSO -1 pequeno: tenta tarde primeiro
+      if (
+        incomingGroup === 'FUSO_1' &&
+        sortedLotTechs.filter(t =>
+          this.safeNormalize(t.company || '') === this.safeNormalize(nextTech.company || '') &&
+          this.safeNormalize(t.city || '') === this.safeNormalize(nextTech.city || '') &&
+          this.safeNormalize(t.state || '') === this.safeNormalize(nextTech.state || '')
+        ).length <= 2
+      ) {
+        shiftsToTry = [Shift.AFTERNOON, Shift.MORNING];
+      } else if (ctxDay.virtualMorning >= 2 && ctxDay.virtualAfternoon < 2) {
+        shiftsToTry = [Shift.AFTERNOON, Shift.MORNING];
+      } else {
+        shiftsToTry = [Shift.MORNING, Shift.AFTERNOON];
+      }
+
+      for (const shift of shiftsToTry) {
         if (
           !canUseVirtualShift(
             analyst.id,
