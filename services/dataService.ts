@@ -412,7 +412,8 @@ const savedMappings = localStorage.getItem('g_analyst_mapping_v1');
       groupId: 'G3',
       presencialPerShift: 3,
       virtualPerShift: 2,
-      schedulingWindowDays: 10,
+      schedulingStartOffsetDays: 0,
+schedulingWindowDays: 10,
       active: true
     }];
 
