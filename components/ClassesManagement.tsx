@@ -2090,9 +2090,27 @@ setWithdrawObservation('');
             <div className="p-10 text-center space-y-6">
               <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4"><span className="text-4xl">🤖</span></div>
               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Gerar Agendamento Automático</h3>
-              <p className="text-sm font-bold text-slate-600 uppercase italic leading-relaxed">
-                Confirmar o processamento da fila por até 10 dias úteis a partir de <span className="text-emerald-600">{schedulingStartDate.split('-').reverse().join('/')}</span>?
-              </p>
+              {(() => {
+  const groupRule = dataService
+    .getGroupRules()
+    .find(r => r.groupId === user.groupId);
+
+  const startOffsetDays =
+    groupRule?.schedulingStartOffsetDays ?? 0;
+
+  const maxWindowDays =
+    groupRule?.schedulingWindowDays ?? 10;
+
+  return (
+    <p className="text-sm font-bold text-slate-600 uppercase italic leading-relaxed">
+      Confirmar o processamento da fila de D+{startOffsetDays} até D+{maxWindowDays} dias úteis a partir de{' '}
+      <span className="text-emerald-600">
+        {schedulingStartDate.split('-').reverse().join('/')}
+      </span>
+      ?
+    </p>
+  );
+})()}
               <div className="flex gap-4 pt-4">
                 <button onClick={() => setIsSchedulingConfirmOpen(false)} className="flex-1 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 transition-colors">CANCELAR</button>
                 <button onClick={executeAutomaticScheduling} className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-emerald-700 transition-all">OK, CONFIRMAR</button>
