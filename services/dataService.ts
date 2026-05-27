@@ -753,7 +753,11 @@ this.persistTimer = setTimeout(() => {
 
   private persistNow(
   payload: any,
-  options: { allowScheduleDeletion?: boolean; allowEventDeletion?: boolean } = {}
+  options: { 
+    allowScheduleDeletion?: boolean; 
+    allowEventDeletion?: boolean;
+    immediate?: boolean;
+  } = {}
 ) {
   const groupId = this.getActiveGroupId();
   const currentUser = this.getCurrentUser();
