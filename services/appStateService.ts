@@ -6,14 +6,16 @@ export async function loadAppState(groupId: string) {
   const { data, error } = await supabase
     .from('app_state')
     .select('*')
-    .eq('app_id', APP_ID)
+    .eq('app_id', 'agendamento_certificacao')
     .eq('group_id', groupId)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      return null;
-    }
+    throw error;
+  }
+
+  return data || null;
+}
     throw error;
   }
 
