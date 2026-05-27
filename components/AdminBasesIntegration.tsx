@@ -1,13 +1,13 @@
 import { supabase } from '../services/supabase';
 import React, { useEffect, useMemo, useState } from 'react';
 import { dataService } from '../services/dataService';
-import { User, UserRole, IntegrationBase, RoutingRule, AnalystIntegrationMapping } from '../types';
+import { User, UserRole, IntegrationBase, RoutingRule, AnalystIntegrationMapping, GroupRule } from '../types';
 
 interface Props {
   user: User;
 }
 
-type TabKey = 'bases' | 'routing' | 'mappings';
+type TabKey = 'bases' | 'routing' | 'mappings' | 'scheduling';
 
 const AdminBasesIntegration: React.FC<Props> = ({ user }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('bases');
@@ -15,6 +15,28 @@ const AdminBasesIntegration: React.FC<Props> = ({ user }) => {
   const [rules, setRules] = useState<RoutingRule[]>(dataService.getRoutingRules());
   const [mappings, setMappings] = useState<AnalystIntegrationMapping[]>(dataService.getAnalystMappings());
   const [users, setUsers] = useState(dataService.getUsers());
+  const getCurrentSchedulingRule = (): GroupRule => {
+  const existingRule = dataService.getGroupRules().find(r => r.groupId === user.groupId);
+
+  return {
+    groupId: user.groupId,
+    presencialPerShift: existingRule?.presencialPerShift ?? 3,
+    virtualPerShift: existingRule?.virtualPerShift ?? 2,
+    schedulingStartOffsetDays: existingRule?.schedulingStartOffsetDays ?? 0,
+    schedulingWindowDays: existingRule?.schedulingWindowDays ?? 10,
+    rulesJson: existingRule?.rulesJson,
+    active: existingRule?.active ?? true,
+  };
+};
+
+const [schedulingForm, setSchedulingForm] = useState(() => {
+  const rule = getCurrentSchedulingRule();
+
+  return {
+    schedulingStartOffsetDays: rule.schedulingStartOffsetDays,
+    schedulingWindowDays: rule.schedulingWindowDays,
+  };
+});
   const [isAnalystModalOpen, setIsAnalystModalOpen] = useState(false);
 const [editingAnalystId, setEditingAnalystId] = useState<string | null>(null);
 
@@ -337,11 +359,18 @@ const handleSaveAnalyst = () => {
   
 
   const refresh = () => {
-    setBases(dataService.getIntegrationBases());
-    setRules(dataService.getRoutingRules());
-    setMappings(dataService.getAnalystMappings());
-    setUsers(dataService.getUsers());
-  };
+  setBases(dataService.getIntegrationBases());
+  setRules(dataService.getRoutingRules());
+  setMappings(dataService.getAnalystMappings());
+  setUsers(dataService.getUsers());
+
+  const rule = getCurrentSchedulingRule();
+
+  setSchedulingForm({
+    schedulingStartOffsetDays: rule.schedulingStartOffsetDays,
+    schedulingWindowDays: rule.schedulingWindowDays,
+  });
+};
 
   useEffect(() => {
     window.addEventListener('data-updated', refresh);
@@ -424,6 +453,38 @@ const handleSaveAnalyst = () => {
     refresh();
   };
 
+  const handleSaveSchedulingSettings = () => {
+  const startOffset = Number(schedulingForm.schedulingStartOffsetDays);
+  const windowDays = Number(schedulingForm.schedulingWindowDays);
+
+  if (Number.isNaN(startOffset) || Number.isNaN(windowDays)) {
+    alert('Informe valores válidos para a janela de agendamento.');
+    return;
+  }
+
+  if (startOffset < 0 || windowDays < 0) {
+    alert('Os dias não podem ser negativos.');
+    return;
+  }
+
+  if (windowDays < startOffset) {
+    alert('O campo "até no máximo" não pode ser menor que o campo "a partir de".');
+    return;
+  }
+
+  const currentRule = getCurrentSchedulingRule();
+
+  dataService.adminUpdateRule({
+    ...currentRule,
+    schedulingStartOffsetDays: startOffset,
+    schedulingWindowDays: windowDays,
+  });
+
+  refresh();
+
+  alert('Configuração de agendamento salva com sucesso.');
+};
+
   if (
   user.role !== UserRole.ADMIN &&
   user.role !== UserRole.MANAGER
@@ -452,10 +513,11 @@ const handleSaveAnalyst = () => {
 
           <div className="flex flex-wrap gap-2">
             {[
-              { id: 'bases', label: 'Bases Presenciais' },
-              { id: 'routing', label: 'Regras de Roteamento' },
-              { id: 'mappings', label: 'Analistas & Acessos' }
-            ].map(tab => (
+  { id: 'bases', label: 'Bases Presenciais' },
+  { id: 'routing', label: 'Regras de Roteamento' },
+  { id: 'mappings', label: 'Analistas & Acessos' },
+  { id: 'scheduling', label: 'Config. Agendamento' }
+].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TabKey)}
@@ -745,6 +807,97 @@ const handleSaveAnalyst = () => {
             </div>
           </div>
         )}
+
+        {activeTab === 'scheduling' && (
+  <div>
+    <div className="mb-6">
+      <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+        Configurações de Agendamento
+      </h3>
+      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+        Defina a janela automática para agendamento das certificações após o fim da turma
+      </p>
+    </div>
+
+    <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 space-y-6 max-w-3xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label className="space-y-2">
+          <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            Agendar a partir de
+          </span>
+
+          <input
+            type="number"
+            min={0}
+            value={schedulingForm.schedulingStartOffsetDays}
+            onChange={(e) =>
+              setSchedulingForm({
+                ...schedulingForm,
+                schedulingStartOffsetDays: Number(e.target.value),
+              })
+            }
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-claro-red/20"
+          />
+
+          <p className="text-[10px] font-bold text-slate-400 uppercase">
+            Dias úteis após a data final da turma
+          </p>
+        </label>
+
+        <label className="space-y-2">
+          <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            Até no máximo
+          </span>
+
+          <input
+            type="number"
+            min={0}
+            value={schedulingForm.schedulingWindowDays}
+            onChange={(e) =>
+              setSchedulingForm({
+                ...schedulingForm,
+                schedulingWindowDays: Number(e.target.value),
+              })
+            }
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800 outline-none focus:ring-2 focus:ring-claro-red/20"
+          />
+
+          <p className="text-[10px] font-bold text-slate-400 uppercase">
+            Dias úteis após a data final da turma
+          </p>
+        </label>
+      </div>
+
+      <div className="rounded-2xl bg-white border border-slate-200 p-4">
+        <p className="text-xs font-bold text-slate-600">
+          Regra atual: agendar a partir de D+
+          <span className="font-black text-claro-red">
+            {schedulingForm.schedulingStartOffsetDays}
+          </span>
+          {' '}até D+
+          <span className="font-black text-claro-red">
+            {schedulingForm.schedulingWindowDays}
+          </span>
+          {' '}dias úteis após o fim da turma.
+        </p>
+
+        <p className="text-[10px] font-bold text-slate-400 uppercase mt-2">
+          Se não houver agenda disponível dentro da janela, o técnico será enviado para a fila.
+        </p>
+      </div>
+
+      <button
+        onClick={handleSaveSchedulingSettings}
+        className="bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black"
+      >
+        Salvar Configuração
+      </button>
+    </div>
+  </div>
+)}
+
+
+        
       </div>
 
       {isBaseModalOpen && (
