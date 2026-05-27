@@ -2078,24 +2078,37 @@ if (!groupRule) {
     groupId: context.groupId,
     presencialPerShift: 3,
     virtualPerShift: 2,
+    schedulingStartOffsetDays: 0,
     schedulingWindowDays: 10,
     active: true
   };
   this.groupRules.push(groupRule);
 }
 
-if (groupRule.schedulingWindowDays !== 10) {
-  groupRule.schedulingWindowDays = 10;
-}
+const startOffsetDays = Math.max(
+  0,
+  Number(groupRule.schedulingStartOffsetDays ?? 0)
+);
 
-const windowDaysCount = 10;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+const maxWindowDays = Math.max(
+  startOffsetDays,
+  Number(groupRule.schedulingWindowDays ?? 10)
+);
 
-  const startReq = new Date(startDateIso + 'T00:00:00');
-  const effectiveStart = startReq < today ? today.toISOString().split('T')[0] : startDateIso;
-  const businessDays = this.getBusinessDays(effectiveStart, windowDaysCount);
-  const businessDaySet = new Set(businessDays);
+const windowDaysCount = maxWindowDays - startOffsetDays + 1;
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const startReq = new Date(startDateIso + 'T00:00:00');
+const baseStart = startReq < today ? today.toISOString().split('T')[0] : startDateIso;
+
+const offsetBusinessDays = this.getBusinessDays(baseStart, startOffsetDays + 1);
+const effectiveStart = offsetBusinessDays[offsetBusinessDays.length - 1] || baseStart;
+
+const businessDays = this.getBusinessDays(effectiveStart, windowDaysCount);
+const businessDaySet = new Set(businessDays);
+    
     let techniciansPool = this.technicians
   .filter(t => {
     if (t.groupId !== context.groupId) return false;
