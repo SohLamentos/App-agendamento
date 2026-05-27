@@ -305,6 +305,28 @@ class DataService {
   private persistVersion: number = 0;
   private cloudUpdatedAt: string | null = null;
   private cloudLoaded: boolean = false;
+  private lastAutoBackupAt: string | null =
+  localStorage.getItem('certitech_last_auto_backup_at_v1');
+
+private shouldCreateAutoBackup(): boolean {
+  if (!this.lastAutoBackupAt) return true;
+
+  const last = new Date(this.lastAutoBackupAt);
+  const now = new Date();
+
+  const diffHours =
+    (now.getTime() - last.getTime()) / (1000 * 60 * 60);
+
+  return diffHours >= 24;
+}
+
+private markAutoBackupCreated() {
+  this.lastAutoBackupAt = new Date().toISOString();
+  localStorage.setItem(
+    'certitech_last_auto_backup_at_v1',
+    this.lastAutoBackupAt
+  );
+}
   private processAwaitingResults() {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -735,21 +757,23 @@ if (cloudWasChangedByAnotherSession) {
   return;
 }
 
-if (currentCloudState?.data) {
-          await saveAppStateHistory({
-            groupId,
-            data: {
-              ...currentCloudState.data,
-              _backupMeta: {
-                createdAt: new Date().toISOString(),
-                createdBy: currentUser?.fullName || 'SYSTEM',
-                reason: 'AUTO_BACKUP'
-              }
-            },
-            createdBy: currentUser?.fullName || 'SYSTEM',
-            reason: 'AUTO_BACKUP',
-          });
-        }
+if (currentCloudState?.data && this.shouldCreateAutoBackup()) {
+  await saveAppStateHistory({
+    groupId,
+    data: {
+      ...currentCloudState.data,
+      _backupMeta: {
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser?.fullName || 'SYSTEM',
+        reason: 'AUTO_BACKUP_DIARIO'
+      }
+    },
+    createdBy: currentUser?.fullName || 'SYSTEM',
+    reason: 'AUTO_BACKUP_DIARIO',
+  });
+
+  this.markAutoBackupCreated();
+}
 
         if (version !== this.persistVersion) return;
 
