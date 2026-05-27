@@ -459,7 +459,14 @@ this.analystMappings = savedMappings ? JSON.parse(savedMappings) : [];
 const cloudState = await loadAppState(groupId);
 
     if (!cloudState?.data) {
-      return false;
+      console.warn('Supabase novo/limpo: nenhum app_state encontrado. App será iniciado com estado local/default.');
+
+      this.cloudUpdatedAt = null;
+      this.cloudLoaded = true;
+
+      window.dispatchEvent(new Event('data-updated'));
+
+      return true;
     }
 
     this.cloudUpdatedAt = cloudState.updated_at || null;
