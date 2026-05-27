@@ -110,7 +110,19 @@ export interface GroupRule {
   groupId: string;
   presencialPerShift: number;
   virtualPerShift: number;
+
+  /**
+   * A partir de quantos dias úteis após a data final da turma o app pode começar a agendar.
+   * Exemplo: 0 = pode agendar a partir do próprio dia útil final da turma.
+   */
+  schedulingStartOffsetDays: number;
+
+  /**
+   * Até quantos dias úteis após a data final da turma o app pode tentar agendar.
+   * Exemplo: 5 = tenta até D+5 úteis.
+   */
   schedulingWindowDays: number;
+
   rulesJson?: string;
   active: boolean;
 }
