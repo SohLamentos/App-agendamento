@@ -1250,10 +1250,7 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
     };
   });
 
-  if (changed) {
-    this.persist();
-  }
-
+ 
   return this.technicians.filter(t => t.groupId === ctx.groupId);
 }
   getTrainingClasses() { return this.trainingClasses.filter(c => c.groupId === this.getContext().groupId); }
