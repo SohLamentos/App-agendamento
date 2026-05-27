@@ -2279,8 +2279,11 @@ let techniciansPool = this.technicians
       for (const fixedDate of collectiveRule.dates) {
         const dateIso = fixedDate.date;
 
-        // Não agenda no passado.
-        if (dateIso < effectiveStart) continue;
+        // Data fixa ignora janela normal do agendamento.
+// Só impede agendar em data realmente passada.
+const todayIsoForFixedBase = new Date().toISOString().split('T')[0];
+
+if (dateIso < todayIsoForFixedBase) continue;
 
         const capacity = Number(fixedDate.capacity || collectiveRule.defaultCapacity || 6);
 
