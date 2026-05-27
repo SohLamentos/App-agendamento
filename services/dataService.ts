@@ -196,18 +196,19 @@ function getOperationalStartTime(params: {
   const group = getOperationalTimeGroup(params.uf, params.city, params.type);
 
   if (params.shift === Shift.MORNING) {
-    if (params.type === ExpertiseType.PRESENTIAL && group === 'RS') return '09:00:00';
-    if (group === 'FUSO_1') return '09:30:00';
+    if (group === 'RS' || group === 'FUSO_1') return '09:00:00';
     if (group === 'AC') return '10:30:00';
     return '08:30:00';
   }
 
   if (params.shift === Shift.AFTERNOON) {
-    if (params.type === ExpertiseType.PRESENTIAL && group === 'RS') return '14:00:00';
-    if (group === 'FUSO_1') return '14:30:00';
+    if (group === 'RS' || group === 'FUSO_1') return '14:00:00';
     if (group === 'AC') return '15:30:00';
     return '13:30:00';
   }
+
+  return '08:30:00';
+}
 
   return '08:30:00';
 }
@@ -219,19 +220,18 @@ function getPresentialTheoryTimeByRegion(params: {
   const state = normalizeTextForTimeRule(params.uf);
   const city = normalizeTextForTimeRule(params.city);
 
-  // RS — regra própria
-  if (state === 'RS') {
+  const isFuso1 =
+    city === 'MANAUS' ||
+    ['AM', 'RO', 'RR', 'MT', 'MS'].includes(state);
+
+  // RS e cidades FUSO -1 seguem a mesma regra
+  if (state === 'RS' || isFuso1) {
     return '09:00:00';
   }
 
-  // Manaus / AM — regra própria
-  if (city === 'MANAUS' || state === 'AM') {
-    return '09:30:00';
-  }
-
-  // Demais cidades fuso 0
   return '08:30:00';
 }
+
 function getPresentialPracticeTimeByRegion(params: {
   uf?: string;
   city?: string;
@@ -241,31 +241,21 @@ function getPresentialPracticeTimeByRegion(params: {
   const state = normalizeTextForTimeRule(params.uf);
   const city = normalizeTextForTimeRule(params.city);
 
-  const isRS = state === 'RS';
-  const isManaus = city === 'MANAUS' || state === 'AM';
+  const isSpecialRule =
+    state === 'RS' ||
+    city === 'MANAUS' ||
+    ['AM', 'RO', 'RR', 'MT', 'MS'].includes(state);
 
   if (params.shift === Shift.AFTERNOON) {
-  if (isRS || isManaus) {
-    if (params.position === 1) return '14:00:00';
-    if (params.position === 2) return '15:00:00';
-    return '16:00:00';
+    if (params.position === 1) return '14:30:00';
+    if (params.position === 2) return '15:30:00';
+    return '16:30:00';
   }
 
-    if (params.position === 1) return '14:00:00';
-    if (params.position === 2) return '15:00:00';
-    return '16:00:00';
-  }
-
-  if (isRS) {
+  if (isSpecialRule) {
     if (params.position === 1) return '09:30:00';
     if (params.position === 2) return '10:30:00';
     return '11:30:00';
-  }
-
-  if (isManaus) {
-    if (params.position === 1) return '10:00:00';
-    if (params.position === 2) return '11:00:00';
-    return '12:00:00';
   }
 
   if (params.position === 1) return '09:00:00';
