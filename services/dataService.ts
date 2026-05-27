@@ -877,6 +877,7 @@ return true;
   groupId: 'G3',
   presencialPerShift: 3,
   virtualPerShift: 2,
+  schedulingStartOffsetDays: 0,
   schedulingWindowDays: 10,
   active: true
 }];
@@ -2064,7 +2065,13 @@ const match =
   return result;
 }
 
-  public runSmartSchedulingReinforced(startDateIso: string): SchedulingSummary {
+  public runSmartSchedulingReinforced(
+  startDateIso: string,
+  options?: {
+    classId?: string;
+    onlyQueue?: boolean;
+  }
+): SchedulingSummary {
   const summary: SchedulingSummary = { scheduled: 0, backlog: 0, reasons: {} };
   const addReason = (r: string) => {
     summary.reasons[r] = (summary.reasons[r] || 0) + 1;
@@ -2109,18 +2116,35 @@ const effectiveStart = offsetBusinessDays[offsetBusinessDays.length - 1] || base
 const businessDays = this.getBusinessDays(effectiveStart, windowDaysCount);
 const businessDaySet = new Set(businessDays);
     
-    let techniciansPool = this.technicians
+    const onlyQueue = options?.onlyQueue === true;
+const targetClassId = options?.classId;
+
+let techniciansPool = this.technicians
   .filter(t => {
     if (t.groupId !== context.groupId) return false;
+
+    if (targetClassId && t.trainingClassId !== targetClassId) {
+      return false;
+    }
 
     const statusPrincipal = this.safeNormalize(t.status_principal || '');
     const certStatus = String(t.certificationProcessStatus || '');
 
+    const isQueue =
+      statusPrincipal === 'BACKLOG AGUARDANDO' ||
+      statusPrincipal === 'FILA' ||
+      statusPrincipal === 'FILA CERTIFICACAO' ||
+      statusPrincipal === 'FILA CERTIFICAÇÃO';
+
+    if (onlyQueue) {
+      return isQueue;
+    }
+
     return (
+      isQueue ||
       statusPrincipal === 'PENDENTE_TRATAMENTO' ||
       statusPrincipal === 'PENDENTE_CERTIFICACAO' ||
       statusPrincipal === 'PENDENTE_CERTIFICAÇÃO' ||
-      statusPrincipal === 'BACKLOG AGUARDANDO' ||
       statusPrincipal === 'PENDENTE' ||
       certStatus === CertificationProcessStatus.QUALIFIED_AWAITING
     );
