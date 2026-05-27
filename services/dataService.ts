@@ -305,6 +305,8 @@ class DataService {
   private persistVersion: number = 0;
   private cloudUpdatedAt: string | null = null;
   private cloudLoaded: boolean = false;
+  private lastPersistedPayloadJson: string | null = null;
+private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private lastAutoBackupAt: string | null =
   localStorage.getItem('certitech_last_auto_backup_at_v1');
 
@@ -590,6 +592,7 @@ payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments)
     this.integrationBases = payload.integrationBases ?? this.integrationBases;
 this.routingRules = payload.routingRules ?? this.routingRules;
 this.analystMappings = payload.analystMappings ?? this.analystMappings;
+    this.lastPersistedPayloadJson = JSON.stringify(this.buildFullPayload());
 
     localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
     localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
@@ -612,12 +615,14 @@ localStorage.setItem(
 
 /*
 |--------------------------------------------------------------------------
-| PROCESSA AGENDAMENTOS SEM RESULTADO
+| CARREGAMENTO SEGURO
+|--------------------------------------------------------------------------
+| IMPORTANTE:
+| Ao carregar o app, não alteramos status automaticamente.
+| Isso evita gravações involuntárias no Supabase e impede que
+| agendamentos sejam aprovados/movidos apenas por abrir a tela.
 |--------------------------------------------------------------------------
 */
-
-this.processAutoApprovals();
-this.processAwaitingResults();
 
 window.dispatchEvent(new Event('data-updated'));
 
@@ -703,26 +708,38 @@ return true;
   localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
   localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings));
 
-    if (!this.cloudLoaded) {
-  console.error(
-    'Persistência bloqueada: Supabase ainda não foi carregado. Isso evita sobrescrever o banco com estado vazio/local.'
-  );
-
-  alert(
-    'Os dados ainda não foram carregados da nuvem. Atualize a página antes de fazer alterações.'
-  );
-
-  return;
-}
+  if (!this.cloudLoaded) {
+    alert('Os dados ainda não foram carregados da nuvem. Atualize a página antes de fazer alterações.');
+    return;
+  }
 
   const payload = this.buildFullPayload();
 
   if (!hasRequiredAppStateShape(payload)) {
-    console.error('Persistência bloqueada: payload obrigatório incompleto.', payload);
     alert('Persistência bloqueada: estado obrigatório incompleto. Nenhuma alteração foi salva na nuvem.');
     return;
   }
 
+  const payloadJson = JSON.stringify(payload);
+
+  if (this.lastPersistedPayloadJson === payloadJson) {
+    return;
+  }
+
+  if (this.persistTimer) {
+    clearTimeout(this.persistTimer);
+  }
+
+  this.persistTimer = setTimeout(() => {
+    this.persistTimer = null;
+    this.persistNow(payload, options);
+  }, 8000);
+}
+
+  private persistNow(
+  payload: any,
+  options: { allowScheduleDeletion?: boolean; allowEventDeletion?: boolean } = {}
+) {
   const groupId = this.getActiveGroupId();
   const currentUser = this.getCurrentUser();
   const version = ++this.persistVersion;
@@ -735,71 +752,61 @@ return true;
       try {
         const currentCloudState = await loadAppState(groupId);
 
-if (version !== this.persistVersion) return;
-
-const cloudWasChangedByAnotherSession =
-  !!currentCloudState?.updated_at &&
-  !!this.cloudUpdatedAt &&
-  currentCloudState.updated_at !== this.cloudUpdatedAt &&
-  !options.allowScheduleDeletion &&
-  !options.allowEventDeletion;
-
-if (cloudWasChangedByAnotherSession) {
-  console.warn(
-    'Estado desatualizado: outra sessão salvou dados antes desta gravação.'
-  );
-
-  alert(
-    'Outra máquina atualizou o sistema antes desta alteração. A tela será recarregada para evitar perda de agendamentos.'
-  );
-
-  window.location.reload();
-  return;
-}
-
-if (currentCloudState?.data && this.shouldCreateAutoBackup()) {
-  await saveAppStateHistory({
-    groupId,
-    data: {
-      ...currentCloudState.data,
-      _backupMeta: {
-        createdAt: new Date().toISOString(),
-        createdBy: currentUser?.fullName || 'SYSTEM',
-        reason: 'AUTO_BACKUP_DIARIO'
-      }
-    },
-    createdBy: currentUser?.fullName || 'SYSTEM',
-    reason: 'AUTO_BACKUP_DIARIO',
-  });
-
-  this.markAutoBackupCreated();
-}
-
         if (version !== this.persistVersion) return;
+
+        const cloudWasChangedByAnotherSession =
+          !!currentCloudState?.updated_at &&
+          !!this.cloudUpdatedAt &&
+          currentCloudState.updated_at !== this.cloudUpdatedAt &&
+          !options.allowScheduleDeletion &&
+          !options.allowEventDeletion;
+
+        if (cloudWasChangedByAnotherSession) {
+          alert('Outra máquina atualizou o sistema antes desta alteração. A tela será recarregada para evitar perda de agendamentos.');
+          window.location.reload();
+          return;
+        }
+
+        if (currentCloudState?.data && this.shouldCreateAutoBackup()) {
+          await saveAppStateHistory({
+            groupId,
+            data: {
+              ...currentCloudState.data,
+              _backupMeta: {
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser?.fullName || 'SYSTEM',
+                reason: 'AUTO_BACKUP_DIARIO'
+              }
+            },
+            createdBy: currentUser?.fullName || 'SYSTEM',
+            reason: 'AUTO_BACKUP_DIARIO',
+          });
+
+          this.markAutoBackupCreated();
+        }
 
         const cloudData = currentCloudState?.data;
 
-const mergedPayload = cloudData
-  ? {
-      ...payload,
+        const mergedPayload = cloudData
+          ? {
+              ...payload,
+              schedules: options.allowScheduleDeletion
+                ? payload.schedules
+                : this.mergeById(cloudData.schedules || [], payload.schedules || []),
+              schedulesTeste: options.allowScheduleDeletion
+                ? payload.schedulesTeste
+                : this.mergeById(cloudData.schedulesTeste || [], payload.schedulesTeste || []),
+              events: options.allowEventDeletion
+                ? payload.events
+                : this.mergeById(cloudData.events || [], payload.events || [])
+            }
+          : payload;
 
-      schedules: options.allowScheduleDeletion
-        ? payload.schedules
-        : this.mergeById(cloudData.schedules || [], payload.schedules || []),
+        const savedState = await saveAppState(groupId, mergedPayload);
 
-      schedulesTeste: options.allowScheduleDeletion
-        ? payload.schedulesTeste
-        : this.mergeById(cloudData.schedulesTeste || [], payload.schedulesTeste || []),
-
-      events: options.allowEventDeletion
-        ? payload.events
-        : this.mergeById(cloudData.events || [], payload.events || [])
-    }
-  : payload;
-
-const savedState = await saveAppState(groupId, mergedPayload);
-this.cloudUpdatedAt = savedState?.updated_at || new Date().toISOString();
+        this.cloudUpdatedAt = savedState?.updated_at || new Date().toISOString();
         this.cloudLoaded = true;
+        this.lastPersistedPayloadJson = JSON.stringify(this.buildFullPayload());
       } catch (error) {
         console.error('Erro ao persistir no Supabase:', error);
       }
