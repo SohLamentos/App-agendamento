@@ -692,7 +692,11 @@ return true;
   return Array.from(map.values());
 }
   
-  private persist(options: { allowScheduleDeletion?: boolean; allowEventDeletion?: boolean } = {}) {
+  private persist(options: { 
+  allowScheduleDeletion?: boolean; 
+  allowEventDeletion?: boolean;
+  immediate?: boolean;
+} = {}) {
   localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
   localStorage.setItem('g_rules_v15', JSON.stringify(this.groupRules));
   localStorage.setItem('g_cities_v15', JSON.stringify(this.cities));
@@ -727,14 +731,24 @@ return true;
     return;
   }
 
+  if (options.immediate) {
   if (this.persistTimer) {
     clearTimeout(this.persistTimer);
+    this.persistTimer = null;
   }
 
-  this.persistTimer = setTimeout(() => {
-    this.persistTimer = null;
-    this.persistNow(payload, options);
-  }, 8000);
+  this.persistNow(payload, options);
+  return;
+}
+
+if (this.persistTimer) {
+  clearTimeout(this.persistTimer);
+}
+
+this.persistTimer = setTimeout(() => {
+  this.persistTimer = null;
+  this.persistNow(payload, options);
+}, 8000);
 }
 
   private persistNow(
@@ -1159,7 +1173,7 @@ public updateEventById(eventId: string, patch: Partial<EventSchedule>) {
     updatedAt: new Date().toISOString()
   } as any;
 
-  this.persist();
+  this.persist({ immediate: true });
   window.dispatchEvent(new Event('data-updated'));
 
   return { success: true };
@@ -1201,7 +1215,7 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
     updatedAt: new Date().toISOString()
   };
 
-  this.persist();
+  this.persist({ immediate: true });
   window.dispatchEvent(new Event('data-updated'));
 
   return { success: true };
