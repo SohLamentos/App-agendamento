@@ -2051,7 +2051,7 @@ setPendingMove({
 
       </div>
 
-      <div className="flex gap-4 flex-wrap px-4 pb-0">
+      <div className="flex gap-4 flex-wrap px-4 pb-2">
         {Object.entries(COLORS).map(([key, val]) => (
           <div key={key} className="flex items-center gap-1.5 text-[9px] font-black tracking-widest uppercase">
             <div className="w-3.5 h-3.5 rounded-sm shadow-sm" style={{ backgroundColor: val }}></div> {key}
