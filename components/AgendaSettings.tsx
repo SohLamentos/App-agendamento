@@ -148,9 +148,10 @@ dataService.saveTrainingTypes(reorderedList);
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-[28px] border border-slate-200">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-200">
+      <div className="rounded-[28px] border border-slate-200 overflow-hidden">
+  <div className="max-h-[60vh] overflow-y-auto">
+    <table className="w-full text-left">
+          <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="p-4 text-[10px] font-black uppercase text-slate-400">Ordem</th>
               <th className="p-4 text-[10px] font-black uppercase text-slate-400">Nome</th>
@@ -243,8 +244,9 @@ dataService.saveTrainingTypes(reorderedList);
               </tr>
             )}
           </tbody>
-        </table>
-      </div>
+            </table>
+  </div>
+</div>
 
       {editing && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
