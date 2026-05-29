@@ -1,4 +1,14 @@
 
+import {
+  User,
+  UserRole,
+  EventSchedule,
+  Shift,
+  ExpertiseType,
+  ScheduleStatus,
+  CertificationSchedule,
+  AgendaTrainingType
+} from '../types';
 import { 
   mockUsers, mockCities, mockClasses, mockTechnicians, mockEvents
 } from './mockData';
@@ -16,6 +26,88 @@ class DataService {
   private trainingClasses: TrainingClass[];
   private technicians: Technician[];
   private schedules: CertificationSchedule[];
+  private trainingTypes: AgendaTrainingType[] = [
+  {
+    id: 'inst-hfc',
+    name: 'INST HFC',
+    agendaTitle: 'ETN INST HFC',
+    color: '#0F766E',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 1
+  },
+  {
+    id: 'inst-gpon',
+    name: 'INST GPON',
+    agendaTitle: 'ETN INST GPON',
+    color: '#1D4ED8',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 2
+  },
+  {
+    id: 'gpon-veterano',
+    name: 'GPON VETERANO',
+    agendaTitle: 'ETN GPON VETERANO',
+    color: '#C2410C',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 3
+  },
+  {
+    id: 'nr',
+    name: 'NR',
+    agendaTitle: 'ETN NR',
+    color: '#334155',
+    active: true,
+    allowLesson: false,
+    maxLessons: 0,
+    sortOrder: 4
+  },
+  {
+    id: 'at',
+    name: 'AT',
+    agendaTitle: 'ETN AT',
+    color: '#7C3AED',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 5
+  },
+  {
+    id: 'mdu-hfc',
+    name: 'MDU HFC',
+    agendaTitle: 'ETN MDU HFC',
+    color: '#0EA5E9',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 6
+  },
+  {
+    id: 'rede-externa',
+    name: 'REDE EXTERNA',
+    agendaTitle: 'ETN REDE EXTERNA',
+    color: '#A16207',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 7
+  },
+  {
+    id: 'hfc-para-gpon',
+    name: 'HFC PARA GPON',
+    agendaTitle: 'ETN HFC PARA GPON',
+    color: '#9333EA',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 8
+  }
+];
   private events: EventSchedule[];
   private schedulingConfig: SchedulingConfig;
 
