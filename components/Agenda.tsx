@@ -1853,69 +1853,71 @@ setPendingMove({
           <div className="fixed inset-0 z-[60]" onClick={() => setSelection(null)}></div>
           <div className="fixed z-[70] bg-white border border-slate-200 shadow-2xl rounded-[32px] py-6 w-72 animate-in zoom-in duration-200" style={{ top: selection.rect.bottom + 12 > window.innerHeight - 350 ? selection.rect.top - 350 : selection.rect.bottom + 12, left: Math.min(selection.rect.left, window.innerWidth - 300) }}>
             <div className="flex flex-col">
-              <div className="px-6 py-2 bg-slate-50 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest">Ações Rápidas</div>
-              <button
-  onClick={() => {
-  setTrainingType(
-    TRAINING_OPTIONS[0] || ''
-  );
+              <div className="px-6 py-2 bg-slate-50 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+  Ações Rápidas
+</div>
 
-  setTrainingLesson('');
-  setTrainingShift(Shift.FULL_DAY);
-  setIsTrainingModalOpen(true);
-}}
+<button
+  onClick={() => {
+    setTrainingType(TRAINING_OPTIONS[0] || '');
+    setTrainingLesson('');
+    setTrainingShift(Shift.FULL_DAY);
+    setIsTrainingModalOpen(true);
+  }}
   className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-900 hover:bg-slate-100 uppercase transition-all tracking-wider"
 >
   Treinamento
 </button>
 
-<button
-  onClick={() => {
-    setVacationEndDate(selection?.dateIso || '');
-    setIsVacationModalOpen(true);
-  }}
-  className="w-full text-left px-8 py-4 text-[11px] font-black text-claro-red hover:bg-claro-red hover:text-white uppercase transition-all tracking-wider"
->
-  Lançar Férias
-</button>
+{dataService
+  .getOperationalEventTypes()
+  .filter(eventType => eventType.active)
+  .map(eventType => {
+    const name = eventType.name.toUpperCase();
 
-<button
-  onClick={() => setStatus('IMPREVISTO')}
-  className="w-full text-left px-8 py-4 text-[11px] font-black text-[#6A1B9A] hover:bg-[#6A1B9A] hover:text-white uppercase transition-all tracking-wider"
->
-  Lançar Improviso
-</button>
-              <button
-  onClick={() => {
-    setStatus('CQ_SUPPORT', Shift.FULL_DAY);
-  }}
-  className="w-full text-left px-8 py-4 text-[11px] font-black text-indigo-600 hover:bg-indigo-600 hover:text-white uppercase transition-all tracking-wider"
->
-  Apoio CQ
-</button>
-  
+    return (
+      <button
+        key={eventType.id}
+        onClick={() => {
+          if (name.includes('FÉRIAS') || name.includes('FERIAS')) {
+            setVacationEndDate(selection?.dateIso || '');
+            setIsVacationModalOpen(true);
+            return;
+          }
 
-<button
-  onClick={() => {
-    setOtherReasonType('FOLGA');
-    setOtherReasonText('');
-    setOtherReasonShift(Shift.MORNING);
-    setIsOutrosModalOpen(true);
-  }}
-  className="w-full text-left px-8 py-4 text-[11px] font-black text-[#455A64] hover:bg-[#455A64] hover:text-white uppercase transition-all tracking-wider"
->
-  Outros (Motivo)
-</button>
+          if (name.includes('IMPREVISTO')) {
+            setStatus('IMPREVISTO');
+            return;
+          }
 
-<button
-  onClick={() => {
-    setHolidayTarget('ONE');
-    setIsHolidayModalOpen(true);
-  }}
-  className="w-full text-left px-8 py-4 text-[11px] font-black text-black hover:bg-black hover:text-white uppercase transition-all tracking-wider"
->
-  Lançar Feriado
-</button>
+          if (name.includes('APOIO CQ')) {
+            setStatus('CQ_SUPPORT', Shift.FULL_DAY);
+            return;
+          }
+
+          if (name.includes('FERIADO')) {
+            setHolidayTarget('ONE');
+            setIsHolidayModalOpen(true);
+            return;
+          }
+
+          if (name.includes('OUTROS')) {
+            setOtherReasonType('FOLGA');
+            setOtherReasonText('');
+            setOtherReasonShift(Shift.MORNING);
+            setIsOutrosModalOpen(true);
+            return;
+          }
+
+          setStatus(name, Shift.FULL_DAY, eventType.color);
+        }}
+        className="w-full text-left px-8 py-4 text-[11px] font-black hover:bg-slate-100 uppercase transition-all tracking-wider"
+        style={{ color: eventType.color }}
+      >
+        {eventType.category === 'BLOCKING' ? `Lançar ${eventType.name}` : eventType.name}
+      </button>
+    );
+  })}
 
 <button
   onClick={() => setStatus(null)}
