@@ -1076,9 +1076,30 @@ this.analystMappings = [];
   }
 
   getCurrentUser(): User {
-    const ctx = this.getContext();
-    return this.users.find(u => u.id === ctx.userId) || this.users[0];
-  }
+  const ctx = this.getContext();
+
+  const matchedUser = this.users.find((u: any) =>
+    String(u.id) === String(ctx.userId) ||
+    String(u.id) === String(ctx.id) ||
+    String(u.email || '').toLowerCase() === String(ctx.email || '').toLowerCase() ||
+    String(u.normalizedLogin || '').toUpperCase() === String(ctx.normalizedLogin || ctx.firstNameLogin || ctx.name || '').toUpperCase()
+  );
+
+  if (matchedUser) return matchedUser;
+
+  return {
+    id: ctx.userId || ctx.id || 'current-user',
+    fullName: ctx.fullName || ctx.name || 'USUÁRIO LOGADO',
+    normalizedLogin: ctx.normalizedLogin || ctx.firstNameLogin || ctx.name || 'USUARIO',
+    firstNameLogin: ctx.firstNameLogin || ctx.normalizedLogin || ctx.name || 'USUARIO',
+    email: ctx.email || '',
+    role: ctx.role || UserRole.ANALYST,
+    groupId: ctx.groupId || ctx.group_id || 'G3',
+    active: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  } as User;
+}
 
     setCurrentUser(user: User) {
     const firstName = user.firstNameLogin || user.fullName.split(' ')[0].toUpperCase();
