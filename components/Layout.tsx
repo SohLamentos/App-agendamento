@@ -341,7 +341,7 @@ const formatHeaderTicketTime = (value?: string) => {
     </button>
   </div>
 </header>
-        <div className="flex-1 overflow-y-auto p-10 bg-slate-50">
+        <div className="flex-1 overflow-hidden p-8 bg-slate-50">
           <div className="max-w-[1600px] mx-auto">{children}</div>
         </div>
       </main>
