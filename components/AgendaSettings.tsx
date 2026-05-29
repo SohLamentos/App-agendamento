@@ -59,11 +59,37 @@ const AgendaSettings: React.FC<AgendaSettingsProps> = ({ user }) => {
 
     const exists = trainingTypes.some(t => t.id === nextItem.id);
 
-    const nextList = exists
-      ? trainingTypes.map(t => t.id === nextItem.id ? nextItem : t)
-      : [...trainingTypes, nextItem];
+const desiredOrder = Number(nextItem.sortOrder || 1);
 
-    dataService.saveTrainingTypes(nextList);
+let baseList = exists
+  ? trainingTypes.filter(t => t.id !== nextItem.id)
+  : [...trainingTypes];
+
+baseList = baseList
+  .sort((a, b) => a.sortOrder - b.sortOrder)
+  .map((item, index) => ({
+    ...item,
+    sortOrder: index + 1
+  }));
+
+const insertIndex = Math.max(
+  0,
+  Math.min(desiredOrder - 1, baseList.length)
+);
+
+const reorderedList = [
+  ...baseList.slice(0, insertIndex),
+  {
+    ...nextItem,
+    sortOrder: desiredOrder
+  },
+  ...baseList.slice(insertIndex)
+].map((item, index) => ({
+  ...item,
+  sortOrder: index + 1
+}));
+
+dataService.saveTrainingTypes(reorderedList);
     setEditing(null);
     load();
   };
