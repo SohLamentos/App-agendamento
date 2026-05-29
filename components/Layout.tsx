@@ -198,6 +198,19 @@ const formatHeaderTicketTime = (value?: string) => {
       <span className="mr-3 text-lg opacity-80">🏢</span>
       BASES & INTEGRAÇÃO
     </button>
+
+    <button
+  onClick={() => setActiveTab('agenda-settings')}
+  className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+    activeTab === 'agenda-settings'
+      ? 'bg-purple-600 text-white shadow-lg'
+      : 'text-purple-300 hover:bg-purple-500/10 hover:text-white'
+  }`}
+>
+  <span className="mr-3 text-lg opacity-80">⚙️</span>
+  CONFIG. AGENDA
+</button>
+
     <button
   onClick={() => setActiveTab('base-collective-schedule')}
   className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
