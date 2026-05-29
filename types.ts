@@ -355,3 +355,19 @@ export interface AgendaTrainingType {
   maxLessons: number;
   sortOrder: number;
 }
+export interface OperationalEventType {
+  id: string;
+  name: string;
+  color: string;
+  category:
+    | 'BLOCKING'
+    | 'OPERATIONAL'
+    | 'SUPPORT'
+    | 'OTHER';
+
+  active: boolean;
+  sortOrder: number;
+
+  createdAt: string;
+  updatedAt: string;
+}
