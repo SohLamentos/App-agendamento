@@ -1,4 +1,5 @@
 
+import AgendaSettings from './components/AgendaSettings';
 import BaseCollectiveSchedule from './components/BaseCollectiveSchedule';
 import { auditService } from './services/auditService';
 import React, { useState, useEffect } from 'react';
