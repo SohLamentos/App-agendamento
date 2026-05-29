@@ -129,7 +129,6 @@ const [analystOrder, setAnalystOrder] = useState<string[]>(() => {
 
   const [events, setEvents] = useState<EventSchedule[]>(dataService.getEvents());
   const [schedules, setSchedules] = useState(dataService.getSchedules());
-  const [isTestMode, setIsTestMode] = useState(dataService.isTestMode());
   const [selection, setSelection] = useState<Selection | null>(null);
   const [movementMode, setMovementMode] = useState(false);
   const [pendingMove, setPendingMove] = useState<{
@@ -260,7 +259,6 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
   setEvents(dataService.getEvents());
   setSchedules(dataService.getSchedules());
   setTechnicians(dataService.getTechnicians());
-  setIsTestMode(dataService.isTestMode());
   setHoverTooltip(null);
 };
     
@@ -1717,83 +1715,8 @@ return (
       </button>
     </div>
 
-    {user.role === UserRole.ADMIN && (
-      <>
-        <div className="flex items-center gap-3 bg-amber-50 px-4 py-2.5 rounded-2xl border-2 border-amber-100">
-          <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">
-            MODO TESTE
-          </span>
-          <button
-            onClick={() => dataService.setTestMode(!isTestMode)}
-            className={`w-12 h-6 rounded-full relative transition-all ${isTestMode ? 'bg-amber-500' : 'bg-slate-300'}`}
-          >
-            <div
-              className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isTestMode ? 'left-7' : 'left-1'}`}
-            ></div>
-          </button>
-        </div>
-
-        {isTestMode && (
-          <>
-            <button
-              onClick={() => dataService.downloadTestTemplate()}
-              className="bg-slate-900 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
-            >
-              Modelo Teste
-            </button>
-
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-amber-600 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
-            >
-              Importar Teste
-            </button>
-
-            <button
-              onClick={() => {
-                if (confirm("Limpar toda a agenda de teste?")) {
-                  dataService.clearTestSchedules();
-                  setToast({ message: 'Agenda de teste removida!', type: 'success' });
-                }
-              }}
-              className="bg-rose-600 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
-            >
-              Limpar Teste
-            </button>
-          </>
-        )}
-
-        <button
-          onClick={() => dataService.downloadTestTemplate()}
-          className="bg-slate-900 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
-        >
-          Modelo Produção
-        </button>
-
-        <button
-          onClick={() => productionAgendaInputRef.current?.click()}
-          className="bg-claro-red text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
-        >
-          Importar Produção
-        </button>
-
-        <button
-          onClick={() => {
-            if (confirm("Limpar toda a agenda importada em produção?")) {
-              dataService.clearProductionSchedules();
-              setToast({ message: 'Agenda importada em produção removida!', type: 'success' });
-            }
-          }}
-          className="bg-rose-600 text-white px-5 py-1 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md"
-        >
-          Limpar Produção
-        </button>
-          </>
-    )}
-  </div>
-
-  {!isTestMode && (
-  <div className="flex gap-3">
+   
+    <div className="flex gap-3">
     <button
       onClick={() => {
         setMovementMode(prev => !prev);
@@ -1815,17 +1738,13 @@ return (
     >
       Bloqueio Lote
     </button>
-  </div>    
-
-)}
+  </div>
+</div>
 </div>
 
-<div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-x-hidden overflow-y-hidden flex-none relative no-scrollbar transition-colors ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>    
+<div className="bg-white border-2 rounded-[40px] shadow-sm overflow-x-hidden overflow-y-hidden flex-none relative no-scrollbar transition-colors border-slate-200">    
   
-  {isTestMode && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] bg-amber-500 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">Visualizando Ambiente de Teste</div>
-        )}
-
+  
   {movementMode && (
   <div className="sticky top-0 z-[60] bg-emerald-600 text-white px-6 py-1 text-[10px] font-black uppercase tracking-widest shadow-lg">
     Modo movimentação ativo — próximo passo: arrastar técnicos entre células com validação.
