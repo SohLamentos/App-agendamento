@@ -344,3 +344,14 @@ export interface AnalystIntegrationMapping {
   powerAppsUserId: string;
   active: boolean;
 }
+
+export interface AgendaTrainingType {
+  id: string;
+  name: string;
+  agendaTitle: string;
+  color: string;
+  active: boolean;
+  allowLesson: boolean;
+  maxLessons: number;
+  sortOrder: number;
+}
