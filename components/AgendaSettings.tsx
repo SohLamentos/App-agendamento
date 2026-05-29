@@ -218,18 +218,23 @@ const removeOperationalEvent = (item: OperationalEventType) => {
         </div>
 
         {canEdit && (
-          <button
-            onClick={() =>
-              setEditing({
-                ...emptyForm,
-                sortOrder: trainingTypes.length + 1
-              })
-            }
-            className="bg-claro-red text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md"
-          >
-            Novo Treinamento
-          </button>
-        )}
+  <button
+    onClick={() => {
+      if (activeSection === 'TRAININGS') {
+        setEditing({
+          ...emptyForm,
+          sortOrder: trainingTypes.length + 1
+        });
+        return;
+      }
+
+      setEditingEvent({
+        ...emptyEventForm,
+        sortOrder: operationalEvents.length + 1
+      });
+    }}
+    className="bg-claro-red text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md"
+ 
       </div>
 
       <div className="flex gap-3 mb-8">
@@ -256,106 +261,172 @@ const removeOperationalEvent = (item: OperationalEventType) => {
   </button>
 </div>
 
-      <div className="rounded-[28px] border border-slate-200 overflow-hidden">
-  <div className="max-h-[60vh] overflow-y-auto">
-    <table className="w-full text-left">
-          <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="p-4 text-[10px] font-black uppercase text-slate-400">Ordem</th>
-              <th className="p-4 text-[10px] font-black uppercase text-slate-400">Nome</th>
-              <th className="p-4 text-[10px] font-black uppercase text-slate-400">Título Agenda</th>
-              <th className="p-4 text-[10px] font-black uppercase text-slate-400">Cor</th>
-              <th className="p-4 text-[10px] font-black uppercase text-slate-400">Aula</th>
-              <th className="p-4 text-[10px] font-black uppercase text-slate-400">Status</th>
-              <th className="p-4 text-[10px] font-black uppercase text-slate-400 text-right">Ações</th>
-            </tr>
-          </thead>
+  {activeSection === 'TRAININGS' ? (
+  <div className="rounded-[28px] border border-slate-200 overflow-hidden">
+    <div className="max-h-[60vh] overflow-y-auto">
+      <table className="w-full text-left">
+        <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Ordem</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Nome</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Título Agenda</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Cor</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Aula</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Status</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400 text-right">Ações</th>
+          </tr>
+        </thead>
 
-          <tbody className="divide-y divide-slate-100">
-            {trainingTypes.map(item => (
-              <tr key={item.id} className={!item.active ? 'bg-slate-50 opacity-60' : 'bg-white'}>
-                <td className="p-4 text-xs font-black text-slate-700">
-                  {item.sortOrder}
-                </td>
+        <tbody className="divide-y divide-slate-100">
+          {trainingTypes.map(item => (
+            <tr key={item.id} className={!item.active ? 'bg-slate-50 opacity-60' : 'bg-white'}>
+              <td className="p-4 text-xs font-black text-slate-700">{item.sortOrder}</td>
 
-                <td className="p-4 text-xs font-black text-slate-900 uppercase">
-                  {item.name}
-                </td>
+              <td className="p-4 text-xs font-black text-slate-900 uppercase">{item.name}</td>
 
-                <td className="p-4 text-xs font-bold text-slate-500 uppercase">
-                  {item.agendaTitle}
-                </td>
+              <td className="p-4 text-xs font-bold text-slate-500 uppercase">{item.agendaTitle}</td>
 
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-5 h-5 rounded-full border border-slate-200"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">
-                      {item.color}
-                    </span>
-                  </div>
-                </td>
+              <td className="p-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full border border-slate-200" style={{ backgroundColor: item.color }} />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{item.color}</span>
+                </div>
+              </td>
 
-                <td className="p-4 text-[10px] font-black uppercase text-slate-500">
-                  {item.allowLesson ? `Sim (${item.maxLessons})` : 'Não'}
-                </td>
+              <td className="p-4 text-[10px] font-black uppercase text-slate-500">
+                {item.allowLesson ? `Sim (${item.maxLessons})` : 'Não'}
+              </td>
 
-                <td className="p-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${
-                      item.active
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-200 text-slate-500'
-                    }`}
+              <td className="p-4">
+                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${
+                  item.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
+                }`}>
+                  {item.active ? 'Ativo' : 'Inativo'}
+                </span>
+              </td>
+
+              <td className="p-4">
+                <div className="flex justify-end gap-2">
+                  <button
+                    disabled={!canEdit}
+                    onClick={() => setEditing(item)}
+                    className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase disabled:opacity-30"
                   >
-                    {item.active ? 'Ativo' : 'Inativo'}
-                  </span>
-                </td>
+                    Editar
+                  </button>
 
-                <td className="p-4">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      disabled={!canEdit}
-                      onClick={() => setEditing(item)}
-                      className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase disabled:opacity-30"
-                    >
-                      Editar
-                    </button>
+                  <button
+                    disabled={!canEdit}
+                    onClick={() => toggleActive(item)}
+                    className="px-3 py-2 rounded-xl bg-amber-500 text-white text-[9px] font-black uppercase disabled:opacity-30"
+                  >
+                    {item.active ? 'Inativar' : 'Ativar'}
+                  </button>
 
-                    <button
-                      disabled={!canEdit}
-                      onClick={() => toggleActive(item)}
-                      className="px-3 py-2 rounded-xl bg-amber-500 text-white text-[9px] font-black uppercase disabled:opacity-30"
-                    >
-                      {item.active ? 'Inativar' : 'Ativar'}
-                    </button>
+                  <button
+                    disabled={!canEdit}
+                    onClick={() => removeItem(item)}
+                    className="px-3 py-2 rounded-xl bg-rose-600 text-white text-[9px] font-black uppercase disabled:opacity-30"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
 
-                    <button
-                      disabled={!canEdit}
-                      onClick={() => removeItem(item)}
-                      className="px-3 py-2 rounded-xl bg-rose-600 text-white text-[9px] font-black uppercase disabled:opacity-30"
-                    >
-                      Remover
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-
-            {trainingTypes.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-8 text-center text-xs font-bold text-slate-400 uppercase">
-                  Nenhum treinamento cadastrado.
-                </td>
-              </tr>
-            )}
-          </tbody>
-            </table>
+          {trainingTypes.length === 0 && (
+            <tr>
+              <td colSpan={7} className="p-8 text-center text-xs font-bold text-slate-400 uppercase">
+                Nenhum treinamento cadastrado.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
+) : (
+  <div className="rounded-[28px] border border-slate-200 overflow-hidden">
+    <div className="max-h-[60vh] overflow-y-auto">
+      <table className="w-full text-left">
+        <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Ordem</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Nome</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Categoria</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Cor</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400">Status</th>
+            <th className="p-4 text-[10px] font-black uppercase text-slate-400 text-right">Ações</th>
+          </tr>
+        </thead>
 
+        <tbody className="divide-y divide-slate-100">
+          {operationalEvents.map(item => (
+            <tr key={item.id} className={!item.active ? 'bg-slate-50 opacity-60' : 'bg-white'}>
+              <td className="p-4 text-xs font-black text-slate-700">{item.sortOrder}</td>
+
+              <td className="p-4 text-xs font-black text-slate-900 uppercase">{item.name}</td>
+
+              <td className="p-4 text-[10px] font-black uppercase text-slate-500">{item.category}</td>
+
+              <td className="p-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full border border-slate-200" style={{ backgroundColor: item.color }} />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{item.color}</span>
+                </div>
+              </td>
+
+              <td className="p-4">
+                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${
+                  item.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
+                }`}>
+                  {item.active ? 'Ativo' : 'Inativo'}
+                </span>
+              </td>
+
+              <td className="p-4">
+                <div className="flex justify-end gap-2">
+                  <button
+                    disabled={!canEdit}
+                    onClick={() => setEditingEvent(item)}
+                    className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase disabled:opacity-30"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    disabled={!canEdit}
+                    onClick={() => toggleOperationalEventActive(item)}
+                    className="px-3 py-2 rounded-xl bg-amber-500 text-white text-[9px] font-black uppercase disabled:opacity-30"
+                  >
+                    {item.active ? 'Inativar' : 'Ativar'}
+                  </button>
+
+                  <button
+                    disabled={!canEdit}
+                    onClick={() => removeOperationalEvent(item)}
+                    className="px-3 py-2 rounded-xl bg-rose-600 text-white text-[9px] font-black uppercase disabled:opacity-30"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+
+          {operationalEvents.length === 0 && (
+            <tr>
+              <td colSpan={6} className="p-8 text-center text-xs font-bold text-slate-400 uppercase">
+                Nenhum evento operacional cadastrado.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
       {editing && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
           <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl p-8">
