@@ -1,5 +1,16 @@
 
 import {
+  User,
+  UserRole,
+  EventSchedule,
+  Shift,
+  ExpertiseType,
+  ScheduleStatus,
+  CertificationSchedule,
+  AgendaTrainingType
+} from '../types';
+
+import {
   saveAppState,
   loadAppState,
   saveAppStateHistory,
@@ -16,7 +27,8 @@ import {
   TrainingClass, CertificationSchedule, 
   ExpertiseType, Shift, ScheduleStatus, EventSchedule, ParticipationStatus, TrainingStatus,
   AnalystDemandMetrics, SchedulingConfig, Group, GroupRule, CityGroup, CertificationCity,
-  VirtualScoreAdjustment, IntegrationBase, RoutingRule, AnalystIntegrationMapping
+VirtualScoreAdjustment, IntegrationBase, RoutingRule, AnalystIntegrationMapping,
+AgendaTrainingType
 } from '../types';
 import { auditService } from './auditService';
 import * as XLSX from 'xlsx';
@@ -363,6 +375,88 @@ private markAutoBackupCreated() {
   private trainingClasses: TrainingClass[];
   private schedules: CertificationSchedule[];
   private schedulesTeste: CertificationSchedule[];
+  private trainingTypes: AgendaTrainingType[] = [
+  {
+    id: 'inst-hfc',
+    name: 'INST HFC',
+    agendaTitle: 'ETN INST HFC',
+    color: '#0F766E',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 1
+  },
+  {
+    id: 'inst-gpon',
+    name: 'INST GPON',
+    agendaTitle: 'ETN INST GPON',
+    color: '#1D4ED8',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 2
+  },
+  {
+    id: 'gpon-veterano',
+    name: 'GPON VETERANO',
+    agendaTitle: 'ETN GPON VETERANO',
+    color: '#C2410C',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 3
+  },
+  {
+    id: 'nr',
+    name: 'NR',
+    agendaTitle: 'ETN NR',
+    color: '#334155',
+    active: true,
+    allowLesson: false,
+    maxLessons: 0,
+    sortOrder: 4
+  },
+  {
+    id: 'at',
+    name: 'AT',
+    agendaTitle: 'ETN AT',
+    color: '#7C3AED',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 5
+  },
+  {
+    id: 'mdu-hfc',
+    name: 'MDU HFC',
+    agendaTitle: 'ETN MDU HFC',
+    color: '#0EA5E9',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 6
+  },
+  {
+    id: 'rede-externa',
+    name: 'REDE EXTERNA',
+    agendaTitle: 'ETN REDE EXTERNA',
+    color: '#A16207',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 7
+  },
+  {
+    id: 'hfc-para-gpon',
+    name: 'HFC PARA GPON',
+    agendaTitle: 'ETN HFC PARA GPON',
+    color: '#9333EA',
+    active: true,
+    allowLesson: true,
+    maxLessons: 9,
+    sortOrder: 8
+  }
+];
   private events: EventSchedule[];
   private schedulingConfig: SchedulingConfig;
   private testModeActive: boolean = false;
@@ -387,6 +481,7 @@ private analystMappings: AnalystIntegrationMapping[];
     const savedBases = localStorage.getItem('g_integration_bases_v1');
 const savedRulesRouting = localStorage.getItem('g_routing_rules_v1');
 const savedMappings = localStorage.getItem('g_analyst_mapping_v1');
+    const savedTrainingTypes = localStorage.getItem('certitech_training_types_v1');
 
     this.groups = savedGroups
       ? JSON.parse(savedGroups)
@@ -457,8 +552,10 @@ this.scoreAdjustments = savedAdjustments ? JSON.parse(savedAdjustments) : [];
     this.integrationBases = savedBases ? JSON.parse(savedBases) : [];
 this.routingRules = savedRulesRouting ? JSON.parse(savedRulesRouting) : [];
 this.analystMappings = savedMappings ? JSON.parse(savedMappings) : [];
-    }
-
+    if (savedTrainingTypes) {
+  this.trainingTypes = JSON.parse(savedTrainingTypes);
+}
+    
    private getActiveGroupId() {
   const ctx = this.getContext();
   return ctx.groupId || 'G3';
@@ -521,6 +618,9 @@ payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments) ? payload.sco
 payload.integrationBases = Array.isArray(payload.integrationBases) ? payload.integrationBases : [];
 payload.routingRules = Array.isArray(payload.routingRules) ? payload.routingRules : [];
 payload.analystMappings = Array.isArray(payload.analystMappings) ? payload.analystMappings : [];
+    payload.trainingTypes = Array.isArray(payload.trainingTypes)
+  ? payload.trainingTypes
+  : this.trainingTypes;
     payload.baseFixedDates = Array.isArray(payload.baseFixedDates)
   ? payload.baseFixedDates
   : [];
@@ -579,6 +679,7 @@ payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments)
     this.integrationBases = payload.integrationBases ?? this.integrationBases;
 this.routingRules = payload.routingRules ?? this.routingRules;
 this.analystMappings = payload.analystMappings ?? this.analystMappings;
+    this.trainingTypes = payload.trainingTypes ?? this.trainingTypes;
     this.lastPersistedPayloadJson = JSON.stringify(this.buildFullPayload());
 
     localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
@@ -596,8 +697,8 @@ this.analystMappings = payload.analystMappings ?? this.analystMappings;
     localStorage.setItem('g_integration_bases_v1', JSON.stringify(this.integrationBases));
 localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
 localStorage.setItem(
-  'g_analyst_mapping_v1',
-  JSON.stringify(this.analystMappings)
+  'certitech_training_types_v1',
+  JSON.stringify(this.trainingTypes)
 );
 
 /*
@@ -698,6 +799,7 @@ return true;
   localStorage.setItem('g_integration_bases_v1', JSON.stringify(this.integrationBases));
   localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
   localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings));
+    localStorage.setItem('certitech_training_types_v1', JSON.stringify(this.trainingTypes));
 
   if (!this.cloudLoaded) {
     alert('Os dados ainda não foram carregados da nuvem. Atualize a página antes de fazer alterações.');
@@ -857,6 +959,7 @@ this.persistTimer = setTimeout(() => {
     integrationBases: this.integrationBases.filter(b => b.groupId === groupId),
     routingRules: this.routingRules.filter(r => r.groupId === groupId),
     analystMappings: this.analystMappings.filter(m => m.groupId === groupId),
+    trainingTypes: this.trainingTypes,
 
     baseFixedDates: JSON.parse(
       localStorage.getItem('certitech_base_fixed_dates_v1') || '[]'
@@ -1280,6 +1383,18 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
   return this.technicians.filter(t => t.groupId === ctx.groupId);
 }
   getTrainingClasses() { return this.trainingClasses.filter(c => c.groupId === this.getContext().groupId); }
+  getTrainingTypes(): AgendaTrainingType[] {
+  return [...this.trainingTypes]
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+saveTrainingTypes(trainingTypes: AgendaTrainingType[]) {
+  this.trainingTypes = [...trainingTypes];
+
+  this.persist({ immediate: true });
+
+  window.dispatchEvent(new Event('data-updated'));
+}
   
   public async getBackupHistory(limit = 50): Promise<AppStateHistoryEntry[]> {
   const groupId = this.getContext().groupId || 'G3';
