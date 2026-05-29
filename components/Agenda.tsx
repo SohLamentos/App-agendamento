@@ -187,6 +187,7 @@ const [impactCount, setImpactCount] = useState(0);
 const [improvisoReason, setImprovisoReason] = useState('');
 
   const [isOutrosModalOpen, setIsOutrosModalOpen] = useState(false);
+  const [isOperationalEventsModalOpen, setIsOperationalEventsModalOpen] = useState(false);
   
   
   // Default Silver
@@ -624,6 +625,7 @@ const closeQuickActionStack = () => {
   setIsHolidayModalOpen(false);
   setIsOutrosModalOpen(false);
   setIsImprovisoModal(false);
+  setIsOperationalEventsModalOpen(false);
 };
 
 const saveTrainingEvent = () => {
@@ -1866,65 +1868,24 @@ setPendingMove({
   }}
   className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-900 hover:bg-slate-100 uppercase transition-all tracking-wider"
 >
-  Treinamento
+  Treinamentos ETN
 </button>
 
-{dataService
-  .getOperationalEventTypes()
-  .filter(eventType => eventType.active)
-  .map(eventType => {
-    const name = eventType.name.toUpperCase();
-
-    return (
-      <button
-        key={eventType.id}
-        onClick={() => {
-          if (name.includes('FÉRIAS') || name.includes('FERIAS')) {
-            setVacationEndDate(selection?.dateIso || '');
-            setIsVacationModalOpen(true);
-            return;
-          }
-
-          if (name.includes('IMPREVISTO')) {
-            setStatus('IMPREVISTO');
-            return;
-          }
-
-          if (name.includes('APOIO CQ')) {
-            setStatus('CQ_SUPPORT', Shift.FULL_DAY);
-            return;
-          }
-
-          if (name.includes('FERIADO')) {
-            setHolidayTarget('ONE');
-            setIsHolidayModalOpen(true);
-            return;
-          }
-
-          if (name.includes('OUTROS')) {
-            setOtherReasonType('FOLGA');
-            setOtherReasonText('');
-            setOtherReasonShift(Shift.MORNING);
-            setIsOutrosModalOpen(true);
-            return;
-          }
-
-          setStatus(name, Shift.FULL_DAY, eventType.color);
-        }}
-        className="w-full text-left px-8 py-4 text-[11px] font-black hover:bg-slate-100 uppercase transition-all tracking-wider"
-        style={{ color: eventType.color }}
-      >
-        {eventType.category === 'BLOCKING' ? `Lançar ${eventType.name}` : eventType.name}
-      </button>
-    );
-  })}
-
 <button
+  onClick={() => {
+  setIsOperationalEventsModalOpen(true);
+}}
+  className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-900 hover:bg-slate-100 uppercase transition-all tracking-wider"
+>
+  Eventos Operacionais
+</button>
+              <button
   onClick={() => setStatus(null)}
-  className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-400 hover:bg-slate-50 uppercase transition-all tracking-wider mt-2 border-t border-slate-100 italic"
+  className="w-full text-left px-8 py-4 text-[11px] font-black text-rose-600 hover:bg-rose-50 uppercase transition-all tracking-wider border-t border-slate-100"
 >
   Limpar Célula
 </button>
+              
             </div>
           </div>
         </>
@@ -1995,6 +1956,96 @@ setPendingMove({
       })()}
     </div>
   </>
+)}
+
+      {isOperationalEventsModalOpen && selection && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-sm overflow-hidden border-t-8 border-slate-900">
+
+      <div className="bg-slate-900 p-8 text-white text-center">
+        <h3 className="text-xl font-black uppercase tracking-tighter">
+          Eventos Operacionais
+        </h3>
+
+        <p className="text-[10px] font-bold uppercase mt-1 opacity-70">
+          Selecione o evento
+        </p>
+      </div>
+
+      <div className="p-4 max-h-[60vh] overflow-y-auto">
+        {dataService
+          .getOperationalEventTypes()
+          .filter(eventType => eventType.active)
+          .map(eventType => {
+
+            const name = eventType.name
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toUpperCase();
+
+            return (
+              <button
+                key={eventType.id}
+                onClick={() => {
+
+                  if (name.includes('FÉRIAS') || name.includes('FERIAS')) {
+  setIsOperationalEventsModalOpen(false);
+  setVacationEndDate(selection.dateIso);
+  setIsVacationModalOpen(true);
+  return;
+}
+
+                  if (name.includes('IMPREVISTO')) {
+  setIsOperationalEventsModalOpen(false);
+  setStatus('IMPREVISTO');
+  return;
+}
+
+if (name.includes('APOIO CQ')) {
+  setIsOperationalEventsModalOpen(false);
+  setStatus('CQ_SUPPORT');
+  return;
+}
+
+if (name.includes('FERIADO')) {
+  setIsOperationalEventsModalOpen(false);
+  setHolidayTarget('ONE');
+  setIsHolidayModalOpen(true);
+  return;
+}
+
+if (name.includes('OUTROS')) {
+  setIsOperationalEventsModalOpen(false);
+  setOtherReasonType('FOLGA');
+  setOtherReasonText('');
+  setOtherReasonShift(Shift.MORNING);
+  setIsOutrosModalOpen(true);
+  return;
+}
+
+setIsOperationalEventsModalOpen(false);
+setStatus(name, Shift.FULL_DAY, eventType.color);
+                }}
+                className="w-full text-left px-5 py-4 rounded-2xl text-[11px] font-black uppercase hover:bg-slate-50"
+                style={{ color: eventType.color }}
+              >
+                {eventType.name}
+              </button>
+            );
+          })}
+      </div>
+
+      <div className="p-4">
+        <button
+          onClick={() => setIsOperationalEventsModalOpen(false)}
+          className="w-full py-3 rounded-2xl bg-slate-100 text-slate-500 text-xs font-black uppercase"
+        >
+          Voltar
+        </button>
+      </div>
+
+    </div>
+  </div>
 )}
 
       {isImprovisoModal && selection && (
