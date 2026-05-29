@@ -17,7 +17,7 @@ import {
   ExpertiseType, Shift, ScheduleStatus, EventSchedule, ParticipationStatus, TrainingStatus,
   AnalystDemandMetrics, SchedulingConfig, Group, GroupRule, CityGroup, CertificationCity,
 VirtualScoreAdjustment, IntegrationBase, RoutingRule, AnalystIntegrationMapping,
-AgendaTrainingType
+AgendaTrainingType, OperationalEventType
 } from '../types';
 import { auditService } from './auditService';
 import * as XLSX from 'xlsx';
@@ -453,6 +453,62 @@ private markAutoBackupCreated() {
   private integrationBases: IntegrationBase[];
 private routingRules: RoutingRule[];
 private analystMappings: AnalystIntegrationMapping[];
+  ];
+
+private operationalEventTypes: OperationalEventType[] = [
+  {
+    id: 'vacation',
+    name: 'FÉRIAS',
+    color: '#DC2626',
+    category: 'BLOCKING',
+    active: true,
+    sortOrder: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'unexpected',
+    name: 'IMPREVISTO',
+    color: '#7C3AED',
+    category: 'BLOCKING',
+    active: true,
+    sortOrder: 2,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'cq',
+    name: 'APOIO CQ',
+    color: '#4F46E5',
+    category: 'SUPPORT',
+    active: true,
+    sortOrder: 3,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'holiday',
+    name: 'FERIADO',
+    color: '#111827',
+    category: 'BLOCKING',
+    active: true,
+    sortOrder: 4,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'other',
+    name: 'OUTROS',
+    color: '#A16207',
+    category: 'OTHER',
+    active: true,
+    sortOrder: 5,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+private events: EventSchedule[];
 
   constructor() {
     const savedGroups = localStorage.getItem('g_groups_v15');
@@ -471,6 +527,7 @@ private analystMappings: AnalystIntegrationMapping[];
 const savedRulesRouting = localStorage.getItem('g_routing_rules_v1');
 const savedMappings = localStorage.getItem('g_analyst_mapping_v1');
     const savedTrainingTypes = localStorage.getItem('certitech_training_types_v1');
+    const savedOperationalEventTypes = localStorage.getItem('certitech_operational_event_types_v1');
 
     this.groups = savedGroups
       ? JSON.parse(savedGroups)
@@ -544,6 +601,9 @@ this.analystMappings = savedMappings ? JSON.parse(savedMappings) : [];
     if (savedTrainingTypes) {
   this.trainingTypes = JSON.parse(savedTrainingTypes);
 }
+    if (savedOperationalEventTypes) {
+  this.operationalEventTypes = JSON.parse(savedOperationalEventTypes);
+}
     }
     
    private getActiveGroupId() {
@@ -611,6 +671,9 @@ payload.analystMappings = Array.isArray(payload.analystMappings) ? payload.analy
     payload.trainingTypes = Array.isArray(payload.trainingTypes)
   ? payload.trainingTypes
   : this.trainingTypes;
+    payload.operationalEventTypes = Array.isArray(payload.operationalEventTypes)
+  ? payload.operationalEventTypes
+  : this.operationalEventTypes;
     payload.baseFixedDates = Array.isArray(payload.baseFixedDates)
   ? payload.baseFixedDates
   : [];
@@ -670,6 +733,7 @@ payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments)
 this.routingRules = payload.routingRules ?? this.routingRules;
 this.analystMappings = payload.analystMappings ?? this.analystMappings;
     this.trainingTypes = payload.trainingTypes ?? this.trainingTypes;
+    this.operationalEventTypes = payload.operationalEventTypes ?? this.operationalEventTypes;
     this.lastPersistedPayloadJson = JSON.stringify(this.buildFullPayload());
 
     localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
@@ -689,6 +753,10 @@ localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
 localStorage.setItem(
   'certitech_training_types_v1',
   JSON.stringify(this.trainingTypes)
+);
+    localStorage.setItem(
+  'certitech_operational_event_types_v1',
+  JSON.stringify(this.operationalEventTypes)
 );
 
 /*
@@ -790,6 +858,7 @@ return true;
   localStorage.setItem('g_routing_rules_v1', JSON.stringify(this.routingRules));
   localStorage.setItem('g_analyst_mapping_v1', JSON.stringify(this.analystMappings));
     localStorage.setItem('certitech_training_types_v1', JSON.stringify(this.trainingTypes));
+    localStorage.setItem('certitech_operational_event_types_v1', JSON.stringify(this.operationalEventTypes));
 
   if (!this.cloudLoaded) {
     alert('Os dados ainda não foram carregados da nuvem. Atualize a página antes de fazer alterações.');
@@ -950,6 +1019,7 @@ this.persistTimer = setTimeout(() => {
     routingRules: this.routingRules.filter(r => r.groupId === groupId),
     analystMappings: this.analystMappings.filter(m => m.groupId === groupId),
     trainingTypes: this.trainingTypes,
+    operationalEventTypes: this.operationalEventTypes,
 
     baseFixedDates: JSON.parse(
       localStorage.getItem('certitech_base_fixed_dates_v1') || '[]'
@@ -1380,6 +1450,18 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
 
 saveTrainingTypes(trainingTypes: AgendaTrainingType[]) {
   this.trainingTypes = [...trainingTypes];
+
+  this.persist({ immediate: true });
+
+  window.dispatchEvent(new Event('data-updated'));
+}
+  getOperationalEventTypes(): OperationalEventType[] {
+  return [...this.operationalEventTypes]
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+saveOperationalEventTypes(eventTypes: OperationalEventType[]) {
+  this.operationalEventTypes = [...eventTypes];
 
   this.persist({ immediate: true });
 
