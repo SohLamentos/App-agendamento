@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, AgendaTrainingType, UserRole } from '../types';
+import { User, AgendaTrainingType, OperationalEventType, UserRole } from '../types';
 import { dataService } from '../services/dataService';
 
 interface AgendaSettingsProps {
@@ -17,15 +17,30 @@ const emptyForm: AgendaTrainingType = {
   sortOrder: 1
 };
 
+const emptyEventForm: OperationalEventType = {
+  id: '',
+  name: '',
+  color: '#455A64',
+  category: 'OTHER',
+  active: true,
+  sortOrder: 1,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+};
+
 const AgendaSettings: React.FC<AgendaSettingsProps> = ({ user }) => {
   const [trainingTypes, setTrainingTypes] = useState<AgendaTrainingType[]>([]);
   const [editing, setEditing] = useState<AgendaTrainingType | null>(null);
+  const [activeSection, setActiveSection] = useState<'TRAININGS' | 'EVENTS'>('TRAININGS');
+const [operationalEvents, setOperationalEvents] = useState<OperationalEventType[]>([]);
+const [editingEvent, setEditingEvent] = useState<OperationalEventType | null>(null);
 
   const canEdit = user.role === UserRole.ADMIN || user.role === UserRole.MANAGER;
 
   const load = () => {
-    setTrainingTypes(dataService.getTrainingTypes());
-  };
+  setTrainingTypes(dataService.getTrainingTypes());
+  setOperationalEvents(dataService.getOperationalEventTypes());
+};
 
   useEffect(() => {
     load();
@@ -115,6 +130,81 @@ dataService.saveTrainingTypes(reorderedList);
     load();
   };
 
+  const saveOperationalEvent = () => {
+  if (!editingEvent) return;
+
+  const name = editingEvent.name.trim().toUpperCase();
+
+  if (!name) {
+    alert('Informe o nome do evento.');
+    return;
+  }
+
+  const nextItem: OperationalEventType = {
+    ...editingEvent,
+    id: editingEvent.id || `event-${Date.now()}`,
+    name,
+    sortOrder: Number(editingEvent.sortOrder || 1),
+    updatedAt: new Date().toISOString(),
+    createdAt: editingEvent.createdAt || new Date().toISOString()
+  };
+
+  const exists = operationalEvents.some(e => e.id === nextItem.id);
+  const desiredOrder = Number(nextItem.sortOrder || 1);
+
+  let baseList = exists
+    ? operationalEvents.filter(e => e.id !== nextItem.id)
+    : [...operationalEvents];
+
+  baseList = baseList
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((item, index) => ({
+      ...item,
+      sortOrder: index + 1
+    }));
+
+  const insertIndex = Math.max(
+    0,
+    Math.min(desiredOrder - 1, baseList.length)
+  );
+
+  const reorderedList = [
+    ...baseList.slice(0, insertIndex),
+    nextItem,
+    ...baseList.slice(insertIndex)
+  ].map((item, index) => ({
+    ...item,
+    sortOrder: index + 1
+  }));
+
+  dataService.saveOperationalEventTypes(reorderedList);
+  setEditingEvent(null);
+  load();
+};
+
+const toggleOperationalEventActive = (item: OperationalEventType) => {
+  const nextList = operationalEvents.map(e =>
+    e.id === item.id
+      ? { ...e, active: !e.active, updatedAt: new Date().toISOString() }
+      : e
+  );
+
+  dataService.saveOperationalEventTypes(nextList);
+  load();
+};
+
+const removeOperationalEvent = (item: OperationalEventType) => {
+  const ok = confirm(
+    `Deseja remover "${item.name}" da lista?\n\nSe já existir histórico com esse evento, prefira INATIVAR.`
+  );
+
+  if (!ok) return;
+
+  const nextList = operationalEvents.filter(e => e.id !== item.id);
+  dataService.saveOperationalEventTypes(nextList);
+  load();
+};
+
   return (
     <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm p-8">
       <div className="flex items-start justify-between gap-4 mb-8">
@@ -143,10 +233,28 @@ dataService.saveTrainingTypes(reorderedList);
       </div>
 
       <div className="flex gap-3 mb-8">
-        <button className="bg-claro-red text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md">
-          Treinamentos ETN
-        </button>
-      </div>
+  <button
+    onClick={() => setActiveSection('TRAININGS')}
+    className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md ${
+      activeSection === 'TRAININGS'
+        ? 'bg-claro-red text-white'
+        : 'bg-slate-100 text-slate-500'
+    }`}
+  >
+    Treinamentos ETN
+  </button>
+
+  <button
+    onClick={() => setActiveSection('EVENTS')}
+    className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md ${
+      activeSection === 'EVENTS'
+        ? 'bg-claro-red text-white'
+        : 'bg-slate-100 text-slate-500'
+    }`}
+  >
+    Eventos Operacionais
+  </button>
+</div>
 
       <div className="rounded-[28px] border border-slate-200 overflow-hidden">
   <div className="max-h-[60vh] overflow-y-auto">
@@ -347,6 +455,8 @@ dataService.saveTrainingTypes(reorderedList);
       )}
     </div>
   );
+
+  
 };
 
 export default AgendaSettings;
