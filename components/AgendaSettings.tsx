@@ -528,6 +528,86 @@ const removeOperationalEvent = (item: OperationalEventType) => {
           </div>
         </div>
       )}
+      {editingEvent && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+    <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl p-8">
+      <h3 className="text-lg font-black uppercase text-slate-900 mb-6">
+        {editingEvent.id ? 'Editar Evento Operacional' : 'Novo Evento Operacional'}
+      </h3>
+
+      <div className="grid grid-cols-2 gap-4">
+        <label className="flex flex-col gap-2">
+          <span className="text-[10px] font-black uppercase text-slate-400">Nome</span>
+          <input
+            value={editingEvent.name}
+            onChange={e => setEditingEvent({ ...editingEvent, name: e.target.value })}
+            className="border border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold uppercase"
+            placeholder="EX: ACOMPANHAMENTO CAMPO"
+          />
+        </label>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-[10px] font-black uppercase text-slate-400">Categoria</span>
+          <select
+            value={editingEvent.category}
+            onChange={e => setEditingEvent({ ...editingEvent, category: e.target.value as any })}
+            className="border border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold uppercase"
+          >
+            <option value="BLOCKING">Bloqueante</option>
+            <option value="OPERATIONAL">Operacional</option>
+            <option value="SUPPORT">Apoio</option>
+            <option value="OTHER">Outros</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-[10px] font-black uppercase text-slate-400">Cor</span>
+          <input
+            type="color"
+            value={editingEvent.color}
+            onChange={e => setEditingEvent({ ...editingEvent, color: e.target.value })}
+            className="border border-slate-200 rounded-2xl px-4 py-2 h-12"
+          />
+        </label>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-[10px] font-black uppercase text-slate-400">Ordem</span>
+          <input
+            type="number"
+            value={editingEvent.sortOrder}
+            onChange={e => setEditingEvent({ ...editingEvent, sortOrder: Number(e.target.value) })}
+            className="border border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold"
+          />
+        </label>
+
+        <label className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3">
+          <input
+            type="checkbox"
+            checked={editingEvent.active}
+            onChange={e => setEditingEvent({ ...editingEvent, active: e.target.checked })}
+          />
+          <span className="text-[10px] font-black uppercase text-slate-600">Ativo</span>
+        </label>
+      </div>
+
+      <div className="flex justify-end gap-3 mt-8">
+        <button
+          onClick={() => setEditingEvent(null)}
+          className="px-5 py-3 rounded-2xl bg-slate-100 text-slate-600 text-[10px] font-black uppercase"
+        >
+          Cancelar
+        </button>
+
+        <button
+          onClick={saveOperationalEvent}
+          className="px-5 py-3 rounded-2xl bg-claro-red text-white text-[10px] font-black uppercase shadow-md"
+        >
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 
