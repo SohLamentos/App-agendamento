@@ -197,6 +197,8 @@ window.dispatchEvent(new Event('data-updated'));
       case 'score': return <ScoreBoard user={currentUser} />;
       case 'audit': return <AuditTickets user={currentUser} />;
       case 'bases-integration': return <AdminBasesIntegration user={currentUser} />;
+        case 'agenda-settings':
+  return <AgendaSettings user={currentUser} />;
       case 'base-collective-schedule':
   return (
     <BaseCollectiveSchedule
