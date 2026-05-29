@@ -453,8 +453,7 @@ private markAutoBackupCreated() {
   private integrationBases: IntegrationBase[];
 private routingRules: RoutingRule[];
 private analystMappings: AnalystIntegrationMapping[];
-  ];
-
+  
 private operationalEventTypes: OperationalEventType[] = [
   {
     id: 'vacation',
