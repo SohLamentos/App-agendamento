@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import * as XLSX from 'xlsx';
+import React, { useState, useEffect, useMemo } from 'react';
 import { dataService } from '../services/dataService';
 import { User, UserRole, EventSchedule, Shift, ExpertiseType, ScheduleStatus, CertificationSchedule } from '../types';
 import { auditService } from '../services/auditService';
@@ -192,12 +191,7 @@ const [improvisoReason, setImprovisoReason] = useState('');
   
   // Default Silver
 
-  const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
-  const [rangeAnalystId, setRangeAnalystId] = useState('');
-  const [rangeStart, setRangeStart] = useState('');
-  const [rangeEnd, setRangeEnd] = useState('');
-  const [rangeTitle, setRangeTitle] = useState('FÉRIAS');
-
+  
   const TRAINING_OPTIONS = [
   'INST HFC',
   'INST GPON',
@@ -249,8 +243,7 @@ const [otherReasonType, setOtherReasonType] = useState<(typeof OTHER_REASON_OPTI
 const [otherReasonText, setOtherReasonText] = useState('');
 const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const productionAgendaInputRef = useRef<HTMLInputElement>(null);
+  
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
@@ -608,82 +601,7 @@ startScheduleTransport(userId, dateIso, firstSchedule);
 };
       
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
-        const inserted = dataService.importTestSchedules(rawData);
-        setToast({message: `${inserted} agendamentos de teste importados!`, type: 'success'});
-      } catch (err: any) {
-        setToast({message: 'Falha ao importar: ' + err.message, type: 'error'});
-      } finally {
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
-  const exportSharePointAgenda = () => {
-  const rows = schedules
-    .filter((s: any) =>
-      s.status !== ScheduleStatus.CANCELLED &&
-      s.status !== 'CANCELLED' &&
-      s.status !== 'CANCELADO' &&
-      s.status !== 'CANCELADOS (ANALISTA)'
-    )
-    .map((s: any) => {
-      const analyst = analysts.find(a => String(a.id) === String(s.analystId));
-
-      const tech = technicians.find((t: any) =>
-        String(t.id) === String(s.technicianId) ||
-        String(t.scheduledCertificationId) === String(s.id) ||
-        String(t.certificationScheduleId) === String(s.id)
-      );
-
-      const dateIso = String(s.datetime || '').split('T')[0];
-      const time = String(s.datetime || '').split('T')[1]?.replace('Z', '').slice(0, 5) || '';
-
-      const tipo =
-        s.type === ExpertiseType.VIRTUAL
-          ? 'VIRTUAL'
-          : 'PRESENCIAL';
-
-      return {
-        STATUS: 'AGENDADO',
-        ANALISTA: analyst?.normalizedLogin || s.analystName || s.analystId || '',
-        DATA: formatDateBR(dateIso),
-        'PROVA TEÓRICA': time,
-        'PROVA PRÁTICA': '',
-        TÉCNICO: tech?.name || tech?.fullName || s.technicianName || '',
-        EMPRESA: tech?.companyPartner || tech?.company || s.company || '',
-        CIDADE: `${tech?.city || s.city || ''}${tech?.state || s.state ? ' / ' + (tech?.state || s.state) : ''}`,
-        TIPO: tipo,
-        OBSERVAÇÃO: ''
-      };
-    });
-
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'SHAREPOINT_RAW');
-
-  XLSX.writeFile(workbook, `Agenda_SharePoint_${new Date().toISOString().slice(0, 10)}.xlsx`);
-};
-
-  const handleImportProductionAgenda = (rawData: any[][]) => {
-  const inserted = dataService.importProductionSchedules(rawData);
-  setToast({
-    message: `${inserted} agendamentos de produção importados!`,
-    type: 'success'
-  });
-};
-
+ 
   const checkImprovisoShift = (shift: Shift) => {
     if (!selection) return;
     const count = dataService.getSchedulesImpactedByImproviso(selection.userId, selection.dateIso, shift).length;
@@ -1662,39 +1580,7 @@ return (
         </div>
       )}
 
-      <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx,.xls" onChange={handleFileUpload} />
-      <input
-  type="file"
-  ref={productionAgendaInputRef}
-  className="hidden"
-  accept=".xlsx,.xls"
-  onChange={(e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
-
-        handleImportProductionAgenda(rawData);
-      } catch (err: any) {
-        setToast({
-          message: 'Falha ao importar agenda de produção: ' + err.message,
-          type: 'error'
-        });
-      } finally {
-        if (productionAgendaInputRef.current) productionAgendaInputRef.current.value = "";
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
-  }}
-/>
-
+      
  <div className="flex flex-col md:flex-row justify-between items-center bg-white px-2 py-1 rounded-[12px] border border-slate-200 shadow-sm gap-1">
   <div className="flex items-center space-x-4">
     <div className="flex bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
@@ -1732,12 +1618,7 @@ return (
       {movementMode ? 'Movimentação Ativa' : 'Modo Movimentação'}
     </button>
 
-    <button
-      onClick={() => setIsRangeModalOpen(true)}
-      className="bg-claro-red text-white px-6 py-1 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest"
-    >
-      Bloqueio Lote
-    </button>
+    
   </div>
 </div>
 </div>
@@ -2461,11 +2342,6 @@ setPendingMove({
 )}
       
 
-                 {isRangeModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
-          
-        </div>
-      )}
 
    {pendingMove && (
   <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
@@ -2546,203 +2422,7 @@ setPendingMove({
     </div>
   </div>
 )}
-      {splitMove && (
-  <>
-    <div
-      className="fixed inset-0 z-[90]"
-      onClick={() => setSplitMove(null)}
-    />
 
-    <div
-      className="fixed z-[100] bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[340px] max-w-[420px] max-h-[460px] overflow-y-auto border border-white/10"
-      style={{
-        top: Math.min(splitMove.rect.bottom + 12, window.innerHeight - 480),
-        left: Math.min(splitMove.rect.left, window.innerWidth - 440)
-      }}
-    >
-      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
-        Escolha técnicos para mover
-      </div>
-
-      {buildAgendaTooltipData(
-        splitMove.sourceAnalystId,
-        splitMove.sourceDateIso,
-        splitMove.sourceShift,
-        splitMove.sourceTechnology,
-        splitMove.sourceModality
-      ).length > 0 ? (
-        buildAgendaTooltipData(
-          splitMove.sourceAnalystId,
-          splitMove.sourceDateIso,
-          splitMove.sourceShift,
-          splitMove.sourceTechnology,
-          splitMove.sourceModality
-        ).map((item: any, index: number) => (
-          <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
-            <div className="text-[11px] font-black uppercase tracking-wide">
-              {item.time} — {item.technician}
-            </div>
-
-            <div className="flex items-center justify-between gap-3 mt-1">
-              <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
-                {item.city}
-              </div>
-
-              <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
-                {item.partner}
-              </div>
-            </div>
-
-            <button
-              onClick={() => moveOneScheduleNow(item.scheduleId)}
-              className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
-            >
-              Mover este técnico
-            </button>
-          </div>
-        ))
-      ) : (
-        <div className="bg-white/5 rounded-xl px-3 py-2">
-          <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
-            Todos os técnicos deste bloco já foram movimentados
-          </div>
-        </div>
-      )}
-    </div>
-  </>
-)}
-
-      {splitMove && (
-  <>
-    <div
-      className="fixed inset-0 z-[90]"
-      onClick={() => setSplitMove(null)}
-    />
-
-    <div
-      className="fixed z-[100] bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[340px] max-w-[420px] max-h-[460px] overflow-y-auto border border-white/10"
-      style={{
-        top: Math.min(splitMove.rect.bottom + 12, window.innerHeight - 480),
-        left: Math.min(splitMove.rect.left, window.innerWidth - 440)
-      }}
-    >
-      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
-        Escolha técnicos para mover
-      </div>
-
-      {buildAgendaTooltipData(
-        splitMove.sourceAnalystId,
-        splitMove.sourceDateIso,
-        splitMove.sourceShift,
-        splitMove.sourceTechnology,
-        splitMove.sourceModality
-      ).length > 0 ? (
-        buildAgendaTooltipData(
-          splitMove.sourceAnalystId,
-          splitMove.sourceDateIso,
-          splitMove.sourceShift,
-          splitMove.sourceTechnology,
-          splitMove.sourceModality
-        ).map((item: any, index: number) => (
-          <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
-            <div className="text-[11px] font-black uppercase tracking-wide">
-              {item.time} — {item.technician}
-            </div>
-
-            <div className="flex items-center justify-between gap-3 mt-1">
-              <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
-                {item.city}
-              </div>
-
-              <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
-                {item.partner}
-              </div>
-            </div>
-
-            <button
-              onClick={() => moveOneScheduleNow(item.scheduleId)}
-              className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
-            >
-              Mover este técnico
-            </button>
-          </div>
-        ))
-      ) : (
-        <div className="bg-white/5 rounded-xl px-3 py-2">
-          <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
-            Todos os técnicos deste bloco já foram movimentados
-          </div>
-        </div>
-      )}
-    </div>
-  </>
-)}
-
-      {splitMove && (
-  <>
-    <div
-      className="fixed inset-0 z-[90]"
-      onClick={() => setSplitMove(null)}
-    />
-
-    <div
-      className="fixed z-[100] bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 min-w-[340px] max-w-[420px] max-h-[460px] overflow-y-auto border border-white/10"
-      style={{
-        top: Math.min(splitMove.rect.bottom + 12, window.innerHeight - 480),
-        left: Math.min(splitMove.rect.left, window.innerWidth - 440)
-      }}
-    >
-      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
-        Escolha técnicos para mover
-      </div>
-
-      {buildAgendaTooltipData(
-        splitMove.sourceAnalystId,
-        splitMove.sourceDateIso,
-        splitMove.sourceShift,
-        splitMove.sourceTechnology,
-        splitMove.sourceModality
-      ).length > 0 ? (
-        buildAgendaTooltipData(
-          splitMove.sourceAnalystId,
-          splitMove.sourceDateIso,
-          splitMove.sourceShift,
-          splitMove.sourceTechnology,
-          splitMove.sourceModality
-        ).map((item: any, index: number) => (
-          <div key={index} className="bg-white/5 rounded-xl px-3 py-2 mb-2">
-            <div className="text-[11px] font-black uppercase tracking-wide">
-              {item.time} — {item.technician}
-            </div>
-
-            <div className="flex items-center justify-between gap-3 mt-1">
-              <div className="text-[10px] text-white/70 font-bold uppercase tracking-wide truncate">
-                {item.city}
-              </div>
-
-              <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wide whitespace-nowrap">
-                {item.partner}
-              </div>
-            </div>
-
-            <button
-              onClick={() => moveOneScheduleNow(item.scheduleId)}
-              className="mt-2 w-full rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500"
-            >
-              Mover este técnico
-            </button>
-          </div>
-        ))
-      ) : (
-        <div className="bg-white/5 rounded-xl px-3 py-2">
-          <div className="text-[11px] font-black uppercase tracking-wide text-white/70">
-            Todos os técnicos deste bloco já foram movimentados
-          </div>
-        </div>
-      )}
-    </div>
-  </>
-)}
 
             {hoverTooltip?.visible && (
         <div
