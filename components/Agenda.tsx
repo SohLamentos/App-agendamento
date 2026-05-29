@@ -1856,7 +1856,7 @@ return (
   </div>
 )}
   
-<table className="w-full border-collapse table-fixed min-w-[1400px]">
+<table className="w-full border-collapse table-fixed">
           <thead>
   <tr className="bg-slate-900 text-white shadow-xl">
     <th className="w-72 p-4 text-left font-black text-[11px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
