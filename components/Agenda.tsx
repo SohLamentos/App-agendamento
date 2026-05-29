@@ -1657,7 +1657,7 @@ setHoverTooltip(null);
 return (
 
 
-    <div className="flex flex-col gap-1 h-full relative -mt-10 overflow-hidden">
+    <div className="flex flex-col gap-1 h-[calc(100vh-118px)] max-h-[calc(100vh-118px)] relative -mt-10 overflow-hidden">
        {toast && (
         <div className={`fixed top-10 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-right-10 duration-300 ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
           {toast.message}
@@ -1820,7 +1820,9 @@ return (
 )}
 </div>
 
-<div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-x-hidden overflow-y-hidden flex-none relative no-scrollbar transition-colors ...`}>      {isTestMode && (
+<div className={`bg-white border-2 rounded-[40px] shadow-sm overflow-x-hidden overflow-y-hidden flex-none relative no-scrollbar transition-colors ${isTestMode ? 'border-amber-400 bg-amber-50/20' : 'border-slate-200'}`}>    
+  
+  {isTestMode && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] bg-amber-500 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">Visualizando Ambiente de Teste</div>
         )}
 
