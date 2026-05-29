@@ -672,8 +672,7 @@ const saveTrainingEvent = () => {
     endDatetime: `${selection.dateIso}T23:59:59Z`,
     involvedUserIds: [selection.userId],
     shift: trainingShift,
-    color:
-  color:
+      color:
   dataService.getTrainingTypes().find(t => t.name === trainingType)?.color ||
   '#111827'
   });
