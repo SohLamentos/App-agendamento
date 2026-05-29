@@ -217,7 +217,7 @@ const removeOperationalEvent = (item: OperationalEventType) => {
           </p>
         </div>
 
-        {canEdit && (
+       {canEdit && (
   <button
     onClick={() => {
       if (activeSection === 'TRAININGS') {
@@ -234,6 +234,10 @@ const removeOperationalEvent = (item: OperationalEventType) => {
       });
     }}
     className="bg-claro-red text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md"
+  >
+    {activeSection === 'TRAININGS' ? 'Novo Treinamento' : 'Novo Evento'}
+  </button>
+)}
  
       </div>
 
