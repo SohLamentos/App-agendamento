@@ -1190,9 +1190,8 @@ public updateEventById(eventId: string, patch: Partial<EventSchedule>) {
   return { success: true };
 }
   getSchedules() { 
-    const pool = this.testModeActive ? this.schedulesTeste : this.schedules;
-    return pool.filter(s => s.groupId === this.getContext().groupId); 
-  }
+  return this.schedules.filter(s => s.groupId === this.getContext().groupId); 
+}
   public setSchedules(newSchedules: CertificationSchedule[]) {
   console.warn(
     'setSchedules(listaInteira) ignorado para evitar perda de agendamentos em ambiente multiusuário.'
@@ -1762,8 +1761,8 @@ addAnalystMapping(mapping: AnalystIntegrationMapping) {
   return this.saveAnalystMapping(mapping);
 }
 
-  isTestMode() { return this.testModeActive; }
-  setTestMode(v: boolean) { this.testModeActive = v; this.persist(); window.dispatchEvent(new Event('data-updated')); }
+  isTestMode() { return false; }
+setTestMode(_v: boolean) { return; }
 
   /**
    * Rotina Automática: Move técnicos AGENDADOS para APROVADOS após a data de certificação passar (D+1).
