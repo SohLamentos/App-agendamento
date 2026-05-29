@@ -1,16 +1,5 @@
 
 import {
-  User,
-  UserRole,
-  EventSchedule,
-  Shift,
-  ExpertiseType,
-  ScheduleStatus,
-  CertificationSchedule,
-  AgendaTrainingType
-} from '../types';
-
-import {
   saveAppState,
   loadAppState,
   saveAppStateHistory,
@@ -555,6 +544,7 @@ this.analystMappings = savedMappings ? JSON.parse(savedMappings) : [];
     if (savedTrainingTypes) {
   this.trainingTypes = JSON.parse(savedTrainingTypes);
 }
+    }
     
    private getActiveGroupId() {
   const ctx = this.getContext();
