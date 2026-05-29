@@ -192,17 +192,9 @@ const [improvisoReason, setImprovisoReason] = useState('');
   // Default Silver
 
   
-  const TRAINING_OPTIONS = [
-  'INST HFC',
-  'INST GPON',
-  'GPON VETERANO',
-  'NR',
-  'AT',
-  'MDU HFC',
-  'REDE EXTERNA',
-    'HFC PARA GPON',
-  
-] as const;
+  const trainingTypes = dataService.getTrainingTypes().filter(t => t.active);
+
+const TRAINING_OPTIONS = trainingTypes.map(t => t.name);
 
 const LESSON_OPTIONS = ['1','2','3','4','5','6','7','8','9'];
 
@@ -229,7 +221,9 @@ const STANDARD_EVENT_COLORS = {
 } as const;
   
 const [isTrainingModalOpen, setIsTrainingModalOpen] = useState(false);
-const [trainingType, setTrainingType] = useState<(typeof TRAINING_OPTIONS)[number]>('INST HFC');
+const [trainingType, setTrainingType] = useState<string>(
+  TRAINING_OPTIONS[0] || 'INST HFC'
+);
 const [trainingLesson, setTrainingLesson] = useState('');
 const [trainingShift, setTrainingShift] = useState<Shift>(Shift.MORNING);
 
@@ -610,19 +604,16 @@ startScheduleTransport(userId, dateIso, firstSchedule);
   };
 
   const buildTrainingTitle = (type: string, lesson?: string) => {
-  const baseMap: Record<string, string> = {
-    'INST HFC': 'ETN INST HFC',
-    'INST GPON': 'ETN INST GPON',
-    'GPON VETERANO': 'ETN GPON VETERANO',
-    'NR': 'ETN NR',
-    'AT': 'ETN AT',
-        'MDU HFC': 'ETN MDU HFC',
-    'REDE EXTERNA': 'ETN REDE EXTERNA',
-    'HFC PARA GPON': 'ETN HFC PARA GPON',
+  const selectedTraining = dataService
+    .getTrainingTypes()
+    .find(t => t.name === type);
 
-  };
+  const base = selectedTraining?.agendaTitle || `ETN ${type}`;
 
-  const base = baseMap[type] || 'ETN TREINAMENTO';
+  if (!selectedTraining?.allowLesson) {
+    return base;
+  }
+
   return lesson?.trim() ? `${base} - AULA ${lesson}` : base;
 };
 
@@ -691,7 +682,10 @@ const saveTrainingEvent = () => {
     endDatetime: `${selection.dateIso}T23:59:59Z`,
     involvedUserIds: [selection.userId],
     shift: trainingShift,
-    color: STANDARD_EVENT_COLORS.TRAINING[trainingType] || '#111827'
+    color:
+  dataService.getTrainingTypes().find(t => t.name === trainingType)?.color ||
+  STANDARD_EVENT_COLORS.TRAINING[trainingType as keyof typeof STANDARD_EVENT_COLORS.TRAINING] ||
+  '#111827'
   });
 
   auditService.logTicket({
