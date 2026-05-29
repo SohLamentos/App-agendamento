@@ -202,21 +202,11 @@ const LESSON_OPTIONS = ['1','2','3','4','5','6','7','8','9'];
 const OTHER_REASON_OPTIONS = ['FOLGA', 'ADM', 'MÉDICO', 'OUTROS'] as const;
   
 const STANDARD_EVENT_COLORS = {
-  TRAINING: {
-    'INST GPON': '#1D4ED8',       // azul forte
-    'INST HFC': '#0F766E',        // verde petróleo
-    'AT': '#7C3AED',              // roxo
-    'GPON VETERANO': '#C2410C',   // laranja queimado
-    'MDU HFC': '#BE185D',         // rosa escuro
-    'REDE EXTERNA': '#15803D',    // verde
-    'NR': '#334155',               // azul acinzentado
-    'HFC PARA GPON': '#9333EA',
-  },
   OTHER: {
-    'FOLGA': '#6B7280',           // cinza
-    'ADM': '#B91C1C',             // vermelho
-    'MÉDICO': '#0891B2',          // ciano
-    'OUTROS': '#A16207'           // mostarda escura
+    'FOLGA': '#6B7280',
+    'ADM': '#B91C1C',
+    'MÉDICO': '#0891B2',
+    'OUTROS': '#A16207'
   }
 } as const;
   
@@ -683,8 +673,8 @@ const saveTrainingEvent = () => {
     involvedUserIds: [selection.userId],
     shift: trainingShift,
     color:
+  color:
   dataService.getTrainingTypes().find(t => t.name === trainingType)?.color ||
-  STANDARD_EVENT_COLORS.TRAINING[trainingType as keyof typeof STANDARD_EVENT_COLORS.TRAINING] ||
   '#111827'
   });
 
