@@ -1857,11 +1857,14 @@ setPendingMove({
               <div className="px-6 py-2 bg-slate-50 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest">Ações Rápidas</div>
               <button
   onClick={() => {
-    setTrainingType('INST HFC');
-    setTrainingLesson('');
-    setTrainingShift(Shift.FULL_DAY); // já alinhado com novo padrão
-    setIsTrainingModalOpen(true);
-  }}
+  setTrainingType(
+    TRAINING_OPTIONS[0] || ''
+  );
+
+  setTrainingLesson('');
+  setTrainingShift(Shift.FULL_DAY);
+  setIsTrainingModalOpen(true);
+}}
   className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-900 hover:bg-slate-100 uppercase transition-all tracking-wider"
 >
   Treinamento
