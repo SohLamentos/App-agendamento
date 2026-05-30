@@ -47,23 +47,43 @@ const [isBackupHistoryOpen, setIsBackupHistoryOpen] = useState(false);
   }, [user]);
 
   const stats = useMemo(() => {
-    const groupTechs = techs.filter(t => user.role === UserRole.ADMIN || t.groupId === user.groupId);
-    return {
-      total: groupTechs.length,
-      awaiting: groupTechs.filter(t => t.status_principal === "PENDENTE_CERTIFICAÇÃO" || t.status_principal === "PENDENTE_TRATAMENTO").length,
-      // Correção: Backlog oficial é definido pelo status principal 'BACKLOG AGUARDANDO'
-      backlog: groupTechs.filter(t => t.status_principal === "BACKLOG AGUARDANDO").length,
-      scheduled: groupTechs.filter(t => t.status_principal === "AGENDADOS" || t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED).length,
-      certified: groupTechs.filter(t => t.status_principal === "APROVADOS" || t.certificationProcessStatus === CertificationProcessStatus.CERTIFIED_APPROVED).length,
-    };
-  }, [techs, user]);
+  const groupTechs = techs.filter(
+    t => user.role === UserRole.ADMIN || t.groupId === user.groupId
+  );
 
-  const pieData = useMemo(() => [
-    { name: 'Aguardando', value: stats.awaiting },
-    { name: 'Backlog', value: stats.backlog },
-    { name: 'Agendados', value: stats.scheduled },
-    { name: 'Certificados', value: stats.certified },
-  ], [stats]);
+  return {
+    total: groupTechs.length,
+
+    awaitingResult: groupTechs.filter(
+      t =>
+        t.status_principal === 'AGUARDANDO_RESULTADO' ||
+        t.certificationProcessStatus === CertificationProcessStatus.AWAITING_RESULT
+    ).length,
+
+    backlog: groupTechs.filter(
+      t => t.status_principal === 'BACKLOG AGUARDANDO'
+    ).length,
+
+    scheduled: groupTechs.filter(
+      t =>
+        t.status_principal === 'AGENDADOS' ||
+        t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED
+    ).length,
+
+    certified: groupTechs.filter(
+      t =>
+        t.status_principal === 'APROVADOS' ||
+        t.certificationProcessStatus === CertificationProcessStatus.CERTIFIED_APPROVED
+    ).length,
+  };
+}, [techs, user]);
+
+const pieData = useMemo(() => [
+  { name: 'Aguardando Resultado', value: stats.awaitingResult },
+  { name: 'Backlog', value: stats.backlog },
+  { name: 'Agendados', value: stats.scheduled },
+  { name: 'Certificados', value: stats.certified },
+], [stats]);
 
   const activeAdjustments = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
