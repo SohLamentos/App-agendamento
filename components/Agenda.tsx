@@ -222,6 +222,9 @@ const STANDARD_EVENT_COLORS = {
 } as const;
   
 const [isTrainingModalOpen, setIsTrainingModalOpen] = useState(false);
+  const [isLegacyModalOpen, setIsLegacyModalOpen] = useState(false);
+const [legacyModality, setLegacyModality] = useState<'PRESENCIAL' | 'VIRTUAL'>('PRESENCIAL');
+const [legacyShift, setLegacyShift] = useState<Shift>(Shift.FULL_DAY);
 const [trainingType, setTrainingType] = useState<string>(
   TRAINING_OPTIONS[0] || 'INST HFC'
 );
@@ -631,6 +634,7 @@ startScheduleTransport(userId, dateIso, firstSchedule);
 const closeQuickActionStack = () => {
   setSelection(null);
   setIsTrainingModalOpen(false);
+  setIsLegacyModalOpen(false);
   setIsVacationModalOpen(false);
   setIsHolidayModalOpen(false);
   setIsOutrosModalOpen(false);
@@ -701,6 +705,69 @@ const saveTrainingEvent = () => {
   });
 
   setToast({ message: 'Treinamento lançado com sucesso.', type: 'success' });
+  closeQuickActionStack();
+};
+  const saveLegacyCertificationEvent = () => {
+  if (!selection) return;
+
+  const analyst = analysts.find(a => a.id === selection.userId);
+
+  const title = `CERTIFICAÇÃO LEGADO ${legacyModality}`;
+
+  const dayEvents = events.filter(
+    e =>
+      e.involvedUserIds.includes(selection.userId) &&
+      e.startDatetime.startsWith(selection.dateIso)
+  );
+
+  const hasFullDay = dayEvents.some(e => e.shift === Shift.FULL_DAY);
+
+  if (hasFullDay && legacyShift !== Shift.FULL_DAY) {
+    dataService.removeEvent(selection.userId, selection.dateIso);
+  }
+
+  if (legacyShift === Shift.FULL_DAY) {
+    dataService.removeEvent(selection.userId, selection.dateIso);
+  } else {
+    const conflictingEvent = dayEvents.find(e => e.shift === legacyShift);
+
+    if (conflictingEvent) {
+      dataService.removeEvent(selection.userId, selection.dateIso);
+
+      dayEvents
+        .filter(e => e.id !== conflictingEvent.id && e.shift !== Shift.FULL_DAY)
+        .forEach(e => {
+          dataService.addEvent({
+            ...e,
+            id: `${e.id}-restored-${Date.now()}-${Math.random()}`
+          });
+        });
+    }
+  }
+
+  dataService.addEvent({
+    id: `evt-legacy-${Date.now()}`,
+    groupId: analyst?.groupId || user.groupId,
+    title,
+    type: 'Other',
+    startDatetime: `${selection.dateIso}T00:00:00Z`,
+    endDatetime: `${selection.dateIso}T23:59:59Z`,
+    involvedUserIds: [selection.userId],
+    shift: legacyShift,
+    color: '#A16207'
+  });
+
+  auditService.logTicket({
+    user,
+    action: 'LANCAR_CERTIFICACAO_LEGADO',
+    targetType: 'Analista',
+    targetValue: analyst?.normalizedLogin || selection.userId,
+    reason: `${title} lançado em ${formatDateBR(selection.dateIso)} (${legacyShift}).`,
+    screen: 'Agenda',
+    groupId: user.groupId
+  });
+
+  setToast({ message: 'Certificação legado lançada com sucesso.', type: 'success' });
   closeQuickActionStack();
 };
 
@@ -1897,6 +1964,17 @@ setPendingMove({
 >
   Eventos Operacionais
 </button>
+
+              <button
+  onClick={() => {
+    setLegacyModality('PRESENCIAL');
+    setLegacyShift(Shift.FULL_DAY);
+    setIsLegacyModalOpen(true);
+  }}
+  className="w-full text-left px-8 py-4 text-[11px] font-black text-slate-900 hover:bg-slate-100 uppercase transition-all tracking-wider"
+>
+  Certificação Legado
+</button>
               <button
   onClick={() => setStatus(null)}
   className="w-full text-left px-8 py-4 text-[11px] font-black text-rose-600 hover:bg-rose-50 uppercase transition-all tracking-wider border-t border-slate-100"
@@ -2150,6 +2228,124 @@ setPendingMove({
           </div>
         </div>
       )}
+
+      {isLegacyModalOpen && selection && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden border-t-8 border-[#A16207] animate-in zoom-in duration-300">
+      <div className="bg-[#A16207] p-8 text-white text-center">
+        <h3 className="text-xl font-black uppercase tracking-tighter">
+          Certificação Legado
+        </h3>
+        <p className="text-[10px] font-bold uppercase mt-1 opacity-70">
+          Modalidade e período
+        </p>
+      </div>
+
+      <div className="p-8 space-y-6">
+        <div className="space-y-2">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+            Modalidade
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setLegacyModality('PRESENCIAL')}
+              className={`p-4 rounded-2xl border-2 text-[10px] font-black uppercase ${
+                legacyModality === 'PRESENCIAL'
+                  ? 'border-[#A16207] bg-[#A16207] text-white'
+                  : 'border-slate-100 text-slate-500'
+              }`}
+            >
+              Presencial
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLegacyModality('VIRTUAL')}
+              className={`p-4 rounded-2xl border-2 text-[10px] font-black uppercase ${
+                legacyModality === 'VIRTUAL'
+                  ? 'border-[#A16207] bg-[#A16207] text-white'
+                  : 'border-slate-100 text-slate-500'
+              }`}
+            >
+              Virtual
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+            Período
+          </label>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setLegacyShift(Shift.FULL_DAY)}
+              className={`p-3 rounded-2xl border-2 text-[10px] font-black uppercase ${
+                legacyShift === Shift.FULL_DAY
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-100 text-slate-500'
+              }`}
+            >
+              Integral
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLegacyShift(Shift.MORNING)}
+              className={`p-3 rounded-2xl border-2 text-[10px] font-black uppercase ${
+                legacyShift === Shift.MORNING
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-100 text-slate-500'
+              }`}
+            >
+              Manhã
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLegacyShift(Shift.AFTERNOON)}
+              className={`p-3 rounded-2xl border-2 text-[10px] font-black uppercase ${
+                legacyShift === Shift.AFTERNOON
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-100 text-slate-500'
+              }`}
+            >
+              Tarde
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+            Prévia
+          </p>
+          <p className="text-sm font-black text-slate-900 mt-2">
+            CERTIFICAÇÃO LEGADO {legacyModality}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-4 p-8 pt-0">
+        <button
+          onClick={() => setIsLegacyModalOpen(false)}
+          className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest"
+        >
+          Voltar
+        </button>
+
+        <button
+          onClick={saveLegacyCertificationEvent}
+          className="flex-1 py-4 bg-[#A16207] text-white text-xs font-black uppercase rounded-2xl shadow-xl tracking-widest"
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {isTrainingModalOpen && selection && (
   <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
