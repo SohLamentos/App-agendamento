@@ -316,29 +316,31 @@ private markAutoBackupCreated() {
     this.lastAutoBackupAt
   );
 }
-  private processAwaitingResults() {
+  private processAwaitingResults(): boolean {
+  const ctx = this.getContext();
+
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
+  let changed = false;
+
   this.technicians.forEach((tech: Technician) => {
+    if (tech.groupId !== ctx.groupId) return;
+
     if (
-      tech.certificationProcessStatus !==
-      CertificationProcessStatus.SCHEDULED
+      tech.status_principal !== 'AGENDADOS' &&
+      tech.certificationProcessStatus !== CertificationProcessStatus.SCHEDULED
     ) {
       return;
     }
 
-    if (!tech.scheduledCertificationId) {
-      return;
-    }
+    if (!tech.scheduledCertificationId) return;
 
     const schedule = this.schedules.find(
       s => s.id === tech.scheduledCertificationId
     );
 
-    if (!schedule?.datetime) {
-      return;
-    }
+    if (!schedule?.datetime) return;
 
     const dataCert = new Date(schedule.datetime);
     dataCert.setHours(0, 0, 0, 0);
@@ -346,14 +348,21 @@ private markAutoBackupCreated() {
     const diffMs = hoje.getTime() - dataCert.getTime();
     const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (dias >= 3) {
+    // REGRA OFICIAL: D+1
+    if (dias >= 1) {
       tech.status_principal = 'AGUARDANDO_RESULTADO';
-      tech.certificationProcessStatus = CertificationProcessStatus.AWAITING_RESULT;
-      tech.status_observacao = 'Resultado não recebido via PowerApps/Excel';
+      tech.certificationProcessStatus =
+        CertificationProcessStatus.AWAITING_RESULT;
+      tech.status_observacao =
+        tech.status_observacao || 'Resultado não recebido via PowerApps/Excel';
       tech.status_updated_at = new Date().toISOString();
-      tech.status_updated_by = 'SISTEMA';
+      tech.status_updated_by = 'SISTEMA - D+1';
+
+      changed = true;
     }
   });
+
+  return changed;
 }
 
   private users: User[];
@@ -1462,6 +1471,7 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
 }
   getTechnicians() {
   const ctx = this.getContext();
+    const awaitingChanged = this.processAwaitingResults();
 
   const activeScheduleByTechId = new Map<string, CertificationSchedule>();
 
@@ -1484,7 +1494,17 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
 
     const schedule = activeScheduleByTechId.get(String(t.id));
 
-    if (!schedule) return t;
+if (!schedule) return t;
+
+if (
+  t.status_principal === 'AGUARDANDO_RESULTADO' ||
+  t.certificationProcessStatus === CertificationProcessStatus.AWAITING_RESULT ||
+  t.status_principal === 'APROVADOS' ||
+  t.status_principal === 'REPROVADO' ||
+  t.status_principal === 'INABILITADO'
+) {
+  return t;
+}
 
     if (
       t.status_principal === 'AGENDADOS' &&
@@ -1507,7 +1527,12 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
   });
 
  
-  return this.technicians.filter(t => t.groupId === ctx.groupId);
+  if (awaitingChanged || changed) {
+  this.persist({ immediate: true });
+  window.dispatchEvent(new Event('data-updated'));
+}
+
+return this.technicians.filter(t => t.groupId === ctx.groupId);
 }
   getTrainingClasses() { return this.trainingClasses.filter(c => c.groupId === this.getContext().groupId); }
   getTrainingTypes(): AgendaTrainingType[] {
