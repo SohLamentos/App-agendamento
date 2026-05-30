@@ -960,6 +960,88 @@ setActiveSubTab('technicians');
     }
   };
 
+  const awaitingSelectedTechs = filteredTechs.filter(t =>
+  selectedTechIds.has(t.id)
+);
+
+const handleToggleSelectTech = (techId: string) => {
+  setSelectedTechIds(prev => {
+    const next = new Set(prev);
+    if (next.has(techId)) next.delete(techId);
+    else next.add(techId);
+    return next;
+  });
+};
+
+const handleToggleSelectAllAwaiting = () => {
+  const allSelected =
+    filteredTechs.length > 0 &&
+    filteredTechs.every(t => selectedTechIds.has(t.id));
+
+  if (allSelected) {
+    setSelectedTechIds(new Set());
+  } else {
+    setSelectedTechIds(new Set(filteredTechs.map(t => t.id)));
+  }
+};
+
+const handleBulkApproveAwaiting = () => {
+  if (awaitingSelectedTechs.length === 0) {
+    setToast({ message: 'Selecione ao menos um técnico.', type: 'error' });
+    return;
+  }
+
+  let success = 0;
+  let error = 0;
+
+  awaitingSelectedTechs.forEach(tech => {
+    const res = dataService.approveScheduledTechnician(tech.id);
+    if (res.success) success++;
+    else error++;
+  });
+
+  refreshData();
+
+  setToast({
+    message: `${success} técnico(s) aprovado(s). ${error > 0 ? `${error} erro(s).` : ''}`,
+    type: error > 0 ? 'error' : 'success'
+  });
+};
+
+const handleBulkReproveAwaiting = () => {
+  if (awaitingSelectedTechs.length === 0) {
+    setToast({ message: 'Selecione ao menos um técnico.', type: 'error' });
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Confirmar envio de ${awaitingSelectedTechs.length} técnico(s) para REPROVADOS?`
+  );
+
+  if (!confirmed) return;
+
+  let success = 0;
+  let error = 0;
+
+  awaitingSelectedTechs.forEach(tech => {
+    const res = dataService.reproveScheduledTechnician({
+      techId: tech.id,
+      outcome: 'REPROVADO_1_CERTIFICACAO',
+      observation: 'Reprovado manualmente em massa pela aba Aguardando Resultado.'
+    });
+
+    if (res.success) success++;
+    else error++;
+  });
+
+  refreshData();
+
+  setToast({
+    message: `${success} técnico(s) enviado(s) para REPROVADOS. ${error > 0 ? `${error} erro(s).` : ''}`,
+    type: error > 0 ? 'error' : 'success'
+  });
+};
+
   const handleWithdrawConfirm = () => {
   if (!selectedTechnician || !withdrawType || !withdrawSubReason) return;
 
@@ -1423,6 +1505,31 @@ const handleManualScheduleSubmit = () => {
             </button>
           </div>
 
+          <div className={`flex flex-wrap items-center gap-3 ${activeSubTab === 'awaiting_result' ? 'flex' : 'hidden'}`}>
+  <button
+    onClick={handleToggleSelectAllAwaiting}
+    className="bg-slate-900 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-black shadow-lg"
+  >
+    Selecionar Todos
+  </button>
+
+  <button
+    onClick={handleBulkApproveAwaiting}
+    disabled={selectedTechIds.size === 0}
+    className="bg-emerald-600 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    Aprovar Selecionados ({selectedTechIds.size})
+  </button>
+
+  <button
+    onClick={handleBulkReproveAwaiting}
+    disabled={selectedTechIds.size === 0}
+    className="bg-rose-600 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-rose-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    Reprovar Selecionados ({selectedTechIds.size})
+  </button>
+</div>
+
         <div className={`flex flex-wrap items-center gap-3 ${activeSubTab === 'scheduled' ? 'flex' : 'hidden'}`}>
   <button 
     onClick={handleRemoveScheduledClass}
@@ -1460,7 +1567,17 @@ const handleManualScheduleSubmit = () => {
         <table className="w-full text-left text-xs uppercase">
           <thead className="bg-slate-50 border-b border-slate-200 font-black text-slate-400">
             <tr>
-              <th className="px-10 py-6 tracking-widest">Técnico</th>
+              <th className="px-10 py-6 tracking-widest">
+  {activeSubTab === 'awaiting_result' && (
+    <input
+      type="checkbox"
+      className="mr-4 accent-claro-red"
+      checked={filteredTechs.length > 0 && filteredTechs.every(t => selectedTechIds.has(t.id))}
+      onChange={handleToggleSelectAllAwaiting}
+    />
+  )}
+  Técnico
+</th>
               <th className="px-10 py-6 tracking-widest">Território</th>
               <th className="px-10 py-6 tracking-widest">Status Atual</th>
               <th className="px-10 py-6 text-right tracking-widest">Ações</th>
@@ -1470,9 +1587,22 @@ const handleManualScheduleSubmit = () => {
             {filteredTechs.length > 0 ? filteredTechs.map(tech => (
               <tr key={tech.id} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-10 py-6">
-                  <p className="font-black text-slate-900 tracking-wider">{tech.name}</p>
-                  <p className="text-[9px] text-slate-400 font-bold">{tech.cpf}</p>
-                  
+                  <div className="flex items-center gap-3">
+  {activeSubTab === 'awaiting_result' && (
+    <input
+      type="checkbox"
+      className="accent-claro-red"
+      checked={selectedTechIds.has(tech.id)}
+      onChange={() => handleToggleSelectTech(tech.id)}
+    />
+  )}
+
+  <div>
+    <p className="font-black text-slate-900 tracking-wider">{tech.name}</p>
+    <p className="text-[9px] text-slate-400 font-bold">{tech.cpf}</p>
+  </div>
+</div>
+                                    
                   {/* EXIBIÇÃO DE DETALHES DO AGENDAMENTO (DATA, PERÍODO, TECNOLOGIA) */}
                   {activeSubTab === 'scheduled' && tech.scheduledCertificationId && (
   (() => {
