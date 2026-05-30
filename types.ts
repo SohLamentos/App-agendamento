@@ -359,11 +359,10 @@ export interface OperationalEventType {
   id: string;
   name: string;
   color: string;
-  category:
-    | 'BLOCKING'
-    | 'OPERATIONAL'
-    | 'SUPPORT'
-    | 'OTHER';
+
+  // Agrupador exibido dentro de EVENTOS OPERACIONAIS
+  // Ex: FOLGA/FÉRIAS, SAÚDE, OPERACIONAL, BLOQUEIOS, OUTROS
+  category: string;
 
   active: boolean;
   sortOrder: number;
