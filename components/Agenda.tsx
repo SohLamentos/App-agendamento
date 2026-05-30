@@ -1863,7 +1863,14 @@ setPendingMove({
 
       {selection && (
         <>
-          <div className="fixed inset-0 z-[60]" onClick={() => setSelection(null)}></div>
+          <div
+  className="fixed inset-0 z-[60]"
+  onClick={() => {
+    setSelection(null);
+    setIsOperationalEventsModalOpen(false);
+    setSelectedOperationalCategory(null);
+  }}
+></div>
           <div className="fixed z-[70] bg-white border border-slate-200 shadow-2xl rounded-[32px] py-6 w-72 animate-in zoom-in duration-200" style={{ top: selection.rect.bottom + 12 > window.innerHeight - 350 ? selection.rect.top - 350 : selection.rect.bottom + 12, left: Math.min(selection.rect.left, window.innerWidth - 300) }}>
             <div className="flex flex-col">
               <div className="px-6 py-2 bg-slate-50 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest">
@@ -1970,8 +1977,14 @@ setPendingMove({
 )}
 
       {isOperationalEventsModalOpen && selection && (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
-    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-sm overflow-hidden border-t-8 border-slate-900">
+  <div
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4"
+    onClick={(e) => e.stopPropagation()}
+  >
+    <div
+      className="bg-white rounded-[40px] shadow-2xl w-full max-w-sm overflow-hidden border-t-8 border-slate-900"
+      onClick={(e) => e.stopPropagation()}
+    >
 
       <div className="bg-slate-900 p-8 text-white text-center">
         <h3 className="text-xl font-black uppercase tracking-tighter">
@@ -2064,7 +2077,10 @@ setPendingMove({
 
       <div className="p-4">
         <button
-          onClick={() => {
+          onClick={(e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
   if (selectedOperationalCategory) {
     setSelectedOperationalCategory(null);
     return;
