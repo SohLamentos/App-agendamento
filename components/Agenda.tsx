@@ -188,6 +188,8 @@ const [improvisoReason, setImprovisoReason] = useState('');
 
   const [isOutrosModalOpen, setIsOutrosModalOpen] = useState(false);
   const [isOperationalEventsModalOpen, setIsOperationalEventsModalOpen] = useState(false);
+  const [selectedOperationalCategory, setSelectedOperationalCategory] =
+  useState<string | null>(null);
   
   
   // Default Silver
@@ -196,6 +198,14 @@ const [improvisoReason, setImprovisoReason] = useState('');
   const trainingTypes = dataService.getTrainingTypes().filter(t => t.active);
 
 const TRAINING_OPTIONS = trainingTypes.map(t => t.name);
+  const OPERATIONAL_CATEGORIES = Array.from(
+  new Set(
+    dataService
+      .getOperationalEventTypes()
+      .filter(e => e.active)
+      .map(e => e.category)
+  )
+).sort();
 
 const LESSON_OPTIONS = ['1','2','3','4','5','6','7','8','9'];
 
@@ -626,6 +636,7 @@ const closeQuickActionStack = () => {
   setIsOutrosModalOpen(false);
   setIsImprovisoModal(false);
   setIsOperationalEventsModalOpen(false);
+  setSelectedOperationalCategory(null);
 };
 
 const saveTrainingEvent = () => {
@@ -932,7 +943,7 @@ const setStatus = (title: string | null, shift: Shift = Shift.FULL_DAY, color?: 
       endDatetime: `${selection.dateIso}T23:59:59Z`,
       involvedUserIds: [selection.userId],
       shift,
-      color: title === 'OUTROS' ? color : undefined
+      color: color || undefined
     });
 
     if (title === 'IMPREVISTO') {
@@ -1973,71 +1984,94 @@ setPendingMove({
       </div>
 
       <div className="p-4 max-h-[60vh] overflow-y-auto">
-        {dataService
-          .getOperationalEventTypes()
-          .filter(eventType => eventType.active)
-          .map(eventType => {
+  {!selectedOperationalCategory ? (
+    OPERATIONAL_CATEGORIES.map(category => (
+      <button
+        key={category}
+        onClick={() => setSelectedOperationalCategory(category)}
+        className="w-full text-left px-5 py-4 rounded-2xl text-[11px] font-black uppercase hover:bg-slate-50"
+      >
+        {category}
+      </button>
+    ))
+  ) : (
+    dataService
+      .getOperationalEventTypes()
+      .filter(
+        eventType =>
+          eventType.active &&
+          eventType.category === selectedOperationalCategory
+      )
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(eventType => {
+        const name = eventType.name
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toUpperCase();
 
-            const name = eventType.name
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .toUpperCase();
+        return (
+          <button
+            key={eventType.id}
+            onClick={() => {
+              if (name.includes('FERIAS')) {
+                setIsOperationalEventsModalOpen(false);
+                setSelectedOperationalCategory(null);
+                setVacationEndDate(selection.dateIso);
+                setIsVacationModalOpen(true);
+                return;
+              }
 
-            return (
-              <button
-                key={eventType.id}
-                onClick={() => {
+              if (name.includes('IMPREVISTO')) {
+                setIsOperationalEventsModalOpen(false);
+                setSelectedOperationalCategory(null);
+                setStatus('IMPREVISTO');
+                return;
+              }
 
-                  if (name.includes('FÉRIAS') || name.includes('FERIAS')) {
-  setIsOperationalEventsModalOpen(false);
-  setVacationEndDate(selection.dateIso);
-  setIsVacationModalOpen(true);
-  return;
-}
+              if (name.includes('APOIO CQ')) {
+                setIsOperationalEventsModalOpen(false);
+                setSelectedOperationalCategory(null);
+                setStatus('CQ_SUPPORT');
+                return;
+              }
 
-                  if (name.includes('IMPREVISTO')) {
-  setIsOperationalEventsModalOpen(false);
-  setStatus('IMPREVISTO');
-  return;
-}
+              if (name.includes('FERIADO')) {
+                setIsOperationalEventsModalOpen(false);
+                setSelectedOperationalCategory(null);
+                setHolidayTarget('ONE');
+                setIsHolidayModalOpen(true);
+                return;
+              }
 
-if (name.includes('APOIO CQ')) {
-  setIsOperationalEventsModalOpen(false);
-  setStatus('CQ_SUPPORT');
-  return;
-}
+              setIsOperationalEventsModalOpen(false);
+              setSelectedOperationalCategory(null);
 
-if (name.includes('FERIADO')) {
-  setIsOperationalEventsModalOpen(false);
-  setHolidayTarget('ONE');
-  setIsHolidayModalOpen(true);
-  return;
-}
-
-if (name.includes('OUTROS')) {
-  setIsOperationalEventsModalOpen(false);
-  setOtherReasonType('FOLGA');
-  setOtherReasonText('');
-  setOtherReasonShift(Shift.MORNING);
-  setIsOutrosModalOpen(true);
-  return;
-}
-
-setIsOperationalEventsModalOpen(false);
-setStatus(name, Shift.FULL_DAY, eventType.color);
-                }}
-                className="w-full text-left px-5 py-4 rounded-2xl text-[11px] font-black uppercase hover:bg-slate-50"
-                style={{ color: eventType.color }}
-              >
-                {eventType.name}
-              </button>
-            );
-          })}
-      </div>
+              setStatus(
+                eventType.name,
+                Shift.FULL_DAY,
+                eventType.color
+              );
+            }}
+            className="w-full text-left px-5 py-4 rounded-2xl text-[11px] font-black uppercase hover:bg-slate-50"
+            style={{ color: eventType.color }}
+          >
+            {eventType.name}
+          </button>
+        );
+      })
+  )}
+</div>
 
       <div className="p-4">
         <button
-          onClick={() => setIsOperationalEventsModalOpen(false)}
+          onClick={() => {
+  if (selectedOperationalCategory) {
+    setSelectedOperationalCategory(null);
+    return;
+  }
+
+  setIsOperationalEventsModalOpen(false);
+}}
           className="w-full py-3 rounded-2xl bg-slate-100 text-slate-500 text-xs font-black uppercase"
         >
           Voltar
