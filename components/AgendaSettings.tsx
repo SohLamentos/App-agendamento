@@ -205,6 +205,14 @@ const removeOperationalEvent = (item: OperationalEventType) => {
   load();
 };
 
+  const availableCategories = Array.from(
+  new Set(
+    operationalEvents
+      .map(e => e.category)
+      .filter(Boolean)
+  )
+).sort();
+
   return (
     <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm p-8">
       <div className="flex items-start justify-between gap-4 mb-8">
@@ -547,18 +555,27 @@ const removeOperationalEvent = (item: OperationalEventType) => {
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-[10px] font-black uppercase text-slate-400">Categoria</span>
-          <select
-            value={editingEvent.category}
-            onChange={e => setEditingEvent({ ...editingEvent, category: e.target.value as any })}
-            className="border border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold uppercase"
-          >
-            <option value="BLOCKING">Bloqueante</option>
-            <option value="OPERATIONAL">Operacional</option>
-            <option value="SUPPORT">Apoio</option>
-            <option value="OTHER">Outros</option>
-          </select>
-        </label>
+  <span className="text-[10px] font-black uppercase text-slate-400">Categoria</span>
+
+  <input
+    list="event-categories"
+    value={editingEvent.category}
+    onChange={e =>
+      setEditingEvent({
+        ...editingEvent,
+        category: e.target.value.toUpperCase()
+      })
+    }
+    className="border border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold uppercase"
+    placeholder="EX: SAÚDE"
+  />
+
+  <datalist id="event-categories">
+    {availableCategories.map(category => (
+      <option key={category} value={category} />
+    ))}
+  </datalist>
+</label>
 
         <label className="flex flex-col gap-2">
           <span className="text-[10px] font-black uppercase text-slate-400">Cor</span>
