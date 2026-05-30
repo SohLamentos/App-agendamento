@@ -459,9 +459,29 @@ private operationalEventTypes: OperationalEventType[] = [
     id: 'vacation',
     name: 'FÉRIAS',
     color: '#DC2626',
-    category: 'BLOCKING',
+    category: 'FOLGA/FÉRIAS',
     active: true,
     sortOrder: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'time-bank',
+    name: 'BANCO DE HORAS',
+    color: '#F59E0B',
+    category: 'FOLGA/FÉRIAS',
+    active: true,
+    sortOrder: 2,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'birthday-day-off',
+    name: 'FOLGA ANIVERSÁRIO',
+    color: '#F97316',
+    category: 'FOLGA/FÉRIAS',
+    active: true,
+    sortOrder: 3,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -469,19 +489,9 @@ private operationalEventTypes: OperationalEventType[] = [
     id: 'unexpected',
     name: 'IMPREVISTO',
     color: '#7C3AED',
-    category: 'BLOCKING',
+    category: 'BLOQUEIOS',
     active: true,
-    sortOrder: 2,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'cq',
-    name: 'APOIO CQ',
-    color: '#4F46E5',
-    category: 'SUPPORT',
-    active: true,
-    sortOrder: 3,
+    sortOrder: 4,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -489,9 +499,19 @@ private operationalEventTypes: OperationalEventType[] = [
     id: 'holiday',
     name: 'FERIADO',
     color: '#111827',
-    category: 'BLOCKING',
+    category: 'BLOQUEIOS',
     active: true,
-    sortOrder: 4,
+    sortOrder: 5,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'cq',
+    name: 'APOIO CQ',
+    color: '#4F46E5',
+    category: 'OPERACIONAL',
+    active: true,
+    sortOrder: 6,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -499,9 +519,29 @@ private operationalEventTypes: OperationalEventType[] = [
     id: 'other',
     name: 'OUTROS',
     color: '#A16207',
-    category: 'OTHER',
+    category: 'OUTROS',
     active: true,
-    sortOrder: 5,
+    sortOrder: 7,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'medical',
+    name: 'MÉDICO',
+    color: '#0891B2',
+    category: 'SAÚDE',
+    active: true,
+    sortOrder: 8,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'dentist',
+    name: 'DENTISTA',
+    color: '#007DB8',
+    category: 'SAÚDE',
+    active: true,
+    sortOrder: 9,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }
