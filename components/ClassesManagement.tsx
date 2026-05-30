@@ -1281,7 +1281,7 @@ const handleManualScheduleSubmit = () => {
 };
   
  return (
-  <div className="space-y-8 animate-in fade-in duration-500 relative">
+  <div className="space-y-3 animate-in fade-in duration-500 relative -mt-6">
     <input
       type="file"
       ref={fileInputRef}
@@ -1301,7 +1301,7 @@ const handleManualScheduleSubmit = () => {
     )}
 
       {/* ActionBar Fixa */}
-      <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+      <div className="bg-white px-5 py-3 rounded-[20px] border border-slate-200 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3">
         
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex flex-col">
@@ -1444,7 +1444,7 @@ const handleManualScheduleSubmit = () => {
         </div>
       </div>
 
-      <div className="flex space-x-6 px-4 overflow-x-auto pb-2 no-scrollbar border-b border-slate-100">
+      <div className="flex space-x-5 px-4 overflow-x-auto pb-1 no-scrollbar border-b border-slate-100">
         {StatusEngine.map(tab => (
           <button 
             key={tab.key} 
