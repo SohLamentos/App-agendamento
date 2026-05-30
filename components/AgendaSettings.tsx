@@ -21,7 +21,7 @@ const emptyEventForm: OperationalEventType = {
   id: '',
   name: '',
   color: '#455A64',
-  category: 'OTHER',
+  category: 'OUTROS',
   active: true,
   sortOrder: 1,
   createdAt: new Date().toISOString(),
@@ -205,14 +205,7 @@ const removeOperationalEvent = (item: OperationalEventType) => {
   load();
 };
 
-  const availableCategories = Array.from(
-  new Set(
-    operationalEvents
-      .map(e => e.category)
-      .filter(Boolean)
-  )
-).sort();
-
+  
   return (
     <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm p-8">
       <div className="flex items-start justify-between gap-4 mb-8">
@@ -554,27 +547,27 @@ const removeOperationalEvent = (item: OperationalEventType) => {
           />
         </label>
 
-        <label className="flex flex-col gap-2">
-  <span className="text-[10px] font-black uppercase text-slate-400">Categoria</span>
+       <label className="flex flex-col gap-2">
+  <span className="text-[10px] font-black uppercase text-slate-400">
+    Categoria
+  </span>
 
-  <input
-    list="event-categories"
+  <select
     value={editingEvent.category}
     onChange={e =>
       setEditingEvent({
         ...editingEvent,
-        category: e.target.value.toUpperCase()
+        category: e.target.value
       })
     }
     className="border border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold uppercase"
-    placeholder="EX: SAÚDE"
-  />
-
-  <datalist id="event-categories">
-    {availableCategories.map(category => (
-      <option key={category} value={category} />
-    ))}
-  </datalist>
+  >
+    <option value="FOLGA/FÉRIAS">FOLGA/FÉRIAS</option>
+    <option value="SAÚDE">SAÚDE</option>
+    <option value="OPERACIONAL">OPERACIONAL</option>
+    <option value="BLOQUEIOS">BLOQUEIOS</option>
+    <option value="OUTROS">OUTROS</option>
+  </select>
 </label>
 
         <label className="flex flex-col gap-2">
