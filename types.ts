@@ -77,18 +77,34 @@ export interface Group {
   active: boolean;
 }
 
+export interface SystemConfig {
+  maintenanceMode: boolean;
+  maintenanceMessage: string;
+  maintenanceAllowedEmails: string[];
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 export interface User {
   id: string;
   fullName: string;
   normalizedLogin: string;
-  firstNameLogin: string; 
+  firstNameLogin: string;
   email: string;
+
   role: UserRole;
+
+  // Novo campo para identificar administradores globais
+  isGlobalAdmin?: boolean;
+
   groupId: string;
-  managerId?: string; 
+  managerId?: string;
+
   passwordHash: string;
   active: boolean;
+
   analystProfileId?: string;
+
   createdAt: string;
   updatedAt: string;
 }
