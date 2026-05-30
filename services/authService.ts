@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { loadSystemConfig } from './appStateService';
 
 export enum AuthRole {
   ADMIN = 'admin',
@@ -44,9 +45,28 @@ class AuthService {
       throw new Error('Perfil não encontrado para este usuário.');
     }
 
-    if (!profile.active) {
+        if (!profile.active) {
       await supabase.auth.signOut();
       throw new Error('Usuário desativado.');
+    }
+
+    const systemConfig = await loadSystemConfig();
+
+    const userEmail = String(profile.email || '').trim().toLowerCase();
+
+    const allowedEmails = (systemConfig.maintenanceAllowedEmails || []).map((item: string) =>
+      String(item).trim().toLowerCase()
+    );
+
+    const isAllowedInMaintenance =
+      profile.is_global_admin === true || allowedEmails.includes(userEmail);
+
+    if (systemConfig.maintenanceMode === true && !isAllowedInMaintenance) {
+      await supabase.auth.signOut();
+      throw new Error(
+        systemConfig.maintenanceMessage ||
+          'Sistema em manutenção. Tente novamente mais tarde.'
+      );
     }
 
     this.setSession(profile);
