@@ -641,9 +641,35 @@ this.analystMappings = savedMappings ? JSON.parse(savedMappings) : [];
   this.trainingTypes = JSON.parse(savedTrainingTypes);
 }
     if (savedOperationalEventTypes) {
-  this.operationalEventTypes = JSON.parse(savedOperationalEventTypes);
+  this.operationalEventTypes = this.normalizeOperationalEventTypes(
+    JSON.parse(savedOperationalEventTypes)
+  );
 }
     }
+
+  private normalizeOperationalEventTypes(
+  eventTypes: OperationalEventType[]
+): OperationalEventType[] {
+  return (eventTypes || []).map(event => {
+    const oldCategory = String(event.category || '').toUpperCase();
+
+    const category =
+      oldCategory === 'BLOCKING'
+        ? 'BLOQUEIOS'
+        : oldCategory === 'SUPPORT'
+        ? 'OPERACIONAL'
+        : oldCategory === 'OPERATIONAL'
+        ? 'OPERACIONAL'
+        : oldCategory === 'OTHER'
+        ? 'OUTROS'
+        : event.category;
+
+    return {
+      ...event,
+      category
+    };
+  });
+}
     
    private getActiveGroupId() {
   const ctx = this.getContext();
@@ -772,7 +798,9 @@ payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments)
 this.routingRules = payload.routingRules ?? this.routingRules;
 this.analystMappings = payload.analystMappings ?? this.analystMappings;
     this.trainingTypes = payload.trainingTypes ?? this.trainingTypes;
-    this.operationalEventTypes = payload.operationalEventTypes ?? this.operationalEventTypes;
+    this.operationalEventTypes = this.normalizeOperationalEventTypes(
+  payload.operationalEventTypes ?? this.operationalEventTypes
+);
     this.lastPersistedPayloadJson = JSON.stringify(this.buildFullPayload());
 
     localStorage.setItem('g_groups_v15', JSON.stringify(this.groups));
@@ -1495,7 +1523,7 @@ saveTrainingTypes(trainingTypes: AgendaTrainingType[]) {
   window.dispatchEvent(new Event('data-updated'));
 }
   getOperationalEventTypes(): OperationalEventType[] {
-  return [...this.operationalEventTypes]
+  return this.normalizeOperationalEventTypes(this.operationalEventTypes)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
