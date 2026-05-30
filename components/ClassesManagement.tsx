@@ -713,16 +713,19 @@ useEffect(() => {
         return false;
       }
 
-      if (activeSubTab === 'scheduled') {
-        const sch = schedules.find(s => s.id === t.scheduledCertificationId);
-        if (filterAnalystId && sch?.analystId !== filterAnalystId) return false;
-        if (filterDateStart || filterDateEnd) {
-          if (!sch?.datetime) return false;
-          const schDate = sch.datetime.split('T')[0];
-          if (filterDateStart && schDate < filterDateStart) return false;
-          if (filterDateEnd && schDate > filterDateEnd) return false;
-        }
-      }
+      if (activeSubTab === 'scheduled' || activeSubTab === 'awaiting_result') {
+  const sch = schedules.find(s => s.id === t.scheduledCertificationId);
+  if (filterAnalystId && sch?.analystId !== filterAnalystId) return false;
+
+  if (activeSubTab === 'scheduled') {
+    if (filterDateStart || filterDateEnd) {
+      if (!sch?.datetime) return false;
+      const schDate = sch.datetime.split('T')[0];
+      if (filterDateStart && schDate < filterDateStart) return false;
+      if (filterDateEnd && schDate > filterDateEnd) return false;
+    }
+  }
+}
 
       return true;
     });
@@ -1420,7 +1423,7 @@ const handleManualScheduleSubmit = () => {
           </div>
 
   
-<div className={`flex items-end gap-6 ${activeSubTab === 'scheduled' ? 'flex' : 'hidden'}`}>
+<div className={`flex items-end gap-6 ${['scheduled', 'awaiting_result'].includes(activeSubTab) ? 'flex' : 'hidden'}`}>
   <div className="flex flex-col">
     <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Analista:</span>
     <select 
@@ -1433,24 +1436,32 @@ const handleManualScheduleSubmit = () => {
     </select>
   </div>
 
+  
+{activeSubTab === 'scheduled' && (
   <div className="flex flex-col">
-    <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Intervalo (DE/ATÉ):</span>
+    <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">
+      Intervalo (DE/ATÉ):
+    </span>
+
     <div className="flex gap-2">
       <input
-        type="date"
-        className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 shadow-inner"
-        value={filterDateStart}
-        onChange={e => setFilterDateStart(e.target.value)}
-      />
-      <input
-        type="date"
-        className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 shadow-inner"
-        value={filterDateEnd}
-        onChange={e => setFilterDateEnd(e.target.value)}
-      />
+  type="date"
+  className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 shadow-inner"
+  value={filterDateStart}
+  onChange={e => setFilterDateStart(e.target.value)}
+/>
+
+<input
+  type="date"
+  className="text-xs border-2 border-slate-50 rounded-2xl px-5 py-3 outline-none focus:border-claro-red font-bold uppercase bg-slate-50 shadow-inner"
+  value={filterDateEnd}
+  onChange={e => setFilterDateEnd(e.target.value)}
+/>
     </div>
   </div>
+)}
 
+  {activeSubTab === 'scheduled' && (
   <div className="flex items-end">
     <button
       onClick={handleExportScheduledTechnicians}
@@ -1459,6 +1470,7 @@ const handleManualScheduleSubmit = () => {
       Exportar Agendados
     </button>
   </div>
+)}
 </div>
       </div>
 
@@ -1488,6 +1500,8 @@ const handleManualScheduleSubmit = () => {
             
             <div className="h-10 w-px bg-slate-100 mx-2 hidden xl:block"></div>
 
+            
+
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">A PARTIR DE:</span>
               <input 
@@ -1515,18 +1529,18 @@ const handleManualScheduleSubmit = () => {
 
   <button
     onClick={handleBulkApproveAwaiting}
-    disabled={selectedTechIds.size === 0}
+    disabled={awaitingSelectedTechs.length === 0}
     className="bg-emerald-600 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
   >
-    Aprovar Selecionados ({selectedTechIds.size})
+Aprovar Selecionados ({awaitingSelectedTechs.length})
   </button>
 
   <button
     onClick={handleBulkReproveAwaiting}
-    disabled={selectedTechIds.size === 0}
+    disabled={awaitingSelectedTechs.length === 0}
     className="bg-rose-600 text-white text-[10px] px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-rose-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
   >
-    Reprovar Selecionados ({selectedTechIds.size})
+    Reprovar Selecionados ({awaitingSelectedTechs.length})
   </button>
 </div>
 
@@ -1555,7 +1569,12 @@ const handleManualScheduleSubmit = () => {
         {StatusEngine.map(tab => (
           <button 
             key={tab.key} 
-            onClick={() => { setActiveSubTab(tab.key); setSelectedClassId(null); }}
+            onClick={() => {
+  setActiveSubTab(tab.key);
+  setSelectedClassId(null);
+  setSelectedTechIds(new Set());
+  setFilterAnalystId('');
+}}
             className={`pb-4 text-[10px] font-black uppercase border-b-4 transition-all tracking-widest flex items-center gap-2 whitespace-nowrap ${activeSubTab === tab.key ? 'border-claro-red text-claro-red' : 'border-transparent text-slate-400'}`}
           >
             {tab.label} {activeSubTab === tab.key && (tab.key === 'technicians' || tab.key === 'training_no_cert') && `(${filteredTechs.length})`}
@@ -1918,14 +1937,14 @@ const analystName = getAnalystName(sch);
 
               <div className="flex gap-4 pt-2">
   <button 
-    onClick={() => setIsFinalSummaryOpen(false)}
+    onClick={() => setIsHeaderErrorModalOpen(false)}
     className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
   >
     CANCELAR
   </button>
 
   <button 
-    onClick={() => setIsFinalSummaryOpen(false)}
+    onClick={() => setIsHeaderErrorModalOpen(false)}
     className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl"
   >
     CONFIRMAR
