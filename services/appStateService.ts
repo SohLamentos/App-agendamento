@@ -159,3 +159,60 @@ export async function restoreAppStateFromHistory(
 
   return restored;
 }
+const SYSTEM_GROUP_ID = '__SYSTEM__';
+
+export async function loadSystemConfig() {
+  const { data, error } = await supabase
+    .from('app_state')
+    .select('*')
+    .eq('app_id', APP_ID)
+    .eq('group_id', SYSTEM_GROUP_ID)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.data || {
+    maintenanceMode: false,
+    maintenanceMessage: 'Sistema em manutenção. Tente novamente mais tarde.',
+    maintenanceAllowedEmails: ['thiago.andersonsilva@claro.com.br'],
+  };
+}
+
+export async function saveSystemConfig(payload: any) {
+  const row = {
+    app_id: APP_ID,
+    group_id: SYSTEM_GROUP_ID,
+    data: payload,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data: updated, error: updateError } = await supabase
+    .from('app_state')
+    .update(row)
+    .eq('app_id', APP_ID)
+    .eq('group_id', SYSTEM_GROUP_ID)
+    .select()
+    .maybeSingle();
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  if (updated) {
+    return updated;
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from('app_state')
+    .insert([row])
+    .select()
+    .single();
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  return inserted;
+}
