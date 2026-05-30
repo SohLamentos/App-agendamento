@@ -337,7 +337,7 @@ private markAutoBackupCreated() {
     if (!tech.scheduledCertificationId) return;
 
     const schedule = this.schedules.find(
-      s => s.id === tech.scheduledCertificationId
+      s => String(s.id) === String(tech.scheduledCertificationId)
     );
 
     if (!schedule?.datetime) return;
@@ -345,14 +345,14 @@ private markAutoBackupCreated() {
     const dataCert = new Date(schedule.datetime);
     dataCert.setHours(0, 0, 0, 0);
 
-    const diffMs = hoje.getTime() - dataCert.getTime();
-    const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const dias = Math.floor(
+      (hoje.getTime() - dataCert.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     // REGRA OFICIAL: D+1
     if (dias >= 1) {
       tech.status_principal = 'AGUARDANDO_RESULTADO';
-      tech.certificationProcessStatus =
-        CertificationProcessStatus.AWAITING_RESULT;
+      tech.certificationProcessStatus = CertificationProcessStatus.AWAITING_RESULT;
       tech.status_observacao =
         tech.status_observacao || 'Resultado não recebido via PowerApps/Excel';
       tech.status_updated_at = new Date().toISOString();
@@ -1469,9 +1469,11 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
 
   return { success: true };
 }
+
   getTechnicians() {
   const ctx = this.getContext();
-    const awaitingChanged = this.processAwaitingResults();
+
+  const awaitingChanged = this.processAwaitingResults();
 
   const activeScheduleByTechId = new Map<string, CertificationSchedule>();
 
@@ -1494,22 +1496,23 @@ public updateScheduleById(scheduleId: string, patch: Partial<CertificationSchedu
 
     const schedule = activeScheduleByTechId.get(String(t.id));
 
-if (!schedule) return t;
+    if (!schedule) return t;
 
-if (
-  t.status_principal === 'AGUARDANDO_RESULTADO' ||
-  t.certificationProcessStatus === CertificationProcessStatus.AWAITING_RESULT ||
-  t.status_principal === 'APROVADOS' ||
-  t.status_principal === 'REPROVADO' ||
-  t.status_principal === 'INABILITADO'
-) {
-  return t;
-}
+    if (
+      t.status_principal === 'AGUARDANDO_RESULTADO' ||
+      t.certificationProcessStatus === CertificationProcessStatus.AWAITING_RESULT ||
+      t.status_principal === 'APROVADOS' ||
+      t.certificationProcessStatus === CertificationProcessStatus.CERTIFIED_APPROVED ||
+      String(t.status_principal || '').startsWith('REPROVADO') ||
+      String(t.status_principal || '').startsWith('INABILITADO')
+    ) {
+      return t;
+    }
 
     if (
       t.status_principal === 'AGENDADOS' &&
       t.certificationProcessStatus === CertificationProcessStatus.SCHEDULED &&
-      t.scheduledCertificationId === schedule.id
+      String(t.scheduledCertificationId) === String(schedule.id)
     ) {
       return t;
     }
@@ -1526,14 +1529,14 @@ if (
     };
   });
 
- 
   if (awaitingChanged || changed) {
-  this.persist({ immediate: true });
-  window.dispatchEvent(new Event('data-updated'));
-}
+    this.persist({ immediate: true });
+    window.dispatchEvent(new Event('data-updated'));
+  }
 
-return this.technicians.filter(t => t.groupId === ctx.groupId);
+  return this.technicians.filter(t => t.groupId === ctx.groupId);
 }
+  
   getTrainingClasses() { return this.trainingClasses.filter(c => c.groupId === this.getContext().groupId); }
   getTrainingTypes(): AgendaTrainingType[] {
   return [...this.trainingTypes]
