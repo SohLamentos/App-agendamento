@@ -79,7 +79,13 @@ const visibleGroups = isGlobalAdmin
 }, []);
 
   const analysts = useMemo(() => users.filter(u => u.role === UserRole.ANALYST && (selectedGroupFilter === 'ALL' || u.groupId === selectedGroupFilter)), [users, selectedGroupFilter]);
-  const filteredUsers = useMemo(() => users.filter(u => selectedGroupFilter === 'ALL' || u.groupId === selectedGroupFilter), [users, selectedGroupFilter]);
+  const filteredUsers = useMemo(() => {
+  if (isGlobalAdmin) {
+    return users.filter(u => selectedGroupFilter === 'ALL' || u.groupId === selectedGroupFilter);
+  }
+
+  return users.filter(u => u.groupId === currentUserGroupId);
+}, [users, selectedGroupFilter, isGlobalAdmin, currentUserGroupId]);
 
   const handleResetPassword = (userId: string, userName: string) => {
     if (window.confirm(`Deseja realmente resetar a senha de ${userName}?`)) {
