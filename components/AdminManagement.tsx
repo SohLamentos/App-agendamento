@@ -77,7 +77,7 @@ const [savingMaintenance, setSavingMaintenance] = useState(false);
       ...formAdjustment,
       groupId: currentGroup
     });
-    set(false);
+    setIsModalOpen(false);
     setFormAdjustment({
       analystId: '',
       penalty: 50,
@@ -200,7 +200,7 @@ const handleMaintenanceMessageChange = async () => {
 
         {activeTab === 'balancing' && (
           <button
-            onClick={() => set(true)}
+            onClick={() => setIsModalOpen(true)}
             className="bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg"
           >
             Novo Ajuste de Score
@@ -395,7 +395,7 @@ const handleMaintenanceMessageChange = async () => {
       )}
 
       {/* Modal para Novo Ajuste de Score */}
-      { && activeTab === 'balancing' && (
+      {isModalOpen && activeTab === 'balancing' && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
           <form onSubmit={handleAddAdjustment} className="bg-white rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden border-t-8 border-slate-900 animate-in zoom-in duration-300">
             <div className="bg-slate-900 p-8 text-white text-center">
@@ -461,7 +461,7 @@ const handleMaintenanceMessageChange = async () => {
               </div>
             </div>
             <div className="flex gap-4 p-10 pt-0">
-              <button type="button" onClick={() => set(false)} className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cancelar</button>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cancelar</button>
               <button type="submit" className="flex-1 py-4 bg-slate-900 text-white text-xs font-black uppercase rounded-2xl shadow-xl tracking-widest hover:bg-black transition-all">Salvar Ajuste</button>
             </div>
           </form>
