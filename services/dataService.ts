@@ -556,8 +556,6 @@ private operationalEventTypes: OperationalEventType[] = [
   }
 ];
 
-private events: EventSchedule[];
-
   constructor() {
     const savedGroups = localStorage.getItem('g_groups_v15');
     const savedRules = localStorage.getItem('g_rules_v15');
@@ -685,6 +683,58 @@ this.analystMappings = savedMappings ? JSON.parse(savedMappings) : [];
   return ctx.groupId || 'G3';
 }
 
+  private mapProfileRoleToUserRole(role: string): UserRole {
+  if (role === 'admin') return UserRole.ADMIN;
+  if (role === 'gestor') return UserRole.MANAGER;
+  return UserRole.ANALYST;
+}
+
+private mapUserProfileToUser(profile: any): User {
+  return {
+    id: profile.user_id || profile.id,
+    fullName: profile.full_name || profile.name || profile.email,
+    normalizedLogin: profile.normalized_login || profile.name || profile.email,
+    firstNameLogin: profile.normalized_login || profile.name || profile.email,
+    email: profile.email || '',
+    role: this.mapProfileRoleToUserRole(String(profile.role || '')),
+    groupId: profile.group_id || 'G3',
+    managerId: profile.analyst_profile_id || undefined,
+    analystProfileId: profile.analyst_profile_id || undefined,
+    passwordHash: '',
+    active: profile.active !== false,
+    isGlobalAdmin: profile.is_global_admin === true,
+    createdAt: profile.created_at || new Date().toISOString(),
+    updatedAt: profile.updated_at || new Date().toISOString(),
+  } as User;
+}
+
+private async syncUsersFromProfiles() {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*');
+
+  if (error) {
+    console.error('Erro ao sincronizar user_profiles:', error);
+    return;
+  }
+
+  const profileUsers = (data || []).map(profile =>
+    this.mapUserProfileToUser(profile)
+  );
+
+  const map = new Map<string, User>();
+
+  this.users.forEach(user => {
+    if (user?.id) map.set(String(user.id), user);
+  });
+
+  profileUsers.forEach(user => {
+    if (user?.id) map.set(String(user.id), user);
+  });
+
+  this.users = Array.from(map.values());
+}
+
   public async initializeFromCloud() {
   try {
     const groupId = this.getActiveGroupId();
@@ -794,7 +844,10 @@ payload.scoreAdjustments = Array.isArray(payload.scoreAdjustments)
     this.groupRules = payload.groupRules ?? this.groupRules;
     this.cities = payload.cities ?? this.cities;
     this.users = payload.users ?? this.users;
-    this.ensureFixedAdmin();
+
+await this.syncUsersFromProfiles();
+
+this.ensureFixedAdmin();
     this.technicians = payload.technicians ?? this.technicians;
     this.trainingClasses = payload.trainingClasses ?? this.trainingClasses;
     this.schedules = payload.schedules ?? this.schedules;
