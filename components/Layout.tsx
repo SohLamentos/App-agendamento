@@ -124,19 +124,19 @@ const formatHeaderTicketTime = (value?: string) => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="p-8 border-b border-white/5 flex flex-col items-center">
+    <div className="flex h-dvh bg-slate-100 overflow-hidden">
+  <aside className="hidden md:flex w-56 xl:w-60 bg-slate-900 text-white flex-col shrink-0">
+        <div className="px-5 py-4 border-b border-white/5 flex flex-col items-center shrink-0">
           <LogoDynamic groupId={user.groupId} />
           <h1 className="text-[10px] font-black tracking-tight text-white/40 mt-2 uppercase text-center">ETN {user.groupId} - Treinamento CLARO</h1>
         </div>
 
-        <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
           {tabs.filter(t => t.roles.includes(user.role)).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+              className={`w-full flex items-center px-3 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider ${
                 activeTab === tab.id 
                   ? 'bg-claro-red text-white shadow-[0_10px_20px_rgba(155,0,0,0.3)]' 
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
@@ -153,7 +153,7 @@ const formatHeaderTicketTime = (value?: string) => {
             <div className="pt-4">
               <button 
                 onClick={() => setReportsExpanded(!reportsExpanded)}
-                className={`w-full flex items-center justify-between px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider ${
                   activeTab.startsWith('reports-') ? 'text-white' : 'text-slate-500 hover:text-white'
                 }`}
               >
@@ -189,7 +189,7 @@ const formatHeaderTicketTime = (value?: string) => {
   <div className="pt-4 border-t border-white/10 mt-4 space-y-1.5">
     <button
       onClick={() => setActiveTab('bases-integration')}
-      className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+      className={`w-full flex items-center px-3 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider ${
         activeTab === 'bases-integration'
           ? 'bg-claro-red text-white shadow-lg'
           : 'text-red-300 hover:bg-claro-red/10 hover:text-white'
@@ -201,7 +201,7 @@ const formatHeaderTicketTime = (value?: string) => {
 
     <button
   onClick={() => setActiveTab('agenda-settings')}
-  className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+  className={`w-full flex items-center px-3 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider ${
     activeTab === 'agenda-settings'
       ? 'bg-purple-600 text-white shadow-lg'
       : 'text-purple-300 hover:bg-purple-500/10 hover:text-white'
@@ -213,7 +213,7 @@ const formatHeaderTicketTime = (value?: string) => {
 
     <button
   onClick={() => setActiveTab('base-collective-schedule')}
-  className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+  className={`w-full flex items-center px-3 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider ${
     activeTab === 'base-collective-schedule'
       ? 'bg-blue-600 text-white shadow-lg'
       : 'text-blue-300 hover:bg-blue-500/10 hover:text-white'
@@ -226,7 +226,7 @@ const formatHeaderTicketTime = (value?: string) => {
     {user.role === ROLE_ADMIN && (
       <button
         onClick={() => setActiveTab('admin')}
-        className={`w-full flex items-center px-4 py-3.5 text-xs font-black rounded-xl transition-all uppercase tracking-wider ${
+        className={`w-full flex items-center px-3 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider ${
           activeTab === 'admin'
             ? 'bg-emerald-600 text-white shadow-lg'
             : 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
@@ -239,7 +239,7 @@ const formatHeaderTicketTime = (value?: string) => {
   </div>
 )}
 </nav>
-        <div className="p-6 border-t border-white/5 bg-black/20">
+        <div className="p-4 border-t border-white/5 bg-black/20 shrink-0">
           <div className="space-y-4">
             <div>
               <label className="text-[8px] font-black text-slate-500 uppercase block mb-1.5 tracking-widest">Identidade Ativa</label>
@@ -275,7 +275,7 @@ const formatHeaderTicketTime = (value?: string) => {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 xl:px-8 shrink-0 gap-4">
   <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
   {activeTab === 'admin'
   ? 'Painel de Controle Nacional'
@@ -290,7 +290,7 @@ const formatHeaderTicketTime = (value?: string) => {
 
   <div className="flex items-center space-x-6">
     <div
-  className={`hidden xl:flex items-start gap-3 border rounded-2xl px-4 py-3 max-w-[520px] transition-all duration-500 ${
+  className={`hidden xl:flex items-start gap-2 border rounded-xl px-3 py-2 max-w-[460px] transition-all duration-500 ${
     highlightUpdates
       ? 'bg-emerald-50 border-emerald-300 shadow-[0_0_0_4px_rgba(16,185,129,0.10)] scale-[1.02]'
       : 'bg-slate-50 border-slate-200'
@@ -354,9 +354,9 @@ const formatHeaderTicketTime = (value?: string) => {
     </button>
   </div>
 </header>
-        <div className="flex-1 overflow-hidden px-8 pt-4 pb-6 bg-slate-50">
-          <div className="max-w-[1600px] mx-auto">{children}</div>
-        </div>
+        <div className="flex-1 min-h-0 overflow-auto px-3 md:px-5 xl:px-6 py-3 bg-slate-50">
+  <div className="w-full max-w-[1600px] mx-auto min-h-full">{children}</div>
+</div>
       </main>
     </div>
   );
