@@ -741,15 +741,21 @@ private async syncUsersFromProfiles() {
 const cloudState = await loadAppState(groupId);
 
     if (!cloudState?.data) {
-      console.warn('Supabase novo/limpo: nenhum app_state encontrado. App será iniciado com estado local/default.');
+  console.warn('Supabase novo/limpo: nenhum app_state encontrado. App será iniciado com estado local/default.');
 
-      this.cloudUpdatedAt = null;
-      this.cloudLoaded = true;
+  await this.syncUsersFromProfiles();
 
-      window.dispatchEvent(new Event('data-updated'));
+  this.ensureFixedAdmin();
 
-      return true;
-    }
+  localStorage.setItem('g_users_v15', JSON.stringify(this.users));
+
+  this.cloudUpdatedAt = null;
+  this.cloudLoaded = true;
+
+  window.dispatchEvent(new Event('data-updated'));
+
+  return true;
+}
 
     this.cloudUpdatedAt = cloudState.updated_at || null;
     this.cloudLoaded = true;
