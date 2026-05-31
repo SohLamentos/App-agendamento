@@ -1636,7 +1636,7 @@ setHoverTooltip(null);
 return (
 
 
-    <div className="flex flex-col gap-1 flex-1 min-h-0 relative -mt-10 overflow-hidden">
+    <div className="flex flex-col gap-2 flex-1 min-h-0 relative overflow-hidden">
        {toast && (
         <div className={`fixed top-10 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-right-10 duration-300 ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
           {toast.message}
@@ -1644,7 +1644,7 @@ return (
       )}
 
       
- <div className="flex flex-col md:flex-row justify-between items-center bg-white px-2 py-1 rounded-[12px] border border-slate-200 shadow-sm gap-1">
+ <div className="flex flex-col md:flex-row justify-between items-center bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm gap-2 shrink-0">
   <div className="flex items-center space-x-4">
     <div className="flex bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
       <button onClick={() => navigateWeek(-1)} className="p-2 hover:bg-slate-200 border-r border-slate-100">
@@ -1686,7 +1686,7 @@ return (
 </div>
 </div>
 
-<div className="bg-white border-2 rounded-[40px] shadow-sm overflow-x-hidden overflow-y-hidden flex-none relative no-scrollbar transition-colors border-slate-200">    
+<div className="bg-white border rounded-2xl shadow-sm overflow-auto flex-1 min-h-0 relative transition-colors border-slate-200">    
   
   
   {movementMode && (
