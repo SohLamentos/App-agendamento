@@ -173,6 +173,21 @@ export default function BaseCollectiveSchedule({
     persist(next);
   }
 
+  function deleteDate(ruleId: string, dateId: string) {
+  if (!window.confirm('Deseja excluir esta data fixa?')) return;
+
+  const next = rules.map((rule) => {
+    if (rule.id !== ruleId) return rule;
+
+    return {
+      ...rule,
+      dates: rule.dates.filter((date) => date.id !== dateId),
+    };
+  });
+
+  persist(next);
+}
+
   function updateDateCapacity(ruleId: string, dateId: string, capacity: number) {
     const next = rules.map((rule) => {
       if (rule.id !== ruleId) return rule;
@@ -395,10 +410,11 @@ export default function BaseCollectiveSchedule({
                 <table className="w-full text-sm border rounded-lg overflow-hidden">
                   <thead className="bg-slate-100 text-slate-600">
                     <tr>
-                      <th className="text-left px-3 py-2">Data</th>
-                      <th className="text-center px-3 py-2">Capacidade</th>
-                      <th className="text-center px-3 py-2">Status</th>
-                    </tr>
+  <th className="text-left px-3 py-2">Data</th>
+  <th className="text-center px-3 py-2">Capacidade</th>
+  <th className="text-center px-3 py-2">Status</th>
+  <th className="text-center px-3 py-2">Ações</th>
+</tr>
                   </thead>
 
                   <tbody>
@@ -436,6 +452,15 @@ export default function BaseCollectiveSchedule({
                             {date.active ? 'Ativa' : 'Inativa'}
                           </button>
                         </td>
+                        <td className="px-3 py-2 text-center">
+  <button
+    onClick={() => deleteDate(rule.id, date.id)}
+    className="px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-black"
+    title="Excluir data fixa"
+  >
+    🗑
+  </button>
+</td>
                       </tr>
                     ))}
                   </tbody>
