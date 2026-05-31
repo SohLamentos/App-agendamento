@@ -15,11 +15,29 @@ const AdminManagement: React.FC = () => {
   const [scoreAdjustments, setScoreAdjustments] = useState<VirtualScoreAdjustment[]>(dataService.getScoreAdjustments());
   const [unconfigured, setUnconfigured] = useState(dataService.getUnconfiguredCities());
   
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>(() => {
+  const user = authService.getCurrentUser();
+  return user?.isGlobalAdmin === true ? 'ALL' : user?.groupId || 'G3';
+});
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [systemConfig, setSystemConfig] = useState<SystemConfig | null>(null);
 const [savingMaintenance, setSavingMaintenance] = useState(false);
+
+  const currentUser = authService.getCurrentUser();
+
+const isGlobalAdmin =
+  currentUser?.role === UserRole.ADMIN && currentUser?.isGlobalAdmin === true;
+
+const isManager =
+  currentUser?.role === UserRole.MANAGER;
+
+const currentUserGroupId =
+  currentUser?.groupId || 'G3';
+
+const visibleGroups = isGlobalAdmin
+  ? groups
+  : groups.filter(g => g.id === currentUserGroupId);
   
   // States para novos cadastros
   const [formGroup, setFormGroup] = useState({ id: '', name: '' });
@@ -189,12 +207,15 @@ const handleMaintenanceMessageChange = async () => {
             value={selectedGroupFilter}
             onChange={(e) => setSelectedGroupFilter(e.target.value)}
           >
-            <option value="ALL">TODOS OS GRUPOS</option>
-            {groups.map(g => (
-              <option key={g.id} value={g.id}>
-                {g.id} - {g.name}
-              </option>
-            ))}
+            {isGlobalAdmin && (
+  <option value="ALL">TODOS OS GRUPOS</option>
+)}
+
+{visibleGroups.map(g => (
+  <option key={g.id} value={g.id}>
+    {g.id} - {g.name}
+  </option>
+))}
           </select>
         </div>
 
