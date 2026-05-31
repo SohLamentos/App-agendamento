@@ -112,6 +112,28 @@ const visibleGroups = isGlobalAdmin
     });
   };
 
+  const handleUpdateGroupName = (groupId: string, currentName: string) => {
+  const nextName = window.prompt('Digite o novo nome do grupo:', currentName);
+
+  if (nextName === null) return;
+
+  const cleanName = nextName.trim();
+
+  if (!cleanName) {
+    alert('O nome do grupo não pode ficar vazio.');
+    return;
+  }
+
+  try {
+    dataService.updateGroupName(groupId, cleanName);
+    refreshData();
+    alert('Nome do grupo atualizado.');
+  } catch (error) {
+    console.error('Erro ao atualizar grupo:', error);
+    alert('Erro ao atualizar nome do grupo.');
+  }
+};
+
   const handleToggleMaintenance = async () => {
   if (!systemConfig) return;
 
@@ -234,6 +256,55 @@ const handleMaintenanceMessageChange = async () => {
           </button>
         )}
       </div>
+
+      {activeTab === 'groups' && (
+  <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
+    <table className="w-full text-left text-xs uppercase">
+      <thead className="bg-slate-50 font-black text-slate-400 border-b">
+        <tr>
+          <th className="px-8 py-5">ID</th>
+          <th className="px-8 py-5">Nome do Grupo</th>
+          <th className="px-8 py-5">Status</th>
+          <th className="px-8 py-5 text-right">Ações</th>
+        </tr>
+      </thead>
+
+      <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
+        {visibleGroups.map(group => (
+          <tr key={group.id} className={!group.active ? 'opacity-50' : ''}>
+            <td className="px-8 py-5 font-black text-claro-red">
+              {group.id}
+            </td>
+
+            <td className="px-8 py-5">
+              {group.name}
+            </td>
+
+            <td className="px-8 py-5">
+              <span className={`px-3 py-1 rounded-full text-[9px] font-black ${
+                group.active
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-slate-100 text-slate-500'
+              }`}>
+                {group.active ? 'ATIVO' : 'INATIVO'}
+              </span>
+            </td>
+
+            <td className="px-8 py-5 text-right">
+              <button
+                type="button"
+                onClick={() => handleUpdateGroupName(group.id, group.name)}
+                className="text-[9px] font-black text-slate-400 hover:text-emerald-600 tracking-widest uppercase"
+              >
+                Editar Nome
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
 
             {activeTab === 'maintenance' && (
         <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
