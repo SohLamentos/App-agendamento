@@ -124,9 +124,9 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
 };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+    <div className="space-y-3 animate-in fade-in duration-500">
+  <div className="bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
           <div>
             <h3 className="text-base font-black text-slate-900 uppercase tracking-wider">
               Monitoramento de Capacidade {user.groupId}
@@ -154,11 +154,11 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {analystDemandData.map((data) => (
             <div
               key={data.id}
-              className="border-2 border-slate-50 rounded-[32px] p-6 bg-slate-50/30 hover:bg-white hover:border-slate-100 hover:shadow-xl transition-all group relative overflow-hidden"
+              className="border border-slate-200 rounded-2xl px-4 py-3 bg-slate-50/30 hover:bg-white hover:shadow-md transition-all group relative overflow-hidden"
             >
               {data.penalty > 0 && (
                 <div className="absolute top-0 right-0 bg-claro-red text-white text-[8px] font-black px-4 py-1.5 rounded-bl-2xl shadow-lg">
@@ -193,7 +193,7 @@ const ScoreBoard: React.FC<Props> = ({ user }) => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="text-center">
                   <p className="text-[8px] text-slate-400 font-black uppercase">Território</p>
                   <p className="text-sm font-black text-slate-700">{data.metrics.cityCount}</p>
