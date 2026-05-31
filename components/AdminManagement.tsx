@@ -729,26 +729,30 @@ const handleMaintenanceMessageChange = async () => {
       <table className="w-full text-left text-xs uppercase">
         <thead className="bg-slate-50 font-black text-slate-400 border-b">
           <tr>
-            <th className="px-8 py-5">
-              Login / Nome
-            </th>
+  <th className="px-8 py-5">
+    Login / Nome
+  </th>
 
-            <th className="px-8 py-5">
-              Perfil
-            </th>
+  <th className="px-8 py-5">
+    Perfil
+  </th>
 
-            <th className="px-8 py-5">
-              Grupo
-            </th>
+  <th className="px-8 py-5">
+    Grupo
+  </th>
 
-            <th className="px-8 py-5">
-              Status
-            </th>
+  <th className="px-8 py-5">
+    Gestor
+  </th>
 
-            <th className="px-8 py-5 text-right">
-              Ações
-            </th>
-          </tr>
+  <th className="px-8 py-5">
+    Status
+  </th>
+
+  <th className="px-8 py-5 text-right">
+    Ações
+  </th>
+</tr>
         </thead>
 
         <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
@@ -788,11 +792,28 @@ const handleMaintenanceMessageChange = async () => {
               </td>
 
               <td className="px-8 py-5 font-black text-claro-red">
-                {u.groupId}
-              </td>
+  {u.groupId}
+</td>
 
-              <td className="px-8 py-5">
-                <div
+<td className="px-8 py-5">
+  {(() => {
+    const gestor = users.find(
+      x =>
+        x.role === UserRole.MANAGER &&
+        x.groupId === u.groupId
+    );
+
+    return (
+      <span className="text-[10px] font-black text-slate-700">
+        {gestor?.normalizedLogin || gestor?.fullName || '-'}
+      </span>
+    );
+  })()}
+</td>
+
+<td className="px-8 py-5">
+  <div
+    
                   className={`flex items-center gap-1.5 ${
                     u.active
                       ? 'text-emerald-600'
