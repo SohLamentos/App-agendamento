@@ -9,7 +9,7 @@ interface ReportFiltersProps {
 
 const ReportFilters: React.FC<ReportFiltersProps> = ({ filters, setFilters, partners }) => {
   return (
-    <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end mb-8 animate-in slide-in-from-top-4 duration-500">
+    <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap gap-3 items-end mb-3 animate-in slide-in-from-top-4 duration-500">
       <div className="flex flex-col gap-1.5">
         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Data Inicial</label>
         <input 
