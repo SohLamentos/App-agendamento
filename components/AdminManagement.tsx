@@ -288,8 +288,8 @@ const handleMaintenanceMessageChange = async () => {
 };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex gap-4 border-b border-slate-200 pb-4 overflow-x-auto no-scrollbar">
+    <div className="space-y-3 animate-in fade-in duration-500">
+      <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         {[
           { id: 'groups', label: 'Grupos', icon: '🏢' },
           { id: 'users', label: 'Usuários', icon: '👤' },
@@ -302,14 +302,14 @@ const handleMaintenanceMessageChange = async () => {
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id as any)} 
-            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === tab.id ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-400 hover:text-slate-600'}`}
+            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shrink-0 ${activeTab === tab.id ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-400 hover:text-slate-600'}`}
           >
             <span>{tab.icon}</span> {tab.label}
           </button>
         ))}
       </div>
 
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-[32px] border border-slate-200">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-200">
         <div className="flex items-center gap-4">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             Filtro Grupo:
