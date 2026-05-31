@@ -25,14 +25,18 @@ type FixedBaseRule = {
 type Props = {
   bases?: any[];
   analysts?: any[];
+  groupId?: string;
 };
 
-const STORAGE_KEY = 'certitech_base_fixed_dates_v1';
 
 export default function BaseCollectiveSchedule({
   bases = [],
   analysts = [],
+  groupId = 'G3',
 }: Props) {
+
+  const STORAGE_KEY = `certitech_base_fixed_dates_v1_${groupId}`;
+  
   const [rules, setRules] = useState<FixedBaseRule[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
