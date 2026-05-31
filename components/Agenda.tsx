@@ -1686,7 +1686,7 @@ return (
 </div>
 </div>
 
-<div className="bg-white border rounded-2xl shadow-sm overflow-auto flex-1 min-h-0 relative transition-colors border-slate-200">    
+<div className="bg-white border rounded-2xl shadow-sm overflow-auto flex-1 min-h-0 relative transition-colors border-slate-200">   
   
   
   {movementMode && (
@@ -1721,7 +1721,7 @@ return (
 )}
   
 <table className="w-full border-collapse table-fixed">
-          <thead>
+          <thead className="sticky top-0 z-40">
   <tr className="bg-slate-900 text-white shadow-xl">
     <th className="w-72 p-4 text-left font-black text-[11px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
       Equipe Analistas
