@@ -2,10 +2,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { dataService } from '../services/dataService';
 import { auditService } from '../services/auditService';
-import { User, UserRole, Group, GroupRule, CityGroup, ExpertiseType, VirtualScoreAdjustment } from '../types';
+import { User, UserRole, Group, GroupRule, CityGroup, ExpertiseType, VirtualScoreAdjustment, SystemConfig } from '../types';
+import { loadSystemConfig, saveSystemConfig } from '../services/appStateService';
+import { authService } from '../services/authService';
 
 const AdminManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'groups' | 'users' | 'rules' | 'cities' | 'balancing' | 'audit'>('groups');
+  const [activeTab, setActiveTab] = useState<'groups' | 'users' | 'rules' | 'cities' | 'balancing' | 'audit' | 'maintenance'>('groups');
   const [groups, setGroups] = useState<Group[]>(dataService.getGroups());
   const [users, setUsers] = useState<User[]>(dataService.getUsers());
   const [rules, setRules] = useState<GroupRule[]>(dataService.getGroupRules());
@@ -15,6 +17,9 @@ const AdminManagement: React.FC = () => {
   
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [systemConfig, setSystemConfig] = useState<SystemConfig | null>(null);
+const [savingMaintenance, setSavingMaintenance] = useState(false);
   
   // States para novos cadastros
   const [formGroup, setFormGroup] = useState({ id: '', name: '' });
@@ -42,6 +47,19 @@ const AdminManagement: React.FC = () => {
     return () => window.removeEventListener('data-updated', refreshData);
   }, []);
 
+  useEffect(() => {
+  const loadMaintenance = async () => {
+    try {
+      const config = await loadSystemConfig();
+      setSystemConfig(config);
+    } catch (error) {
+      console.error('Erro ao carregar modo manutenção:', error);
+    }
+  };
+
+  loadMaintenance();
+}, []);
+
   const analysts = useMemo(() => users.filter(u => u.role === UserRole.ANALYST && (selectedGroupFilter === 'ALL' || u.groupId === selectedGroupFilter)), [users, selectedGroupFilter]);
   const filteredUsers = useMemo(() => users.filter(u => selectedGroupFilter === 'ALL' || u.groupId === selectedGroupFilter), [users, selectedGroupFilter]);
 
@@ -59,7 +77,7 @@ const AdminManagement: React.FC = () => {
       ...formAdjustment,
       groupId: currentGroup
     });
-    setIsModalOpen(false);
+    set(false);
     setFormAdjustment({
       analystId: '',
       penalty: 50,
@@ -70,6 +88,74 @@ const AdminManagement: React.FC = () => {
     });
   };
 
+  const handleToggleMaintenance = async () => {
+  if (!systemConfig) return;
+
+  const nextMaintenanceMode = !systemConfig.maintenanceMode;
+
+  const confirmMessage = nextMaintenanceMode
+    ? 'Deseja ATIVAR o modo manutenção? Apenas e-mails liberados conseguirão acessar.'
+    : 'Deseja DESATIVAR o modo manutenção e liberar o sistema para todos?';
+
+  if (!window.confirm(confirmMessage)) return;
+
+  try {
+    setSavingMaintenance(true);
+
+    const currentUser = authService.getCurrentUser();
+
+    const nextConfig: SystemConfig = {
+      ...systemConfig,
+      maintenanceMode: nextMaintenanceMode,
+      maintenanceMessage:
+        systemConfig.maintenanceMessage ||
+        'Sistema em manutenção para atualização. Tente novamente mais tarde.',
+      maintenanceAllowedEmails:
+        systemConfig.maintenanceAllowedEmails?.length > 0
+          ? systemConfig.maintenanceAllowedEmails
+          : ['thiago.andersonsilva@claro.com.br'],
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser?.email || currentUser?.fullName || 'ADMIN',
+    };
+
+    await saveSystemConfig(nextConfig);
+    setSystemConfig(nextConfig);
+
+    alert(nextMaintenanceMode ? 'Modo manutenção ativado.' : 'Sistema liberado.');
+  } catch (error) {
+    console.error('Erro ao alterar modo manutenção:', error);
+    alert('Erro ao alterar modo manutenção.');
+  } finally {
+    setSavingMaintenance(false);
+  }
+};
+
+const handleMaintenanceMessageChange = async () => {
+  if (!systemConfig) return;
+
+  try {
+    setSavingMaintenance(true);
+
+    const currentUser = authService.getCurrentUser();
+
+    const nextConfig: SystemConfig = {
+      ...systemConfig,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser?.email || currentUser?.fullName || 'ADMIN',
+    };
+
+    await saveSystemConfig(nextConfig);
+    setSystemConfig(nextConfig);
+
+    alert('Mensagem de manutenção salva.');
+  } catch (error) {
+    console.error('Erro ao salvar mensagem de manutenção:', error);
+    alert('Erro ao salvar mensagem.');
+  } finally {
+    setSavingMaintenance(false);
+  }
+};
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex gap-4 border-b border-slate-200 pb-4 overflow-x-auto no-scrollbar">
@@ -79,7 +165,8 @@ const AdminManagement: React.FC = () => {
           { id: 'rules', label: 'Regras', icon: '📏' },
           { id: 'cities', label: 'Cidades/UF', icon: '📍' },
           { id: 'balancing', label: 'Balanceamento', icon: '⚖️' },
-          { id: 'audit', label: 'Auditoria', icon: '📋' }
+          { id: 'audit', label: 'Auditoria', icon: '📋' },
+{ id: 'maintenance', label: 'Manutenção', icon: '🔧' }
         ].map((tab) => (
           <button 
             key={tab.id} 
@@ -91,27 +178,147 @@ const AdminManagement: React.FC = () => {
         ))}
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-[32px] border border-slate-200">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-[32px] border border-slate-200">
         <div className="flex items-center gap-4">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filtro Grupo:</label>
-          <select 
-            className="bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2 text-xs font-black outline-none" 
-            value={selectedGroupFilter} 
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Filtro Grupo:
+          </label>
+
+          <select
+            className="bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2 text-xs font-black outline-none"
+            value={selectedGroupFilter}
             onChange={(e) => setSelectedGroupFilter(e.target.value)}
           >
             <option value="ALL">TODOS OS GRUPOS</option>
-            {groups.map(g => <option key={g.id} value={g.id}>{g.id} - {g.name}</option>)}
+            {groups.map(g => (
+              <option key={g.id} value={g.id}>
+                {g.id} - {g.name}
+              </option>
+            ))}
           </select>
         </div>
+
         {activeTab === 'balancing' && (
-          <button 
-            onClick={() => setIsModalOpen(true)}
+          <button
+            onClick={() => set(true)}
             className="bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg"
           >
             Novo Ajuste de Score
           </button>
         )}
       </div>
+
+            {activeTab === 'maintenance' && (
+        <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
+
+          <div className={`p-8 border-b ${
+            systemConfig?.maintenanceMode
+              ? 'bg-red-50 border-red-100'
+              : 'bg-emerald-50 border-emerald-100'
+          }`}>
+            <div className="flex items-center justify-between gap-6">
+
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  Controle de disponibilidade do sistema
+                </p>
+
+                <h3
+                  className={`text-2xl font-black uppercase ${
+                    systemConfig?.maintenanceMode
+                      ? 'text-red-700'
+                      : 'text-emerald-700'
+                  }`}
+                >
+                  {systemConfig?.maintenanceMode
+                    ? 'Sistema em manutenção'
+                    : 'Sistema liberado'}
+                </h3>
+
+                <p className="text-xs font-bold text-slate-500 mt-2">
+                  Quando ativo, somente os e-mails autorizados conseguem acessar o app.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={!systemConfig || savingMaintenance}
+                onClick={handleToggleMaintenance}
+                className={`px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg transition-all disabled:opacity-50 ${
+                  systemConfig?.maintenanceMode
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    : 'bg-red-700 text-white hover:bg-red-800'
+                }`}
+              >
+                {savingMaintenance
+                  ? 'Salvando...'
+                  : systemConfig?.maintenanceMode
+                    ? 'Liberar Sistema'
+                    : 'Ativar Manutenção'}
+              </button>
+
+            </div>
+          </div>
+
+          <div className="p-8 space-y-6">
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                Mensagem exibida no login
+              </label>
+
+              <textarea
+                value={systemConfig?.maintenanceMessage || ''}
+                onChange={(e) =>
+                  setSystemConfig(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          maintenanceMessage: e.target.value
+                        }
+                      : prev
+                  )
+                }
+                className="w-full min-h-[110px] bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-xs font-bold outline-none resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                E-mails liberados
+              </label>
+
+              <div className="bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-xs font-black text-slate-700">
+                {(systemConfig?.maintenanceAllowedEmails || [
+                  'thiago.andersonsilva@claro.com.br'
+                ]).join(', ')}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+
+              <div className="text-[10px] font-bold text-slate-400 uppercase">
+                Última alteração:{' '}
+                <span className="text-slate-700">
+                  {systemConfig?.updatedBy || 'N/A'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                disabled={!systemConfig || savingMaintenance}
+                onClick={handleMaintenanceMessageChange}
+                className="bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+              >
+                Salvar Mensagem
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
       {activeTab === 'balancing' && (
         <div className="space-y-6">
@@ -188,7 +395,7 @@ const AdminManagement: React.FC = () => {
       )}
 
       {/* Modal para Novo Ajuste de Score */}
-      {isModalOpen && activeTab === 'balancing' && (
+      { && activeTab === 'balancing' && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
           <form onSubmit={handleAddAdjustment} className="bg-white rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden border-t-8 border-slate-900 animate-in zoom-in duration-300">
             <div className="bg-slate-900 p-8 text-white text-center">
@@ -254,7 +461,7 @@ const AdminManagement: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-4 p-10 pt-0">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cancelar</button>
+              <button type="button" onClick={() => set(false)} className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cancelar</button>
               <button type="submit" className="flex-1 py-4 bg-slate-900 text-white text-xs font-black uppercase rounded-2xl shadow-xl tracking-widest hover:bg-black transition-all">Salvar Ajuste</button>
             </div>
           </form>
