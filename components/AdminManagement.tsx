@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createUserProfile } from '../services/userAdminService';
 import { dataService } from '../services/dataService';
 import { auditService } from '../services/auditService';
 import { User, UserRole, Group, GroupRule, CityGroup, ExpertiseType, VirtualScoreAdjustment, SystemConfig } from '../types';
@@ -42,6 +43,8 @@ const visibleGroups = isGlobalAdmin
   // States para novos cadastros
   const [formGroup, setFormGroup] = useState({ id: '', name: '' });
   const [formUser, setFormUser] = useState({ fullName: '', groupId: '', managerId: '', role: UserRole.ANALYST });
+  const [temporaryPassword, setTemporaryPassword] = useState('Claro@123');
+const [creatingUser, setCreatingUser] = useState(false);
   const [formAdjustment, setFormAdjustment] = useState({
     analystId: '',
     penalty: 50,
@@ -158,6 +161,56 @@ const visibleGroups = isGlobalAdmin
   } catch (error) {
     console.error('Erro ao criar grupo:', error);
     alert(error instanceof Error ? error.message : 'Erro ao criar grupo.');
+  }
+};
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const targetGroupId = isManager ? currentUserGroupId : formUser.groupId;
+
+  if (!formUser.fullName.trim() || !targetGroupId || !temporaryPassword.trim()) {
+    alert('Preencha nome, grupo e senha temporária.');
+    return;
+  }
+
+  if (isManager && formUser.role !== UserRole.ANALYST) {
+    alert('Gestor só pode criar analistas.');
+    return;
+  }
+
+  const email = window.prompt('Informe o e-mail corporativo do usuário:');
+
+  if (!email) return;
+
+  try {
+    setCreatingUser(true);
+
+    await createUserProfile({
+      email,
+      fullName: formUser.fullName,
+      role: formUser.role,
+      groupId: targetGroupId,
+      temporaryPassword,
+      managerId: isManager ? currentUser?.id : formUser.managerId || undefined,
+    });
+
+    alert('Usuário criado com sucesso.');
+
+    setFormUser({
+      fullName: '',
+      groupId: isManager ? currentUserGroupId : '',
+      managerId: '',
+      role: UserRole.ANALYST,
+    });
+
+    setTemporaryPassword('Claro@123');
+    refreshData();
+  } catch (error) {
+    console.error('Erro ao criar usuário:', error);
+    alert(error instanceof Error ? error.message : 'Erro ao criar usuário.');
+  } finally {
+    setCreatingUser(false);
   }
 };
 
