@@ -192,7 +192,12 @@ const [creatingUser, setCreatingUser] = useState(false);
       role: formUser.role,
       groupId: targetGroupId,
       temporaryPassword,
-      managerId: isManager ? currentUser?.id : formUser.managerId || undefined,
+      managerId:
+  isManager
+    ? currentUser?.analystProfileId ||
+      currentUser?.id ||
+      undefined
+    : formUser.managerId || undefined,
     });
 
     alert('Usuário criado com sucesso.');
@@ -774,7 +779,11 @@ const handleMaintenanceMessageChange = async () => {
                       : 'bg-slate-100 text-slate-500'
                   }`}
                 >
-                  {u.role}
+                  {u.role === UserRole.ADMIN
+  ? 'ADMIN'
+  : u.role === UserRole.MANAGER
+  ? 'GESTOR'
+  : 'ANALISTA'}
                 </span>
               </td>
 
