@@ -134,6 +134,33 @@ const visibleGroups = isGlobalAdmin
   }
 };
 
+  const handleAddGroup = (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const groupId = formGroup.id.trim().toUpperCase();
+  const groupName = formGroup.name.trim();
+
+  if (!groupId || !groupName) {
+    alert('Informe o ID e o nome do grupo.');
+    return;
+  }
+
+  try {
+    dataService.addGroup({
+      id: groupId,
+      name: groupName,
+    });
+
+    setFormGroup({ id: '', name: '' });
+    refreshData();
+
+    alert('Grupo criado com sucesso.');
+  } catch (error) {
+    console.error('Erro ao criar grupo:', error);
+    alert(error instanceof Error ? error.message : 'Erro ao criar grupo.');
+  }
+};
+
   const handleToggleMaintenance = async () => {
   if (!systemConfig) return;
 
@@ -258,7 +285,57 @@ const handleMaintenanceMessageChange = async () => {
       </div>
 
       {activeTab === 'groups' && (
-  <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
+  <div className="space-y-6">
+
+    <form
+      onSubmit={handleAddGroup}
+      className="bg-white border border-slate-200 rounded-[32px] p-6 flex flex-col md:flex-row gap-4 items-end"
+    >
+      <div className="flex-1">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+          ID do Grupo
+        </label>
+
+        <input
+          value={formGroup.id}
+          onChange={(e) =>
+            setFormGroup({
+              ...formGroup,
+              id: e.target.value.toUpperCase()
+            })
+          }
+          placeholder="Ex: G4"
+          className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-black uppercase outline-none"
+        />
+      </div>
+
+      <div className="flex-[2]">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+          Nome do Grupo
+        </label>
+
+        <input
+          value={formGroup.name}
+          onChange={(e) =>
+            setFormGroup({
+              ...formGroup,
+              name: e.target.value
+            })
+          }
+          placeholder="Ex: G4 - Treinamento"
+          className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-black outline-none"
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
+      >
+        Criar Grupo
+      </button>
+    </form>
+
+    <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
     <table className="w-full text-left text-xs uppercase">
       <thead className="bg-slate-50 font-black text-slate-400 border-b">
         <tr>
@@ -303,6 +380,8 @@ const handleMaintenanceMessageChange = async () => {
         ))}
       </tbody>
     </table>
+      </div>
+
   </div>
 )}
 
