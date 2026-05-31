@@ -124,7 +124,7 @@ const AuditTickets: React.FC<{ user: User }> = ({ user }) => {
           <label className="text-[9px] font-black text-slate-400 uppercase mb-1">Ação</label>
           <input 
             type="text" 
-            className="text-xs border rounded-lg p-2 font-bold uppercase" 
+            className="text-xs border border-slate-200 rounded-lg px-3 py-2 font-bold uppercase bg-slate-50 outline-none focus:ring-2 focus:ring-claro-red/20" 
             placeholder="Filtrar Ação..." 
             value={filterAction} 
             onChange={e => setFilterAction(e.target.value)} 
@@ -172,22 +172,22 @@ const AuditTickets: React.FC<{ user: User }> = ({ user }) => {
       </div>
 
       {/* Tabela de Tickets */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-auto">
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 border-b border-slate-200 font-black text-slate-400 uppercase">
             <tr>
-              <th className="px-6 py-4">Data/Hora</th>
-              <th className="px-6 py-4">Responsável</th>
-              <th className="px-6 py-4">Ação</th>
-              <th className="px-6 py-4">Alvo</th>
-              <th className="px-6 py-4">Motivo</th>
+              <th className="px-4 py-3">Data/Hora</th>
+              <th className="px-4 py-3">Responsável</th>
+              <th className="px-4 py-3">Ação</th>
+              <th className="px-4 py-3">Alvo</th>
+              <th className="px-4 py-3">Motivo</th>
               <th className="px-6 py-4 text-center">Ticket ID</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 uppercase">
             {paginatedTickets.map(t => (
               <tr key={t.ticketId} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4">
+                <td className="px-4 py-3">
                   <p className="font-bold text-slate-900">
                     {new Date(t.timestamp).toLocaleString('pt-BR', {
   timeZone: 'America/Sao_Paulo',
@@ -201,20 +201,20 @@ const AuditTickets: React.FC<{ user: User }> = ({ user }) => {
                   </p>
                   <p className="text-[9px] text-slate-400 font-black uppercase">{t.screen}</p>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-3">
                   <p className="font-black text-slate-800">{t.userName}</p>
                   <p className="text-[9px] text-blue-600 font-black">{t.userRole}</p>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-3">
   <span className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${getActionBadgeClass(t.action)}`}>
     {t.action}
   </span>
 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-3">
                   <p className="font-black text-slate-400 text-[9px]">{t.targetType}</p>
                   <p className="font-bold text-slate-600">{t.targetValue}</p>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-3">
   <div className="max-w-[320px]" title={t.reason}>
     <p className="italic text-slate-500 font-medium leading-tight line-clamp-3">
       {t.reason}
