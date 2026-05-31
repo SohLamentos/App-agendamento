@@ -4934,6 +4934,17 @@ public getUnconfiguredCities() {
     if (this.groups.find(g => g.id === group.id)) throw new Error("Grupo já existe.");
     this.groups.push({ ...group, active: true }); this.persist(); window.dispatchEvent(new Event('data-updated'));
   }
+  public updateGroupName(groupId: string, name: string) {
+  const group = this.groups.find(g => g.id === groupId);
+
+  if (!group) {
+    throw new Error('Grupo não encontrado.');
+  }
+
+  group.name = name.trim();
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+}
 
   public addUser(user: any) {
     const newUser: User = { id: `u-${Date.now()}`, fullName: user.fullName, normalizedLogin: user.fullName.toUpperCase(), firstNameLogin: user.fullName.split(' ')[0].toUpperCase(), email: '', role: user.role, groupId: user.groupId, managerId: user.managerId, passwordHash: btoa('salt_Claro@123_G3'), active: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
