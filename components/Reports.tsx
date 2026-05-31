@@ -364,30 +364,30 @@ const Reports: React.FC<ReportsProps> = ({ user, type }) => {
     ];
 
     return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
+      <div className="space-y-3 animate-in fade-in duration-500">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ociosidade Média G3</p>
             <p className="text-2xl font-black text-claro-red mt-1">
               {(reportData.reduce((acc, c) => acc + c.idlePercent, 0) / (reportData.length || 1)).toFixed(1)}%
             </p>
           </div>
-          <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Carga Semanal Base</p>
             <p className="text-2xl font-black text-slate-900 mt-1">30 Horas</p>
           </div>
-          <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tempo Efetivo Certif.</p>
             <p className="text-2xl font-black text-emerald-600 mt-1">{totals.productive.toFixed(1)}h</p>
           </div>
-          <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capacidade Ociosa</p>
             <p className="text-2xl font-black text-amber-500 mt-1">{totals.empty.toFixed(1)}h</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm h-[500px] flex flex-col items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm h-[420px] flex flex-col items-center">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 text-center">Distribuição 30h Semanais (6h/Dia)</h3>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -400,7 +400,7 @@ const Reports: React.FC<ReportsProps> = ({ user, type }) => {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm h-[500px] flex flex-col">
+          <div className="bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm h-[420px] flex flex-col">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6">Eficiência de Ocupação G3</h3>
             <div className="flex-1 space-y-4 overflow-y-auto pr-2">
               {reportData.map(r => (
@@ -418,31 +418,31 @@ const Reports: React.FC<ReportsProps> = ({ user, type }) => {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-auto">
+          <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center gap-3">
              <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Detalhamento Granular (Virtual 1.5h | Presencial 1.0h)</h3>
              <span className="text-[10px] font-black text-slate-400 uppercase">Carga Horária do Analista: 30h</span>
           </div>
           <table className="w-full text-left text-[10px] uppercase">
             <thead className="bg-slate-50 font-black text-slate-400">
               <tr>
-                <th className="px-8 py-4">Analista</th>
-                <th className="px-8 py-4 text-center">Total Período</th>
-                <th className="px-8 py-4 text-center">Produtivas</th>
-                <th className="px-8 py-4 text-center">Bloqueios ADM</th>
-                <th className="px-8 py-4 text-center">Vazias (Ociosas)</th>
-                <th className="px-8 py-4 text-right">Ociosidade %</th>
+                <th className="px-4 py-3">Analista</th>
+                <th className="px-4 py-3 text-center">Total Período</th>
+                <th className="px-4 py-3 text-center">Produtivas</th>
+                <th className="px-4 py-3 text-center">Bloqueios ADM</th>
+                <th className="px-4 py-3 text-center">Vazias (Ociosas)</th>
+                <th className="px-4 py-3 text-right">Ociosidade %</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
               {reportData.map(r => (
                 <tr key={r.id} className="hover:bg-slate-50/50 transition-all">
-                  <td className="px-8 py-4 font-black text-slate-900">{r.name}</td>
-                  <td className="px-8 py-4 text-center font-black">{r.totalHours.toFixed(1)}H</td>
-                  <td className="px-8 py-4 text-center text-emerald-600">{r.productiveHours.toFixed(1)}H</td>
-                  <td className="px-8 py-4 text-center text-indigo-600">{(r.trainingHours + r.internalCertHours + r.offHours).toFixed(1)}H</td>
-                  <td className="px-8 py-4 text-center text-claro-red">{r.emptyHours.toFixed(1)}H</td>
-                  <td className="px-8 py-4 text-right font-black text-slate-900">
+                  <td className="px-4 py-3 font-black text-slate-900">{r.name}</td>
+                  <td className="px-4 py-3 text-center font-black">{r.totalHours.toFixed(1)}H</td>
+                  <td className="px-4 py-3 text-center text-emerald-600">{r.productiveHours.toFixed(1)}H</td>
+                  <td className="px-4 py-3 text-center text-indigo-600">{(r.trainingHours + r.internalCertHours + r.offHours).toFixed(1)}H</td>
+                  <td className="px-4 py-3 text-center text-claro-red">{r.emptyHours.toFixed(1)}H</td>
+                  <td className="px-4 py-3 text-right font-black text-slate-900">
                     <span className={`px-2 py-1 rounded-full ${r.idlePercent > 50 ? 'bg-claro-red/10 text-claro-red' : 'bg-emerald-100 text-emerald-700'}`}>
                       {r.idlePercent.toFixed(1)}%
                     </span>
@@ -461,8 +461,8 @@ const Reports: React.FC<ReportsProps> = ({ user, type }) => {
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm">
+    <div className="space-y-3">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h3 className="text-base font-black text-slate-900 uppercase tracking-widest">
             {type === 'capacity' ? 'Governança de Capacidade (6h/Dia - 30h/Semana)' : 'Performance G3'}
