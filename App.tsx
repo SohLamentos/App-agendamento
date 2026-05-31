@@ -206,11 +206,9 @@ window.dispatchEvent(new Event('data-updated'));
       bases={dataService.getIntegrationBases()}
       analysts={dataService.getUsers().filter((u: any) =>
         u.active === true &&
-        (
-          String(currentUser.role).toUpperCase() === 'ADMIN' ||
-          u.groupId === currentUser.groupId
-        )
+        u.groupId === currentUser.groupId
       )}
+      groupId={currentUser.groupId}
     />
   );
       case 'reports-operational': return <OperationalDashboard />;
