@@ -600,29 +600,251 @@ const handleMaintenanceMessageChange = async () => {
       )}
 
       {/* Restante das abas (groups, users, etc) permanecem as mesmas */}
+
       {activeTab === 'users' && (
-        <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
-          <table className="w-full text-left text-xs uppercase">
-            <thead className="bg-slate-50 font-black text-slate-400 border-b">
-              <tr><th className="px-8 py-5">Login / Nome</th><th className="px-8 py-5">Perfil</th><th className="px-8 py-5">Grupo</th><th className="px-8 py-5">Status</th><th className="px-8 py-5 text-right">Ações</th></tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
-              {filteredUsers.map(u => (
-                <tr key={u.id} className={`hover:bg-slate-50/50 transition-all ${!u.active ? 'opacity-50' : ''}`}>
-                  <td className="px-8 py-5"><p className="font-black text-slate-900">{u.normalizedLogin}</p><p className="text-[9px] text-slate-400">{u.fullName}</p></td>
-                  <td className="px-8 py-5"><span className={`px-2 py-1 rounded-lg text-[8px] font-black ${u.role === UserRole.ADMIN ? 'bg-emerald-100 text-emerald-700' : u.role === UserRole.MANAGER ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{u.role}</span></td>
-                  <td className="px-8 py-5 font-black text-claro-red">{u.groupId}</td>
-                  <td className="px-8 py-5"><div className={`flex items-center gap-1.5 ${u.active ? 'text-emerald-600' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${u.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></div><span className="text-[9px] font-black">{u.active ? 'ATIVO' : 'INATIVO'}</span></div></td>
-                  <td className="px-8 py-5 text-right space-x-4">
-                    <button onClick={() => handleResetPassword(u.id, u.normalizedLogin)} className="text-[9px] font-black text-slate-400 hover:text-emerald-600 tracking-widest">RESET SENHA</button>
-                    <button onClick={() => dataService.updateUserStatus(u.id, !u.active)} className={`text-[9px] font-black tracking-widest ${u.active ? 'text-slate-400 hover:text-claro-red' : 'text-emerald-600'}`}>{u.active ? 'INATIVAR' : 'REATIVAR'}</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+  <div className="space-y-6">
+
+    <form
+      onSubmit={handleCreateUser}
+      className="bg-white border border-slate-200 rounded-[32px] p-6"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+            Nome Completo
+          </label>
+
+          <input
+            required
+            value={formUser.fullName}
+            onChange={(e) =>
+              setFormUser({
+                ...formUser,
+                fullName: e.target.value
+              })
+            }
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+          />
         </div>
-      )}
+
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+            Perfil
+          </label>
+
+          <select
+            value={formUser.role}
+            onChange={(e) =>
+              setFormUser({
+                ...formUser,
+                role: e.target.value as UserRole
+              })
+            }
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+          >
+            {isGlobalAdmin && (
+              <option value={UserRole.MANAGER}>
+                Gestor
+              </option>
+            )}
+
+            <option value={UserRole.ANALYST}>
+              Analista
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+            Grupo
+          </label>
+
+          <select
+            disabled={isManager}
+            value={
+              isManager
+                ? currentUserGroupId
+                : formUser.groupId
+            }
+            onChange={(e) =>
+              !isManager &&
+              setFormUser({
+                ...formUser,
+                groupId: e.target.value
+              })
+            }
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+          >
+            <option value="">Selecione</option>
+
+            {visibleGroups.map(group => (
+              <option
+                key={group.id}
+                value={group.id}
+              >
+                {group.id} - {group.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+            Senha Inicial
+          </label>
+
+          <input
+            value={temporaryPassword}
+            onChange={(e) =>
+              setTemporaryPassword(
+                e.target.value
+              )
+            }
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+          />
+        </div>
+
+      </div>
+
+      <div className="flex justify-end mt-6">
+        <button
+          type="submit"
+          disabled={creatingUser}
+          className="bg-slate-900 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50"
+        >
+          {creatingUser
+            ? 'Criando...'
+            : 'Criar Usuário'}
+        </button>
+      </div>
+    </form>
+
+    <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
+      <table className="w-full text-left text-xs uppercase">
+        <thead className="bg-slate-50 font-black text-slate-400 border-b">
+          <tr>
+            <th className="px-8 py-5">
+              Login / Nome
+            </th>
+
+            <th className="px-8 py-5">
+              Perfil
+            </th>
+
+            <th className="px-8 py-5">
+              Grupo
+            </th>
+
+            <th className="px-8 py-5">
+              Status
+            </th>
+
+            <th className="px-8 py-5 text-right">
+              Ações
+            </th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
+          {filteredUsers.map(u => (
+            <tr
+              key={u.id}
+              className={`hover:bg-slate-50/50 transition-all ${
+                !u.active ? 'opacity-50' : ''
+              }`}
+            >
+              <td className="px-8 py-5">
+                <p className="font-black text-slate-900">
+                  {u.normalizedLogin}
+                </p>
+
+                <p className="text-[9px] text-slate-400">
+                  {u.fullName}
+                </p>
+              </td>
+
+              <td className="px-8 py-5">
+                <span
+                  className={`px-2 py-1 rounded-lg text-[8px] font-black ${
+                    u.role === UserRole.ADMIN
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : u.role === UserRole.MANAGER
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {u.role}
+                </span>
+              </td>
+
+              <td className="px-8 py-5 font-black text-claro-red">
+                {u.groupId}
+              </td>
+
+              <td className="px-8 py-5">
+                <div
+                  className={`flex items-center gap-1.5 ${
+                    u.active
+                      ? 'text-emerald-600'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      u.active
+                        ? 'bg-emerald-500'
+                        : 'bg-slate-300'
+                    }`}
+                  />
+
+                  <span className="text-[9px] font-black">
+                    {u.active
+                      ? 'ATIVO'
+                      : 'INATIVO'}
+                  </span>
+                </div>
+              </td>
+
+              <td className="px-8 py-5 text-right space-x-4">
+                <button
+                  onClick={() =>
+                    handleResetPassword(
+                      u.id,
+                      u.normalizedLogin
+                    )
+                  }
+                  className="text-[9px] font-black text-slate-400 hover:text-emerald-600 tracking-widest"
+                >
+                  RESET SENHA
+                </button>
+
+                <button
+                  onClick={() =>
+                    dataService.updateUserStatus(
+                      u.id,
+                      !u.active
+                    )
+                  }
+                  className={`text-[9px] font-black tracking-widest ${
+                    u.active
+                      ? 'text-slate-400 hover:text-claro-red'
+                      : 'text-emerald-600'
+                  }`}
+                >
+                  {u.active
+                    ? 'INATIVAR'
+                    : 'REATIVAR'}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+)}
 
       {/* Modal para Novo Ajuste de Score */}
       {isModalOpen && activeTab === 'balancing' && (
