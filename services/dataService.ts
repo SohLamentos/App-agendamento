@@ -1315,16 +1315,35 @@ this.analystMappings = [];
   }
 
   getCurrentUser(): User {
+  const rawProfile = localStorage.getItem('etn_user_profile');
+
+  if (rawProfile) {
+    try {
+      const profile = JSON.parse(rawProfile);
+
+      return {
+        id: profile.legacy_user_id || profile.user_id || profile.id || 'current-user',
+        fullName: profile.full_name || profile.name || profile.email || 'USUÁRIO LOGADO',
+        normalizedLogin: profile.normalized_login || profile.name || profile.email || 'USUARIO',
+        firstNameLogin: profile.normalized_login || profile.name || 'USUARIO',
+        email: profile.email || '',
+        role:
+          profile.role === 'admin'
+            ? UserRole.ADMIN
+            : profile.role === 'gestor'
+            ? UserRole.MANAGER
+            : UserRole.ANALYST,
+        groupId: profile.group_id || 'G3',
+        active: profile.active !== false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as User;
+    } catch {
+      localStorage.removeItem('etn_user_profile');
+    }
+  }
+
   const ctx = this.getContext();
-
-  const matchedUser = this.users.find((u: any) =>
-    String(u.id) === String(ctx.userId) ||
-    String(u.id) === String(ctx.id) ||
-    String(u.email || '').toLowerCase() === String(ctx.email || '').toLowerCase() ||
-    String(u.normalizedLogin || '').toUpperCase() === String(ctx.normalizedLogin || ctx.firstNameLogin || ctx.name || '').toUpperCase()
-  );
-
-  if (matchedUser) return matchedUser;
 
   return {
     id: ctx.userId || ctx.id || 'current-user',
