@@ -343,7 +343,7 @@ const handleMaintenanceMessageChange = async () => {
       </div>
 
       {activeTab === 'groups' && (
-  <div className="space-y-6">
+  <div className="space-y-3">
 
     <form
       onSubmit={handleAddGroup}
@@ -363,7 +363,7 @@ const handleMaintenanceMessageChange = async () => {
             })
           }
           placeholder="Ex: G4"
-          className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-black uppercase outline-none"
+          className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2 text-xs font-black uppercase outline-none"
         />
       </div>
 
@@ -381,7 +381,7 @@ const handleMaintenanceMessageChange = async () => {
             })
           }
           placeholder="Ex: G4 - Treinamento"
-          className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-black outline-none"
+          className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2 text-xs font-black outline-none"
         />
       </div>
 
@@ -393,13 +393,13 @@ const handleMaintenanceMessageChange = async () => {
       </button>
     </form>
 
-    <div className="bg-white border border-slate-200 rounded-[40px] shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-auto">
     <table className="w-full text-left text-xs uppercase">
       <thead className="bg-slate-50 font-black text-slate-400 border-b">
         <tr>
-          <th className="px-8 py-5">ID</th>
-          <th className="px-8 py-5">Nome do Grupo</th>
-          <th className="px-8 py-5">Status</th>
+          <th className="px-5 py-3">ID</th>
+          <th className="px-5 py-3">Nome do Grupo</th>
+          <th className="px-5 py-3">Status</th>
           <th className="px-8 py-5 text-right">Ações</th>
         </tr>
       </thead>
@@ -411,11 +411,11 @@ const handleMaintenanceMessageChange = async () => {
               {group.id}
             </td>
 
-            <td className="px-8 py-5">
+            <td className="px-5 py-3">
               {group.name}
             </td>
 
-            <td className="px-8 py-5">
+            <td className="px-5 py-3">
               <span className={`px-3 py-1 rounded-full text-[9px] font-black ${
                 group.active
                   ? 'bg-emerald-100 text-emerald-700'
@@ -561,10 +561,10 @@ const handleMaintenanceMessageChange = async () => {
             <table className="w-full text-left text-xs uppercase">
               <thead className="bg-slate-50 font-black text-slate-400 border-b">
                 <tr>
-                  <th className="px-8 py-5">Analista</th>
+                  <th className="px-5 py-3">Analista</th>
                   <th className="px-8 py-5 text-center">Penalidade Virtual</th>
                   <th className="px-8 py-5 text-center">Vigência</th>
-                  <th className="px-8 py-5">Motivo</th>
+                  <th className="px-5 py-3">Motivo</th>
                   <th className="px-8 py-5 text-right">Ações</th>
                 </tr>
               </thead>
@@ -573,7 +573,7 @@ const handleMaintenanceMessageChange = async () => {
                   const analyst = users.find(u => u.id === adj.analystId);
                   return (
                     <tr key={adj.id} className={`hover:bg-slate-50/50 transition-all ${!adj.active ? 'opacity-50' : ''}`}>
-                      <td className="px-8 py-5">
+                      <td className="px-5 py-3">
                         <p className="font-black text-slate-900">{analyst?.fullName || 'N/A'}</p>
                         <p className="text-[9px] text-slate-400">ID: {adj.analystId}</p>
                       </td>
@@ -611,9 +611,9 @@ const handleMaintenanceMessageChange = async () => {
 
     <form
       onSubmit={handleCreateUser}
-      className="bg-white border border-slate-200 rounded-[32px] p-6"
+      className="bg-white border border-slate-200 rounded-2xl px-5 py-4"
     >
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
 
         <div>
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
@@ -629,7 +629,7 @@ const handleMaintenanceMessageChange = async () => {
                 fullName: e.target.value
               })
             }
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2 text-xs font-bold outline-none"
           />
         </div>
 
@@ -646,7 +646,7 @@ const handleMaintenanceMessageChange = async () => {
                 role: e.target.value as UserRole
               })
             }
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2 text-xs font-bold outline-none"
           >
             {isGlobalAdmin && (
               <option value={UserRole.MANAGER}>
@@ -679,7 +679,7 @@ const handleMaintenanceMessageChange = async () => {
                 groupId: e.target.value
               })
             }
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2 text-xs font-bold outline-none"
           >
             <option value="">Selecione</option>
 
@@ -706,7 +706,7 @@ const handleMaintenanceMessageChange = async () => {
                 e.target.value
               )
             }
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2 text-xs font-bold outline-none"
           />
         </div>
 
@@ -729,23 +729,23 @@ const handleMaintenanceMessageChange = async () => {
       <table className="w-full text-left text-xs uppercase">
         <thead className="bg-slate-50 font-black text-slate-400 border-b">
           <tr>
-  <th className="px-8 py-5">
+  <th className="px-5 py-3">
     Login / Nome
   </th>
 
-  <th className="px-8 py-5">
+  <th className="px-5 py-3">
     Perfil
   </th>
 
-  <th className="px-8 py-5">
+  <th className="px-5 py-3">
     Grupo
   </th>
 
-  <th className="px-8 py-5">
+  <th className="px-5 py-3">
     Gestor
   </th>
 
-  <th className="px-8 py-5">
+  <th className="px-5 py-3">
     Status
   </th>
 
@@ -763,7 +763,7 @@ const handleMaintenanceMessageChange = async () => {
                 !u.active ? 'opacity-50' : ''
               }`}
             >
-              <td className="px-8 py-5">
+              <td className="px-5 py-3">
                 <p className="font-black text-slate-900">
                   {u.normalizedLogin}
                 </p>
@@ -773,7 +773,7 @@ const handleMaintenanceMessageChange = async () => {
                 </p>
               </td>
 
-              <td className="px-8 py-5">
+              <td className="px-5 py-3">
                 <span
                   className={`px-2 py-1 rounded-lg text-[8px] font-black ${
                     u.role === UserRole.ADMIN
@@ -795,7 +795,7 @@ const handleMaintenanceMessageChange = async () => {
   {u.groupId}
 </td>
 
-<td className="px-8 py-5">
+<td className="px-5 py-3">
   {(() => {
     const gestor = users.find(
       x =>
@@ -811,7 +811,7 @@ const handleMaintenanceMessageChange = async () => {
   })()}
 </td>
 
-<td className="px-8 py-5">
+<td className="px-5 py-3">
   <div
     
                   className={`flex items-center gap-1.5 ${
