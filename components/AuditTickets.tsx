@@ -107,14 +107,14 @@ const AuditTickets: React.FC<{ user: User }> = ({ user }) => {
 
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Filtros de Auditoria */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
         <div className="flex flex-col">
           <label className="text-[9px] font-black text-slate-400 uppercase mb-1">Usuário</label>
           <input 
             type="text" 
-            className="text-xs border rounded-lg p-2 font-bold uppercase" 
+            className="text-xs border rounded-lg px-3 py-2 font-bold uppercase bg-slate-50"
             placeholder="Filtrar Usuário..." 
             value={filterUser} 
             onChange={e => setFilterUser(e.target.value)} 
