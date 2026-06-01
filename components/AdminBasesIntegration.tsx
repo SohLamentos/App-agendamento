@@ -220,7 +220,7 @@ if (newAnalystForm.mode === 'link') {
 }
 
   const { data, error } = await supabase.functions.invoke(
-    'create-analyst-user',
+    'admin-create-user',
     {
       body: {
         email,
@@ -332,9 +332,13 @@ if (newAnalystForm.mode === 'link') {
       'admin-delete-user',
       {
         body: {
-          userId: analyst.userId || analyst.id,
-          email: analyst.email
-        }
+  userId:
+    (analyst as any).userId ||
+    (analyst as any).authUserId ||
+    (analyst as any).user_id ||
+    analyst.id,
+  email: analyst.email
+}
       }
     );
 
@@ -847,8 +851,8 @@ const handleSaveAnalyst = () => {
   {analyst.active ? 'Inativar' : 'Ativar'}
 </button>
             <button
-  onClick={() => handleDeleteAnalystFromApp(analyst)}
-  className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black"
+  onClick={() => handleDeleteAnalystComplete(analyst)}
+  className="px-3 py-2 rounded-xl bg-red-700 text-white text-[9px] font-black uppercase hover:bg-red-800"
 >
   Excluir
 </button>
