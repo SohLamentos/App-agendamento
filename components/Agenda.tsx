@@ -1752,7 +1752,7 @@ return (
 <table className="w-full min-w-full border-collapse table-fixed">
   <thead className="sticky top-0 z-40">
     <tr className="bg-slate-900 text-white shadow-xl">
-      <th className="w-48 px-3 py-3 text-left font-black text-[10px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
+      <th className="w-36 px-2 py-3 text-left font-black text-[10px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
         Equipe Analistas
       </th>
 
