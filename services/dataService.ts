@@ -692,6 +692,8 @@ this.analystMappings = savedMappings ? JSON.parse(savedMappings) : [];
 private mapUserProfileToUser(profile: any): User {
   return {
     id: profile.user_id || profile.id,
+authUserId: profile.user_id || profile.id,
+legacyUserId: profile.legacy_user_id || null,
     fullName: profile.full_name || profile.name || profile.email,
     normalizedLogin: profile.normalized_login || profile.name || profile.email,
     firstNameLogin: profile.normalized_login || profile.name || profile.email,
@@ -729,7 +731,15 @@ private async syncUsersFromProfiles() {
   });
 
   profileUsers.forEach(user => {
-    if (user?.id) map.set(String(user.id), user);
+    const legacyId = (user as any).legacyUserId;
+
+    if (legacyId) {
+      map.delete(String(legacyId));
+    }
+
+    if (user?.id) {
+      map.set(String(user.id), user);
+    }
   });
 
   this.users = Array.from(map.values());
