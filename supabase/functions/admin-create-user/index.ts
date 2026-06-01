@@ -87,6 +87,13 @@ serve(async (req) => {
     const role = body.role as RoleInput;
     const requestedGroupId = String(body.groupId || '').trim().toUpperCase();
     const temporaryPassword = String(body.temporaryPassword || '').trim();
+    const legacyUserId = body.legacyUserId
+  ? String(body.legacyUserId).trim()
+  : null;
+
+const analystProfileId = body.analystProfileId
+  ? String(body.analystProfileId).trim()
+  : null;
 
     if (!email || !fullName || !role || !requestedGroupId || !temporaryPassword) {
       return new Response(JSON.stringify({ error: 'Preencha nome, e-mail, perfil, grupo e senha.' }), {
@@ -178,8 +185,8 @@ serve(async (req) => {
         full_name: fullName,
         role: mapRole(role),
         group_id: finalGroupId,
-        legacy_user_id: null,
-        analyst_profile_id: null,
+        legacy_user_id: legacyUserId,
+analyst_profile_id: analystProfileId,
         normalized_login: normalizedLogin,
         active: true,
         is_global_admin: role === 'Admin' ? true : false,
