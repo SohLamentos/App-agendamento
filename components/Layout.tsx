@@ -488,7 +488,9 @@ const formatHeaderTicketTime = (value?: string) => {
   </div>
 </header>
         <div className="flex-1 min-h-0 overflow-auto px-3 md:px-5 xl:px-6 py-3 bg-slate-50">
-  <div className="w-full max-w-[1600px] mx-auto min-h-full">{children}</div>
+  <div className={`${activeTab === 'agenda' ? 'w-full max-w-none' : 'w-full max-w-[1600px] mx-auto'} min-h-full`}>
+  {children}
+</div>
 </div>
       </main>
     </div>
