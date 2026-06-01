@@ -1749,7 +1749,7 @@ return (
   </div>
 )}
   
-<table className="w-full border-collapse table-fixed">
+<table className="w-full min-w-full border-collapse table-fixed">
   <thead className="sticky top-0 z-40">
     <tr className="bg-slate-900 text-white shadow-xl">
       <th className="w-48 px-3 py-3 text-left font-black text-[10px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
@@ -1759,8 +1759,8 @@ return (
       {weekDates.map((d, idx) => (
         <React.Fragment key={d.iso}>
           <th
-            className="px-2 py-3 text-center font-black text-[10px] border-r border-white/10 uppercase tracking-widest bg-slate-900 sticky top-0 z-30"
-          >
+  className="px-3 py-3 text-center font-black text-[10px] border-r border-white/10 uppercase tracking-widest bg-slate-900 sticky top-0 z-30"
+>
             {d.formatted}
           </th>
 
