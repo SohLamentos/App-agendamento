@@ -275,22 +275,36 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
   };
 
   const [currentMonday, setCurrentMonday] = useState(() => getMonday(new Date()));
+  const [weeksVisible, setWeeksVisible] = useState<1 | 2>(1);
+  
 
   const weekDates = useMemo(() => {
-    const dates = [];
-    const days = ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
+  const dates = [];
+  const days = ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
+  const totalWeeks = weeksVisible;
+
+  for (let week = 0; week < totalWeeks; week++) {
     for (let i = 0; i < 5; i++) {
       const d = new Date(currentMonday);
-      d.setDate(currentMonday.getDate() + i);
+      d.setDate(currentMonday.getDate() + (week * 7) + i);
+
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       const iso = `${year}-${month}-${day}`;
       const formatted = `${day}/${month} - ${days[i]}`;
-      dates.push({ iso, formatted });
+
+      dates.push({
+        iso,
+        formatted,
+        weekIndex: week,
+        dayIndex: i
+      });
     }
-    return dates;
-  }, [currentMonday]);
+  }
+
+  return dates;
+}, [currentMonday, weeksVisible]);
 
   const navigateWeek = (dir: number) => {
     const d = new Date(currentMonday);
@@ -1645,7 +1659,7 @@ return (
 
       
  <div className="flex flex-col md:flex-row justify-between items-center bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm gap-2 shrink-0">
-  <div className="flex items-center space-x-4">
+  <div className="flex items-center gap-3 flex-wrap">
     <div className="flex bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
       <button onClick={() => navigateWeek(-1)} className="p-2 hover:bg-slate-200 border-r border-slate-100">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1654,7 +1668,7 @@ return (
       </button>
 
       <div className="px-6 py-2 text-[10px] font-black text-slate-900 uppercase min-w-[220px] text-center tracking-widest">
-        {weekDates[0].iso.split('-').reverse().slice(0,2).join('/')} — {weekDates[4].iso.split('-').reverse().slice(0,2).join('/')}
+        {weekDates[0].iso.split('-').reverse().slice(0,2).join('/')} — {weekDates[weekDates.length - 1].iso.split('-').reverse().slice(0,2).join('/')}
       </div>
 
       <button onClick={() => navigateWeek(1)} className="p-2 hover:bg-slate-200 border-l border-slate-100">
@@ -1664,8 +1678,26 @@ return (
       </button>
     </div>
 
-   
-    <div className="flex gap-3">
+    <div className="flex bg-slate-100 border border-slate-200 rounded-2xl overflow-hidden p-1">
+      <button
+        onClick={() => setWeeksVisible(1)}
+        className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+          weeksVisible === 1 ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'
+        }`}
+      >
+        1 Semana
+      </button>
+
+      <button
+        onClick={() => setWeeksVisible(2)}
+        className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+          weeksVisible === 2 ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'
+        }`}
+      >
+        2 Semanas
+      </button>
+    </div>
+
     <button
       onClick={() => {
         setMovementMode(prev => !prev);
@@ -1680,10 +1712,7 @@ return (
     >
       {movementMode ? 'Movimentação Ativa' : 'Modo Movimentação'}
     </button>
-
-    
   </div>
-</div>
 </div>
 
 <div className="bg-white border rounded-2xl shadow-sm overflow-auto flex-1 min-h-0 relative transition-colors border-slate-200">   
@@ -1721,22 +1750,29 @@ return (
 )}
   
 <table className="w-full border-collapse table-fixed">
-          <thead className="sticky top-0 z-40">
-  <tr className="bg-slate-900 text-white shadow-xl">
-    <th className="w-72 p-4 text-left font-black text-[11px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
-      Equipe Analistas
-    </th>
-
-    {weekDates.map((d, idx) => (
-      <th
-        key={idx}
-        className="p-4 text-center font-black text-[11px] border-r border-white/10 uppercase tracking-widest bg-slate-900 sticky top-0 z-30"
-      >
-        {d.formatted}
+  <thead className="sticky top-0 z-40">
+    <tr className="bg-slate-900 text-white shadow-xl">
+      <th className="w-48 px-3 py-3 text-left font-black text-[10px] border-r-2 border-white/20 sticky left-0 top-0 z-40 bg-slate-900 uppercase tracking-widest">
+        Equipe Analistas
       </th>
-    ))}
-  </tr>
-</thead>
+
+      {weekDates.map((d, idx) => (
+        <React.Fragment key={d.iso}>
+          <th
+            className="px-2 py-3 text-center font-black text-[10px] border-r border-white/10 uppercase tracking-widest bg-slate-900 sticky top-0 z-30"
+          >
+            {d.formatted}
+          </th>
+
+          {weeksVisible === 2 && idx === 4 && (
+            <th className="w-4 bg-black sticky top-0 z-30 p-0 border-x border-black">
+              <span className="sr-only">Separador de semanas</span>
+            </th>
+          )}
+        </React.Fragment>
+      ))}
+    </tr>
+  </thead>
           <tbody>
             {sortedAnalysts.map((analyst, aIdx) => (
               <React.Fragment key={analyst.id}>
@@ -1755,21 +1791,21 @@ return (
   className="flex items-center px-2 py-1 h-full cursor-grab active:cursor-grabbing select-none"
   title="Arraste para reorganizar"
 >
-  <span className={`w-1.5 h-8 mr-4 rounded-full ${aIdx % 2 === 0 ? 'bg-claro-red' : 'bg-slate-900'}`}></span>
+  <span className={`w-1.5 h-8 mr-2 rounded-full ${aIdx % 2 === 0 ? 'bg-claro-red' : 'bg-slate-900'}`}></span>
 
   <span className="mr-2 text-slate-400 font-black">
     ☰
   </span>
 
-  <p className="font-black text-[11px] uppercase truncate">
+  <p className="font-black text-[10px] uppercase truncate">
     {analyst.normalizedLogin}
   </p>
 </div>
   
                   </td>
                   {weekDates.map((date, idx) => (
-                    <td 
-                      key={idx} 
+  <React.Fragment key={date.iso}>
+    <td
   onClick={(e) => {
   if (movementMode) {
 
@@ -1902,10 +1938,22 @@ setPendingMove({
                       <div className="h-full w-full relative">
                         {getCellContent(analyst.id, date.iso)}
                       </div>
-                    </td>
-                  ))}
+                                        </td>
+
+    {weeksVisible === 2 && idx === 4 && (
+      <td className="w-4 bg-black p-0 border-x border-black">
+        <div className="h-full min-h-[48px] bg-black"></div>
+      </td>
+    )}
+  </React.Fragment>
+))}
                 </tr>
-                <tr><td colSpan={6} className="h-1 bg-slate-900/10"></td></tr>
+                <tr>
+  <td
+    colSpan={weeksVisible === 2 ? 12 : 6}
+    className="h-1 bg-slate-900/10"
+  ></td>
+</tr>
                             </React.Fragment>
  
 ))}
