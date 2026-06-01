@@ -186,7 +186,7 @@ const analystProfileId = body.analystProfileId
         role: mapRole(role),
         group_id: finalGroupId,
         legacy_user_id: legacyUserId,
-analyst_profile_id: analystProfileId,
+        analyst_profile_id: analystProfileId,
         normalized_login: normalizedLogin,
         active: true,
         is_global_admin: role === 'Admin' ? true : false,
@@ -203,13 +203,15 @@ analyst_profile_id: analystProfileId,
     }
 
     return new Response(JSON.stringify({
-      ok: true,
-      userId: createdAuth.user.id,
-      email,
-      fullName,
-      role,
-      groupId: finalGroupId,
-    }), {
+  ok: true,
+  userId: createdAuth.user.id,
+  email,
+  fullName,
+  role,
+  groupId: finalGroupId,
+  legacyUserId,
+  analystProfileId,
+}), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
