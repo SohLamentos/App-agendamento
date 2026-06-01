@@ -41,6 +41,7 @@ const Layout: React.FC<LayoutProps> = ({
   const [lastTickets, setLastTickets] = useState<AuditTicket[]>([]);
   const [highlightUpdates, setHighlightUpdates] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 const [headerStats, setHeaderStats] = useState({
   analysts: 0,
   scheduledToday: 0,
@@ -178,11 +179,24 @@ const formatHeaderTicketTime = (value?: string) => {
 
   return (
     <div className="flex h-dvh bg-slate-100 overflow-hidden">
-  <aside className="hidden md:flex w-56 xl:w-60 bg-slate-900 text-white flex-col shrink-0">
-        <div className="px-5 py-4 border-b border-white/5 flex flex-col items-center shrink-0">
-          <LogoDynamic groupId={user.groupId} />
-          <h1 className="text-[10px] font-black tracking-tight text-white/40 mt-2 uppercase text-center">ETN {user.groupId} - Treinamento CLARO</h1>
-        </div>
+  <aside className={`hidden md:flex ${sidebarCollapsed ? 'w-20' : 'w-56 xl:w-60'} bg-slate-900 text-white flex-col shrink-0 transition-all duration-300`}>
+        <div className="px-3 py-4 border-b border-white/5 flex flex-col items-center shrink-0 relative">
+  <button
+    onClick={() => setSidebarCollapsed(prev => !prev)}
+    className="absolute right-2 top-2 w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs transition-all"
+    title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+  >
+    {sidebarCollapsed ? '›' : '‹'}
+  </button>
+
+  <LogoDynamic groupId={user.groupId} />
+
+  {!sidebarCollapsed && (
+    <h1 className="text-[10px] font-black tracking-tight text-white/40 mt-2 uppercase text-center">
+      ETN {user.groupId} - Treinamento CLARO
+    </h1>
+  )}
+</div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
           {tabs.filter(t => t.roles.includes(user.role)).map(tab => (
@@ -195,8 +209,11 @@ const formatHeaderTicketTime = (value?: string) => {
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg opacity-80">{tab.icon}</span>
-              {tab.label}
+              <span className={`${sidebarCollapsed ? 'mx-auto' : 'mr-3'} text-lg opacity-80`}>
+  {tab.icon}
+</span>
+
+{!sidebarCollapsed && tab.label}
             </button>
           ))}
 
@@ -211,13 +228,16 @@ const formatHeaderTicketTime = (value?: string) => {
                 }`}
               >
                 <div className="flex items-center">
-                  <span className="mr-3 text-lg opacity-80">📈</span>
-                  RELATÓRIOS
-                </div>
-                <span className={`text-[10px] transition-transform ${reportsExpanded ? 'rotate-180' : ''}`}>▼</span>
+  <span className={`${sidebarCollapsed ? 'mx-auto' : 'mr-3'} text-lg opacity-80`}>📈</span>
+  {!sidebarCollapsed && 'RELATÓRIOS'}
+</div>
+
+{!sidebarCollapsed && (
+  <span className={`text-[10px] transition-transform ${reportsExpanded ? 'rotate-180' : ''}`}>▼</span>
+)}
               </button>
               
-              {reportsExpanded && (
+              {reportsExpanded && !sidebarCollapsed && (
                 <div className="mt-1 space-y-1 ml-4 border-l-2 border-white/5">
                   {reportSubTabs.map(sub => (
                     <button
@@ -248,8 +268,8 @@ const formatHeaderTicketTime = (value?: string) => {
           : 'text-red-300 hover:bg-claro-red/10 hover:text-white'
       }`}
     >
-      <span className="mr-3 text-lg opacity-80">🏢</span>
-      BASES & INTEGRAÇÃO
+      <span className={`${sidebarCollapsed ? 'mx-auto' : 'mr-3'} text-lg opacity-80`}>🏢</span>
+{!sidebarCollapsed && 'BASES & INTEGRAÇÃO'}
     </button>
 
     <button
@@ -260,8 +280,11 @@ const formatHeaderTicketTime = (value?: string) => {
       : 'text-purple-300 hover:bg-purple-500/10 hover:text-white'
   }`}
 >
-  <span className="mr-3 text-lg opacity-80">⚙️</span>
-  CONFIG. AGENDA
+  <span className={`${sidebarCollapsed ? 'mx-auto' : 'mr-3'} text-lg opacity-80`}>
+    ⚙️
+  </span>
+
+  {!sidebarCollapsed && 'CONFIG. AGENDA'}
 </button>
 
     <button
@@ -272,27 +295,34 @@ const formatHeaderTicketTime = (value?: string) => {
       : 'text-blue-300 hover:bg-blue-500/10 hover:text-white'
   }`}
 >
-  <span className="mr-3 text-lg opacity-80">📍</span>
-  DATAS FIXAS
+  <span className={`${sidebarCollapsed ? 'mx-auto' : 'mr-3'} text-lg opacity-80`}>
+    📍
+  </span>
+
+  {!sidebarCollapsed && 'DATAS FIXAS'}
 </button>
 
     {user.role === ROLE_ADMIN && (
       <button
-        onClick={() => setActiveTab('admin')}
-        className={`w-full flex items-center px-3 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider ${
-          activeTab === 'admin'
-            ? 'bg-emerald-600 text-white shadow-lg'
-            : 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
-        }`}
-      >
-        <span className="mr-3 text-lg opacity-80">🛡️</span>
-        ADMINISTRAÇÃO
-      </button>
+        <button
+  onClick={() => setActiveTab('admin')}
+  className={`w-full flex items-center px-3 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider ${
+    activeTab === 'admin'
+      ? 'bg-emerald-600 text-white shadow-lg'
+      : 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
+  }`}
+>
+  <span className={`${sidebarCollapsed ? 'mx-auto' : 'mr-3'} text-lg opacity-80`}>
+    🛡️
+  </span>
+
+  {!sidebarCollapsed && 'ADMINISTRAÇÃO'}
+</button>
     )}
   </div>
 )}
 </nav>
-        <div className="p-4 border-t border-white/5 bg-black/20 shrink-0">
+        <div className={`${sidebarCollapsed ? 'hidden' : 'p-4'} border-t border-white/5 bg-black/20 shrink-0`}>
           <div className="space-y-4">
             <div>
               <label className="text-[8px] font-black text-slate-500 uppercase block mb-1.5 tracking-widest">Identidade Ativa</label>
