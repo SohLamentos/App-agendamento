@@ -100,6 +100,9 @@ export interface User {
   groupId: string;
   managerId?: string;
 
+  authUserId?: string;
+legacyUserId?: string | null;
+
   passwordHash: string;
   active: boolean;
 
