@@ -307,6 +307,20 @@ if (newAnalystForm.mode === 'link') {
   }
 };
 
+  const handleDeleteAnalystFromApp = (analyst: User) => {
+  const confirmDelete = window.confirm(
+    `Deseja excluir ${analyst.fullName} apenas do app?\n\nUse esta opção somente quando o usuário já foi removido do Supabase/Auth ou está duplicado.`
+  );
+
+  if (!confirmDelete) return;
+
+  dataService.deleteUser(analyst.id);
+
+  refresh();
+
+  alert('Analista removido do app.');
+};
+
   const handleEditAnalyst = (analyst: User) => {
     
   setEditingAnalystId(analyst.id);
@@ -794,6 +808,12 @@ const handleSaveAnalyst = () => {
   }`}
 >
   {analyst.active ? 'Inativar' : 'Ativar'}
+</button>
+            <button
+  onClick={() => handleDeleteAnalystFromApp(analyst)}
+  className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black"
+>
+  Excluir App
 </button>
 
           </div>
