@@ -25,3 +25,22 @@ export async function createUserProfile(input: CreateUserProfileInput) {
 
   return data;
 }
+
+export async function deleteUserProfile(userId: string, email?: string) {
+  const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+    body: {
+      userId,
+      email,
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Erro ao excluir usuário.');
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
