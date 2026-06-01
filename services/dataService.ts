@@ -5038,6 +5038,22 @@ public getUnconfiguredCities() {
   window.dispatchEvent(new Event('data-updated'));
 }
 
+  public deleteUser(userId: string) {
+  const user = this.users.find(u => u.id === userId);
+
+  if (!user) return;
+
+  if (this.isFixedAdmin(userId)) {
+    alert('O ADMIN principal do sistema não pode ser excluído.');
+    return;
+  }
+
+  this.users = this.users.filter(u => u.id !== userId);
+
+  this.persist();
+  window.dispatchEvent(new Event('data-updated'));
+}
+
   public updateUserStatus(userId: string, active: boolean) {
   const user = this.users.find(u => u.id === userId);
   if (!user) return;
