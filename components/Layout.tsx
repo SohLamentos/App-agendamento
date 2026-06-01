@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, AuditTicket } from '../types';
 import { authService } from '../services/authService';
 import { auditService } from '../services/auditService';
+import { dataService } from '../services/dataService';
 
 const ROLE_ADMIN = 'Admin';
 const ROLE_MANAGER = 'Gestor';
@@ -39,6 +40,13 @@ const Layout: React.FC<LayoutProps> = ({
   const [reportsExpanded, setReportsExpanded] = useState(activeTab.startsWith('reports-'));
   const [lastTickets, setLastTickets] = useState<AuditTicket[]>([]);
   const [highlightUpdates, setHighlightUpdates] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState('');
+const [headerStats, setHeaderStats] = useState({
+  analysts: 0,
+  scheduledToday: 0,
+  waitingResult: 0,
+  queue: 0
+});
   const availableGroups = ['G1', 'G2', 'G3', 'G4', 'G5'];
 
   useEffect(() => {
@@ -81,6 +89,49 @@ const Layout: React.FC<LayoutProps> = ({
     if (timeoutId) clearTimeout(timeoutId);
   };
 }, [user]);
+
+  useEffect(() => {
+  const loadHeaderStats = () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const analysts = dataService
+      .getUsers()
+      .filter((u: any) =>
+        u.role === ROLE_ANALYST &&
+        u.active === true &&
+        u.groupId === user.groupId
+      ).length;
+
+    const scheduledToday = dataService
+      .getSchedules()
+      .filter((s: any) =>
+        s.groupId === user.groupId &&
+        String(s.datetime || '').startsWith(today) &&
+        String(s.status || '').toUpperCase() !== 'CANCELADO' &&
+        String(s.status || '').toUpperCase() !== 'CANCELLED'
+      ).length;
+
+    const technicians = dataService
+      .getTechnicians()
+      .filter((t: any) => t.groupId === user.groupId);
+
+    setHeaderStats({
+      analysts,
+      scheduledToday,
+      waitingResult: technicians.filter((t: any) =>
+        String(t.status_principal || '').toUpperCase().includes('AGUARDANDO')
+      ).length,
+      queue: technicians.filter((t: any) =>
+        String(t.status_principal || '').toUpperCase().includes('FILA')
+      ).length
+    });
+  };
+
+  loadHeaderStats();
+
+  window.addEventListener('data-updated', loadHeaderStats);
+  return () => window.removeEventListener('data-updated', loadHeaderStats);
+}, [user.groupId]);
 
 const formatHeaderTicketTime = (value?: string) => {
   if (!value) return 'SEM DATA';
@@ -276,19 +327,69 @@ const formatHeaderTicketTime = (value?: string) => {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 xl:px-8 shrink-0 gap-4">
-  <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
-  {activeTab === 'admin'
-  ? 'Painel de Controle Nacional'
-  : activeTab === 'bases-integration'
-? 'Bases & Integração PowerApps'
-: activeTab === 'base-collective-schedule'
-? 'Datas Fixas Presenciais por Base'
-  : activeTab === 'score'
-  ? 'Monitoramento de Score'
-  : 'Gestão Operacional'}
-</h2>
+  <div className="min-w-0">
+  <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] truncate">
+    {activeTab === 'admin'
+      ? 'Painel de Controle Nacional'
+      : activeTab === 'bases-integration'
+      ? 'Bases & Integração PowerApps'
+      : activeTab === 'base-collective-schedule'
+      ? 'Datas Fixas Presenciais por Base'
+      : activeTab === 'score'
+      ? 'Monitoramento de Score'
+      : 'Gestão Operacional'}
+  </h2>
+
+  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">
+    {user.groupId} • {headerStats.analysts} Analistas • {headerStats.scheduledToday} Agendados Hoje • Fila: {headerStats.queue} • Aguardando: {headerStats.waitingResult}
+  </p>
+</div>
 
   <div className="flex items-center space-x-6">
+    <div className="hidden 2xl:block relative">
+  <input
+    value={globalSearch}
+    onChange={(e) => setGlobalSearch(e.target.value)}
+    placeholder="Buscar técnico, CPF, TOA..."
+    className="w-[260px] bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-bold uppercase outline-none focus:ring-2 focus:ring-claro-red/20"
+  />
+
+  {globalSearch.trim().length >= 3 && (
+    <div className="absolute right-0 top-11 w-[420px] bg-white border border-slate-200 rounded-2xl shadow-2xl z-[200] overflow-hidden">
+      {dataService
+        .getTechnicians()
+        .filter((t: any) => t.groupId === user.groupId)
+        .filter((t: any) => {
+          const q = globalSearch.toLowerCase();
+          return (
+            String(t.name || '').toLowerCase().includes(q) ||
+            String(t.cpf || '').toLowerCase().includes(q) ||
+            String(t.externalLogin || '').toLowerCase().includes(q) ||
+            String(t.city || '').toLowerCase().includes(q) ||
+            String(t.company || '').toLowerCase().includes(q)
+          );
+        })
+        .slice(0, 6)
+        .map((t: any) => (
+          <button
+            key={t.id}
+            onClick={() => {
+              setActiveTab('classes');
+              setGlobalSearch('');
+            }}
+            className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100"
+          >
+            <div className="text-[11px] font-black text-slate-900 uppercase truncate">
+              {t.name}
+            </div>
+            <div className="text-[9px] font-bold text-slate-500 uppercase truncate">
+              CPF: {t.cpf || 'N/D'} • {t.city || 'N/D'} • {t.company || 'N/D'}
+            </div>
+          </button>
+        ))}
+    </div>
+  )}
+</div>
     <div
   className={`hidden xl:flex items-start gap-2 border rounded-xl px-3 py-2 max-w-[460px] transition-all duration-500 ${
     highlightUpdates
