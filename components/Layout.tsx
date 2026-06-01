@@ -102,14 +102,16 @@ const [headerStats, setHeaderStats] = useState({
         u.groupId === user.groupId
       ).length;
 
-    const scheduledToday = dataService
-      .getSchedules()
-      .filter((s: any) =>
-        s.groupId === user.groupId &&
-        String(s.datetime || '').startsWith(today) &&
-        String(s.status || '').toUpperCase() !== 'CANCELADO' &&
-        String(s.status || '').toUpperCase() !== 'CANCELLED'
-      ).length;
+    const schedules = typeof dataService.getSchedules === 'function'
+  ? dataService.getSchedules()
+  : [];
+
+const scheduledToday = schedules.filter((s: any) =>
+  s.groupId === user.groupId &&
+  String(s.datetime || '').startsWith(today) &&
+  String(s.status || '').toUpperCase() !== 'CANCELADO' &&
+  String(s.status || '').toUpperCase() !== 'CANCELLED'
+).length;
 
     const technicians = dataService
       .getTechnicians()
