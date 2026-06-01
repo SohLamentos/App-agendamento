@@ -170,63 +170,52 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
 };
 
   const handleCreateAnalyst = async () => {
-  if (!newAnalystForm.fullName.trim() || !newAnalystForm.email.trim()) {
-    alert('Informe nome e e-mail do analista.');
+  if (!newAnalystForm.email.trim()) {
+    alert('Informe o e-mail do analista.');
     return;
   }
 
-  const normalizedName = newAnalystForm.fullName
+  const email = newAnalystForm.email.trim().toLowerCase();
+
+  let fullName = newAnalystForm.fullName.trim();
+  let legacyUserId: string | null = null;
+  let analystProfileId: string | null = null;
+
+  if (newAnalystForm.mode === 'link') {
+    const existing = operationalAnalysts.find(
+      a => a.id === newAnalystForm.existingAnalystId
+    );
+
+    if (!existing) {
+      alert('Selecione um analista legado para vincular.');
+      return;
+    }
+
+    fullName = existing.fullName;
+    legacyUserId = existing.id;
+    analystProfileId = existing.analystProfileId || null;
+  }
+
+  if (!fullName.trim()) {
+    alert('Informe o nome completo.');
+    return;
+  }
+
+  const normalizedName = fullName
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase()
     .trim();
-
-  const email = newAnalystForm.email.trim().toLowerCase();
-
-  let legacyUserId = '';
-let analystProfileId = '';
-
-if (newAnalystForm.mode === 'link') {
-  const existing = operationalAnalysts.find(
-    a => a.id === newAnalystForm.existingAnalystId
-  );
-
-  if (!existing) {
-    alert('Selecione um analista existente.');
-    return;
-  }
-
-  legacyUserId = existing.id;
-  analystProfileId = existing.analystProfileId || '';
-} else {
-  const nextUserNumber =
-    Math.max(
-      0,
-      ...users
-        .map(u => Number(String(u.id).replace('u', '')))
-        .filter(n => !Number.isNaN(n))
-    ) + 1;
-
-  const nextAnalystProfileNumber =
-    Math.max(
-      0,
-      ...users
-        .map(u => Number(String(u.analystProfileId || '').replace('ap', '')))
-        .filter(n => !Number.isNaN(n))
-    ) + 1;
-
-  legacyUserId = `u${nextUserNumber}`;
-  analystProfileId = `ap${nextAnalystProfileNumber}`;
-}
 
   const { data, error } = await supabase.functions.invoke(
     'admin-create-user',
     {
       body: {
         email,
-        password: newAnalystForm.password || 'Claro@123',
         fullName: normalizedName,
+        role: UserRole.ANALYST,
         groupId: user.groupId,
+        temporaryPassword: newAnalystForm.password || 'Claro@123',
         legacyUserId,
         analystProfileId,
       },
@@ -238,21 +227,7 @@ if (newAnalystForm.mode === 'link') {
     return;
   }
 
-  if (newAnalystForm.mode === 'create') {
-  dataService.addUser({
-    id: legacyUserId,
-    fullName: normalizedName,
-    normalizedLogin: normalizedName,
-    firstNameLogin: normalizedName.split(' ')[0],
-    email,
-    role: UserRole.ANALYST,
-    groupId: user.groupId,
-    analystProfileId,
-    active: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-}
+  await dataService.initializeFromCloud();
 
   setIsNewAnalystModalOpen(false);
 
@@ -260,11 +235,17 @@ if (newAnalystForm.mode === 'link') {
     fullName: '',
     email: '',
     password: 'Claro@123',
+    mode: 'link',
+    existingAnalystId: '',
   });
 
   refresh();
 
-  alert('Analista criado com sucesso. Login já disponível.');
+  alert(
+    newAnalystForm.mode === 'link'
+      ? 'Analista legado vinculado ao novo login com sucesso.'
+      : 'Analista criado com sucesso.'
+  );
 };
 
   const handleToggleAnalystStatus = async (analyst: User) => {
@@ -438,11 +419,22 @@ const handleSaveAnalyst = () => {
   );
 }, [users, user.groupId]);
 
-  const operationalAnalysts = useMemo(() => {
+  const linkedLegacyIds = useMemo(() => {
+  return users
+    .map(u => (u as any).legacyUserId)
+    .filter(Boolean)
+    .map(String);
+}, [users]);
+
+const operationalAnalysts = useMemo(() => {
   return users.filter(
-    u => u.role === UserRole.ANALYST && u.groupId === user.groupId
+    u =>
+      u.role === UserRole.ANALYST &&
+      u.groupId === user.groupId &&
+      String(u.id).startsWith('u') &&
+      !linkedLegacyIds.includes(String(u.id))
   );
-}, [users, user.groupId]);
+}, [users, user.groupId, linkedLegacyIds]);
 
   const resetBaseForm = () => {
     setEditingBaseId(null);
