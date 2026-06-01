@@ -243,6 +243,7 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
 
   
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+const [isAgendaFullScreen, setIsAgendaFullScreen] = useState(false);
 
   useEffect(() => {
 
@@ -398,14 +399,29 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
 );
 
     const formatScheduleTitle = (schs: CertificationSchedule[]) => {
-      if (schs.length === 0) return null;
-      const first = schs[0];
-      const qty = schs.length;
-      const period = first.shift === Shift.MORNING ? 'MANHÃ' : first.shift === Shift.AFTERNOON ? 'TARDE' : 'DIA';
-      const tech = first.technology || 'GPON';
-      
-      return `${qty} ${period} ${tech}`;
-    };
+  if (schs.length === 0) return null;
+
+  const first = schs[0];
+  const qty = schs.length;
+
+  const period =
+    first.shift === Shift.MORNING
+      ? 'MANHÃ'
+      : first.shift === Shift.AFTERNOON
+      ? 'TARDE'
+      : 'DIA';
+
+  const tech = first.technology || 'GPON';
+
+  const modality =
+    first.type === ExpertiseType.VIRTUAL
+      ? 'VIRTUAL'
+      : first.type === ExpertiseType.PRESENTIAL
+      ? 'PRES.'
+      : 'MISTO';
+
+  return `${qty} ${period} • ${tech} • ${modality}`;
+};
 
     const fullDayBlock = dayBlocks.find(b => b.shift === Shift.FULL_DAY);
     if (fullDayBlock) {
@@ -1633,10 +1649,42 @@ setHoverTooltip(null);
   });
 };
 
+const todayIso = new Date().toISOString().slice(0, 10);
+
+const agendaKpis = {
+  scheduledToday: schedules.filter((s: any) =>
+    s.groupId === user.groupId &&
+    String(s.datetime || '').startsWith(todayIso) &&
+    s.status !== ScheduleStatus.CANCELLED &&
+    String(s.status || '').toUpperCase() !== 'CANCELADO' &&
+    String(s.status || '').toUpperCase() !== 'CANCELLED'
+  ).length,
+
+  waitingResult: technicians.filter((t: any) =>
+    t.groupId === user.groupId &&
+    String(t.status_principal || '').toUpperCase().includes('AGUARDANDO')
+  ).length,
+
+  queue: technicians.filter((t: any) =>
+    t.groupId === user.groupId &&
+    String(t.status_principal || '').toUpperCase().includes('FILA')
+  ).length,
+
+  approved: technicians.filter((t: any) =>
+    t.groupId === user.groupId &&
+    String(t.status_principal || '').toUpperCase().includes('APROVADO')
+  ).length,
+
+  reproved: technicians.filter((t: any) =>
+    t.groupId === user.groupId &&
+    String(t.status_principal || '').toUpperCase().includes('REPROVADO')
+  ).length
+};
+
 return (
 
 
-    <div className="flex flex-col gap-2 flex-1 min-h-0 relative overflow-hidden">
+    <div className={`${isAgendaFullScreen ? 'fixed inset-0 z-[500] bg-slate-50 p-3' : ''} flex flex-col gap-2 flex-1 min-h-0 relative overflow-hidden`}>
        {toast && (
         <div className={`fixed top-10 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest animate-in slide-in-from-right-10 duration-300 ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
           {toast.message}
@@ -1644,46 +1692,91 @@ return (
       )}
 
       
- <div className="flex flex-col md:flex-row justify-between items-center bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm gap-2 shrink-0">
-  <div className="flex items-center space-x-4">
-    <div className="flex bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-      <button onClick={() => navigateWeek(-1)} className="p-2 hover:bg-slate-200 border-r border-slate-100">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
+ <div className="bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm shrink-0 space-y-2">
+  <div className="flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between gap-2">
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <button
+          onClick={() => navigateWeek(-1)}
+          className="p-2 hover:bg-slate-200 border-r border-slate-100"
+          title="Semana anterior"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 
-      <div className="px-6 py-2 text-[10px] font-black text-slate-900 uppercase min-w-[220px] text-center tracking-widest">
-        {weekDates[0].iso.split('-').reverse().slice(0,2).join('/')} — {weekDates[4].iso.split('-').reverse().slice(0,2).join('/')}
+        <div className="px-5 py-2 text-[10px] font-black text-slate-900 uppercase min-w-[230px] text-center tracking-widest">
+          Semana {weekDates[0].iso.split('-').reverse().slice(0,2).join('/')} — {weekDates[4].iso.split('-').reverse().slice(0,2).join('/')}
+        </div>
+
+        <button
+          onClick={() => navigateWeek(1)}
+          className="p-2 hover:bg-slate-200 border-l border-slate-100"
+          title="Próxima semana"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
-      <button onClick={() => navigateWeek(1)} className="p-2 hover:bg-slate-200 border-l border-slate-100">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-        </svg>
+      <button
+        onClick={() => {
+          setMovementMode(prev => !prev);
+          setSelection(null);
+          setHoverTooltip(null);
+        }}
+        className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase shadow-sm tracking-widest ${
+          movementMode
+            ? 'bg-emerald-600 text-white'
+            : 'bg-slate-900 text-white'
+        }`}
+      >
+        {movementMode ? 'Movimentação Ativa' : 'Modo Movimentação'}
+      </button>
+
+      <button
+        onClick={() => setIsAgendaFullScreen(prev => !prev)}
+        className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
+      >
+        {isAgendaFullScreen ? 'Sair Tela Cheia' : 'Tela Cheia'}
       </button>
     </div>
 
-   
-    <div className="flex gap-3">
-    <button
-      onClick={() => {
-        setMovementMode(prev => !prev);
-        setSelection(null);
-        setHoverTooltip(null);
-      }}
-      className={`px-4 py-1.5 rounded-2xl text-[9px] font-black uppercase shadow-lg tracking-widest ${
-        movementMode
-          ? 'bg-emerald-600 text-white'
-          : 'bg-slate-900 text-white'
-      }`}
-    >
-      {movementMode ? 'Movimentação Ativa' : 'Modo Movimentação'}
-    </button>
-
-    
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+      {[
+        ['Agendados Hoje', agendaKpis.scheduledToday],
+        ['Fila', agendaKpis.queue],
+        ['Aguardando', agendaKpis.waitingResult],
+        ['Aprovados', agendaKpis.approved],
+        ['Reprovados', agendaKpis.reproved],
+      ].map(([label, value]) => (
+        <div
+          key={String(label)}
+          className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 min-w-[110px]"
+        >
+          <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest truncate">
+            {label}
+          </div>
+          <div className="text-sm font-black text-slate-900">
+            {value}
+          </div>
+        </div>
+      ))}
+    </div>
   </div>
-</div>
+
+  <div className="flex gap-1 overflow-x-auto no-scrollbar">
+    {weekDates.map((d, idx) => (
+      <div
+        key={idx}
+        className="shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-600"
+      >
+        {d.formatted}
+      </div>
+    ))}
+  </div>
 </div>
 
 <div className="bg-white border rounded-2xl shadow-sm overflow-auto flex-1 min-h-0 relative transition-colors border-slate-200">   
