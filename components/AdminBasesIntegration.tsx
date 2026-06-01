@@ -413,13 +413,7 @@ const handleSaveAnalyst = () => {
     return () => window.removeEventListener('data-updated', refresh);
   }, []);
 
-  const linkedLegacyIds = useMemo(() => {
-  return users
-    .map(u => (u as any).legacyUserId || (u as any).legacy_user_id)
-    .filter(Boolean)
-    .map(String);
-}, [users]);
-
+  
 const analysts = useMemo(() => {
   return users.filter(
     u =>
