@@ -320,6 +320,43 @@ if (newAnalystForm.mode === 'link') {
 
   alert('Analista removido do app.');
 };
+  const handleDeleteAnalystComplete = async (analyst: User) => {
+  const confirmDelete = window.confirm(
+    `Deseja excluir definitivamente ${analyst.fullName}?\n\nEsta ação irá remover:\n\n- Login do Supabase\n- Perfil do usuário\n- Analista do App\n\nNão poderá ser desfeita.`
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      'admin-delete-user',
+      {
+        body: {
+          userId: analyst.userId || analyst.id,
+          email: analyst.email
+        }
+      }
+    );
+
+    if (error || data?.error) {
+      alert(
+        data?.error ||
+        error?.message ||
+        'Erro ao excluir usuário.'
+      );
+      return;
+    }
+
+    dataService.deleteUser(analyst.id);
+
+    refresh();
+
+    alert('Usuário removido do App e do Supabase.');
+  } catch (err: any) {
+    console.error(err);
+    alert(err?.message || 'Erro inesperado.');
+  }
+};
 
   const handleEditAnalyst = (analyst: User) => {
     
@@ -813,7 +850,7 @@ const handleSaveAnalyst = () => {
   onClick={() => handleDeleteAnalystFromApp(analyst)}
   className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black"
 >
-  Excluir App
+  Excluir
 </button>
 
           </div>
