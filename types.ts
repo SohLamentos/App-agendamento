@@ -93,6 +93,7 @@ export interface User {
   email: string;
 
   role: UserRole;
+  showInSchedule?: boolean;
 
   // Novo campo para identificar administradores globais
   isGlobalAdmin?: boolean;
