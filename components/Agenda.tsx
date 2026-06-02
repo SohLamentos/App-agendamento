@@ -66,13 +66,10 @@ const getRegion = (user: any) => {
   .getUsers()
   .filter(
     u =>
-      (
-  u.role === UserRole.ANALYST ||
-  u.role === UserRole.ADMIN
-) &&
-u.active === true &&
-u.showInSchedule !== false &&
-u.groupId === user.groupId
+     u.active === true &&
+u.groupId === user.groupId &&
+u.showInSchedule === true &&
+!!u.analystProfileId
   )
     .sort((a, b) => {
       const regionA = getRegion(a);
