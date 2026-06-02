@@ -5049,7 +5049,11 @@ public getUnconfiguredCities() {
   window.dispatchEvent(new Event('data-updated'));
 }
 
-public reassignAnalystReferences(oldAnalystId: string, newAnalystId: string) {
+public reassignAnalystReferences(
+  oldAnalystId: string,
+  newAnalystId: string,
+  legacyAnalystProfileId?: string | null
+) {
   if (!oldAnalystId || !newAnalystId || oldAnalystId === newAnalystId) return;
 
   const ctx = this.getContext();
@@ -5091,6 +5095,12 @@ public reassignAnalystReferences(oldAnalystId: string, newAnalystId: string) {
       : mapping
   );
 
+  this.scoreAdjustments = this.scoreAdjustments.map(adj =>
+    adj.groupId === ctx.groupId && String(adj.analystId) === String(oldAnalystId)
+      ? { ...adj, analystId: newAnalystId, updatedAt: now }
+      : adj
+  );
+
   const rawFixedDates = localStorage.getItem('certitech_base_fixed_dates_v1');
 
   if (rawFixedDates) {
@@ -5099,15 +5109,12 @@ public reassignAnalystReferences(oldAnalystId: string, newAnalystId: string) {
 
       if (Array.isArray(fixedDates)) {
         const migratedFixedDates = fixedDates.map(rule =>
-          String(rule.analystId) === String(oldAnalystId)
+          rule.groupId === ctx.groupId && String(rule.analystId) === String(oldAnalystId)
             ? { ...rule, analystId: newAnalystId }
             : rule
         );
 
-        localStorage.setItem(
-          'certitech_base_fixed_dates_v1',
-          JSON.stringify(migratedFixedDates)
-        );
+        localStorage.setItem('certitech_base_fixed_dates_v1', JSON.stringify(migratedFixedDates));
       }
     } catch {
       console.warn('Não foi possível migrar datas fixas do analista legado.');
