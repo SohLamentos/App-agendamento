@@ -835,25 +835,28 @@ const operationalAnalysts = useMemo(() => {
 </tr>
                 </thead>
 
-                <tbody>
+                
+  <tbody>
   {visibleUsers.length === 0 ? (
     <tr>
-      <td colSpan={6} className="p-8 text-center text-[11px] font-bold text-slate-400 uppercase">
+      <td colSpan={7} className="p-8 text-center text-[11px] font-bold text-slate-400 uppercase">
         Nenhum usuário cadastrado
       </td>
     </tr>
   ) : (
-    <td className="p-4 text-xs font-black text-slate-800 uppercase">
-  {analyst.fullName}
-</td>
-        
+    visibleUsers.map(analyst => (
+      <tr key={analyst.id} className="border-t border-slate-100">
+        <td className="p-4 text-xs font-black text-slate-800 uppercase">
+          {analyst.fullName}
+        </td>
+
         <td className="p-4 text-xs font-bold text-slate-600 uppercase">
-  {analyst.role === UserRole.MANAGER
-  ? 'GESTOR'
-  : analyst.showInSchedule === false
-    ? 'ADMINISTRATIVO'
-    : 'ANALISTA'}
-</td>
+          {analyst.role === UserRole.MANAGER
+            ? 'GESTOR'
+            : analyst.showInSchedule === false
+              ? 'ADMINISTRATIVO'
+              : 'ANALISTA'}
+        </td>
 
         <td className="p-4 text-xs font-bold text-slate-600">
           {analyst.id}
@@ -879,34 +882,32 @@ const operationalAnalysts = useMemo(() => {
 
         <td className="p-4">
           <div className="flex gap-2">
-            
             <button
-  onClick={() => handleEditAnalyst(analyst)}
-  className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-200"
->
-  Editar
-</button>
+              onClick={() => handleEditAnalyst(analyst)}
+              className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-200"
+            >
+              Editar
+            </button>
 
             <button
-  onClick={() => handleToggleAnalystStatus(analyst)}
-  className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
-    analyst.active
-      ? 'bg-red-100 text-red-700 hover:bg-red-200'
-      : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-  }`}
->
-  {analyst.active ? 'Inativar' : 'Ativar'}
-</button>
-            <button
-  onClick={() => handleDeleteAnalystComplete(analyst)}
-  className="px-3 py-2 rounded-xl bg-red-700 text-white text-[9px] font-black uppercase hover:bg-red-800"
->
-  Excluir
-</button>
+              onClick={() => handleToggleAnalystStatus(analyst)}
+              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase ${
+                analyst.active
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                  : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+              }`}
+            >
+              {analyst.active ? 'Inativar' : 'Ativar'}
+            </button>
 
+            <button
+              onClick={() => handleDeleteAnalystComplete(analyst)}
+              className="px-3 py-2 rounded-xl bg-red-700 text-white text-[9px] font-black uppercase hover:bg-red-800"
+            >
+              Excluir
+            </button>
           </div>
         </td>
-
       </tr>
     ))
   )}
