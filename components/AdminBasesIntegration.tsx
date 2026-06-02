@@ -214,14 +214,15 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
     'admin-create-user',
     {
       body: {
-        email,
-        fullName: normalizedName,
-        role: UserRole.ANALYST,
-        groupId: user.groupId,
-        temporaryPassword: newAnalystForm.password || 'Claro@123',
-        legacyUserId: isAdministrative ? null : legacyUserId,
-        showInSchedule: !isAdministrative,
-      },
+  email,
+  fullName: normalizedName,
+  role: UserRole.ANALYST,
+  groupId: user.groupId,
+  temporaryPassword: newAnalystForm.password || 'Claro@123',
+  legacyUserId: isAdministrative ? null : legacyUserId,
+  analystProfileId: isAdministrative ? null : analystProfileId,
+  showInSchedule: !isAdministrative,
+},
     }
   );
 
@@ -842,8 +843,9 @@ const operationalAnalysts = useMemo(() => {
       </td>
     </tr>
   ) : (
-    visibleUsers.map(analyst => (
-      <tr key={analyst.id} className="border-t border-slate-100">
+    <td className="p-4 text-xs font-black text-slate-800 uppercase">
+  {analyst.fullName}
+</td>
         
         <td className="p-4 text-xs font-bold text-slate-600 uppercase">
   {analyst.role === UserRole.MANAGER
@@ -1425,7 +1427,10 @@ coveredUfs: [
             >
               <option value="">Qualquer Analista</option>
               {visibleUsers
-  .filter(a => a.role === UserRole.ANALYST)
+  .filter(a =>
+    a.role === UserRole.ANALYST &&
+    a.showInSchedule !== false
+  )
   .map(a => (
                 <option key={a.id} value={a.id}>{a.fullName}</option>
               ))}
