@@ -53,7 +53,7 @@ const [newAnalystForm, setNewAnalystForm] = useState({
   fullName: '',
   email: '',
   password: 'Claro@123',
-  mode: 'link',
+  mode: 'link', // link | create | admin
   existingAnalystId: '',
 });
 
@@ -171,11 +171,12 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
 
   const handleCreateAnalyst = async () => {
   if (!newAnalystForm.email.trim()) {
-    alert('Informe o e-mail do analista.');
+    alert('Informe o e-mail.');
     return;
   }
 
   const email = newAnalystForm.email.trim().toLowerCase();
+  const isAdministrative = newAnalystForm.mode === 'admin';
 
   let fullName = newAnalystForm.fullName.trim();
   let legacyUserId: string | null = null;
@@ -213,29 +214,29 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
       body: {
         email,
         fullName: normalizedName,
-        role: UserRole.ANALYST,
+        role: isAdministrative ? UserRole.MANAGER : UserRole.ANALYST,
         groupId: user.groupId,
         temporaryPassword: newAnalystForm.password || 'Claro@123',
-        legacyUserId,
-        analystProfileId,
+        legacyUserId: isAdministrative ? null : legacyUserId,
+        analystProfileId: isAdministrative ? null : analystProfileId,
       },
     }
   );
 
   if (error || data?.error) {
-    alert(data?.error || error?.message || 'Erro ao criar login do analista.');
+    alert(data?.error || error?.message || 'Erro ao criar usuário.');
     return;
   }
 
-   await dataService.initializeFromCloud();
+  await dataService.initializeFromCloud();
 
-if (newAnalystForm.mode === 'link' && legacyUserId && data?.userId) {
-  dataService.reassignAnalystReferences(
-    legacyUserId,
-    data.userId,
-    analystProfileId
-  );
-}
+  if (newAnalystForm.mode === 'link' && legacyUserId && data?.userId) {
+    dataService.reassignAnalystReferences(
+      legacyUserId,
+      data.userId,
+      analystProfileId
+    );
+  }
 
   setIsNewAnalystModalOpen(false);
 
@@ -250,9 +251,11 @@ if (newAnalystForm.mode === 'link' && legacyUserId && data?.userId) {
   refresh();
 
   alert(
-    newAnalystForm.mode === 'link'
-      ? 'Analista legado vinculado ao novo login com sucesso.'
-      : 'Analista criado com sucesso.'
+    isAdministrative
+      ? 'Usuário administrativo criado com sucesso.'
+      : newAnalystForm.mode === 'link'
+        ? 'Analista legado vinculado ao novo login com sucesso.'
+        : 'Analista criado com sucesso.'
   );
 };
 
@@ -781,6 +784,7 @@ const operationalAnalysts = useMemo(() => {
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
                 Analistas & Acessos
               </h3>
+              
               <button
   onClick={() => setIsNewAnalystModalOpen(true)}
   className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest"
@@ -1048,49 +1052,71 @@ const operationalAnalysts = useMemo(() => {
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
     <div className="bg-white p-8 rounded-[30px] w-[520px] space-y-4">
       <h3 className="text-sm font-black uppercase text-slate-900">
-        Novo Analista
-      </h3>
+  {newAnalystForm.mode === 'admin'
+    ? 'Novo Administrativo'
+    : 'Novo Analista'}
+</h3>
 
       <div className="space-y-3">
   <label className="text-[10px] font-black uppercase text-slate-500">
     Tipo de criação
   </label>
 
-  <div className="flex gap-2">
-    <button
-      type="button"
-      onClick={() =>
-        setNewAnalystForm({
-          ...newAnalystForm,
-          mode: 'link',
-        })
-      }
-      className={`flex-1 p-3 rounded-xl text-[10px] font-black uppercase transition-all ${
-        newAnalystForm.mode === 'link'
-          ? 'bg-claro-red text-white'
-          : 'bg-slate-100 text-slate-500'
-      }`}
-    >
-      Vincular Existente
-    </button>
+  <div className="grid grid-cols-3 gap-2">
+  <button
+    type="button"
+    onClick={() =>
+      setNewAnalystForm({
+        ...newAnalystForm,
+        mode: 'link',
+        existingAnalystId: '',
+      })
+    }
+    className={`p-3 rounded-xl text-[10px] font-black uppercase transition-all ${
+      newAnalystForm.mode === 'link'
+        ? 'bg-claro-red text-white'
+        : 'bg-slate-100 text-slate-500'
+    }`}
+  >
+    Vincular Existente
+  </button>
 
-    <button
-      type="button"
-      onClick={() =>
-        setNewAnalystForm({
-          ...newAnalystForm,
-          mode: 'create',
-        })
-      }
-      className={`flex-1 p-3 rounded-xl text-[10px] font-black uppercase transition-all ${
-        newAnalystForm.mode === 'create'
-          ? 'bg-claro-red text-white'
-          : 'bg-slate-100 text-slate-500'
-      }`}
-    >
-      Criar Novo
-    </button>
-  </div>
+  <button
+    type="button"
+    onClick={() =>
+      setNewAnalystForm({
+        ...newAnalystForm,
+        mode: 'create',
+        existingAnalystId: '',
+      })
+    }
+    className={`p-3 rounded-xl text-[10px] font-black uppercase transition-all ${
+      newAnalystForm.mode === 'create'
+        ? 'bg-claro-red text-white'
+        : 'bg-slate-100 text-slate-500'
+    }`}
+  >
+    Criar Novo
+  </button>
+
+  <button
+    type="button"
+    onClick={() =>
+      setNewAnalystForm({
+        ...newAnalystForm,
+        mode: 'admin',
+        existingAnalystId: '',
+      })
+    }
+    className={`p-3 rounded-xl text-[10px] font-black uppercase transition-all ${
+      newAnalystForm.mode === 'admin'
+        ? 'bg-claro-red text-white'
+        : 'bg-slate-100 text-slate-500'
+    }`}
+  >
+    Criar Administrativo
+  </button>
+</div>
 </div>
 
       {newAnalystForm.mode === 'link' && (
@@ -1119,7 +1145,7 @@ const operationalAnalysts = useMemo(() => {
   </select>
 )}
 
-      {newAnalystForm.mode === 'create' && (
+      {(newAnalystForm.mode === 'create' || newAnalystForm.mode === 'admin') && (
   <input
     placeholder="Nome completo"
     value={newAnalystForm.fullName}
@@ -1159,7 +1185,9 @@ const operationalAnalysts = useMemo(() => {
 
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
         <p className="text-[10px] font-black uppercase text-amber-700 leading-relaxed">
-          O login do analista será criado automaticamente no Supabase.
+          {newAnalystForm.mode === 'admin'
+  ? 'O usuário administrativo será criado como GESTOR do grupo e não aparecerá na agenda.'
+  : 'O login do analista será criado automaticamente no Supabase.'}
         </p>
       </div>
 
@@ -1177,8 +1205,11 @@ const operationalAnalysts = useMemo(() => {
   onClick={handleCreateAnalyst}
   className="flex-1 p-3 bg-claro-red text-white rounded-xl text-xs font-black uppercase transition-all duration-100 shadow-[0_5px_0_#7f0000] hover:translate-y-[1px] hover:shadow-[0_4px_0_#7f0000] active:translate-y-[5px] active:shadow-none"
 >
-  Criar Analista
+  {newAnalystForm.mode === 'admin'
+    ? 'Criar Administrativo'
+    : 'Criar Analista'}
 </button>
+        
       </div>
     </div>
   </div>
