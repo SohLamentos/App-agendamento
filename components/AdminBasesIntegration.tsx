@@ -380,7 +380,7 @@ if (dependencySummary.hasDependencies) {
   fullName: analyst.fullName || '',
   email: analyst.email || '',
   analystProfileId: analyst.analystProfileId || '',
-  role: UserRole.ANALYST,
+  role: analyst.role || UserRole.ANALYST,
   showInSchedule: analyst.showInSchedule !== false,
   active: analyst.active
 });
@@ -406,7 +406,7 @@ const handleSaveAnalyst = () => {
   fullName: normalizedName,
   email: analystForm.email.trim().toLowerCase(),
   analystProfileId: analystForm.analystProfileId.trim(),
-  role: UserRole.ANALYST,
+  role: analystForm.role,
   showInSchedule: analystForm.showInSchedule,
   normalizedLogin: normalizedName,
   firstNameLogin: normalizedName.split(' ')[0],
@@ -480,6 +480,16 @@ const visibleUsers = useMemo(() => {
 
     return true;
   });
+}, [users, user.groupId, linkedLegacyIds]);
+
+  const operationalAnalysts = useMemo(() => {
+  return users.filter(u =>
+    u.groupId === user.groupId &&
+    u.role === UserRole.ANALYST &&
+    u.showInSchedule !== false &&
+    String(u.id).startsWith('u') &&
+    !linkedLegacyIds.includes(String(u.id))
+  );
 }, [users, user.groupId, linkedLegacyIds]);
 
   const resetBaseForm = () => {
