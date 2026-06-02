@@ -460,25 +460,26 @@ const linkedLegacyIds = useMemo(() => {
 }, [users]);
 
 const visibleUsers = useMemo(() => {
-  return users.filter(
-    u =>
+  return users.filter(u => {
+    if (
+      u.groupId !== user.groupId ||
       (
-        u.role === UserRole.ANALYST ||
-        u.role === UserRole.MANAGER
-      ) &&
-      u.groupId === user.groupId
-  );
-}, [users, user.groupId]);
-  
+        u.role !== UserRole.ANALYST &&
+        u.role !== UserRole.MANAGER
+      )
+    ) {
+      return false;
+    }
 
-const operationalAnalysts = useMemo(() => {
-  return users.filter(
-    u =>
-      u.role === UserRole.ANALYST &&
-      u.groupId === user.groupId &&
+    if (
       String(u.id).startsWith('u') &&
-      
-  );
+      linkedLegacyIds.includes(String(u.id))
+    ) {
+      return false;
+    }
+
+    return true;
+  });
 }, [users, user.groupId, linkedLegacyIds]);
 
   const resetBaseForm = () => {
