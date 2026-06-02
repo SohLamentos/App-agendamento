@@ -435,14 +435,18 @@ const linkedLegacyIds = useMemo(() => {
     .map(String);
 }, [users]);
 
-const analysts = useMemo(() => {
+const visibleUsers = useMemo(() => {
   return users.filter(
     u =>
-      u.role === UserRole.ANALYST &&
+      (
+        u.role === UserRole.ANALYST ||
+        u.role === UserRole.MANAGER
+      ) &&
       u.groupId === user.groupId &&
       !linkedLegacyIds.includes(String(u.id))
   );
 }, [users, user.groupId, linkedLegacyIds]);
+  
 
 const operationalAnalysts = useMemo(() => {
   return users.filter(
@@ -805,14 +809,14 @@ const operationalAnalysts = useMemo(() => {
                 </thead>
 
                 <tbody>
-  {analysts.length === 0 ? (
+  {visibleUsers.length === 0 ? (
     <tr>
       <td colSpan={6} className="p-8 text-center text-[11px] font-bold text-slate-400 uppercase">
         Nenhum analista cadastrado
       </td>
     </tr>
   ) : (
-    analysts.map(analyst => (
+    visibleUsers.map(analyst => (
       <tr key={analyst.id} className="border-t border-slate-100">
         
         <td className="p-4 text-xs font-black text-slate-800 uppercase">
