@@ -801,11 +801,14 @@ const operationalAnalysts = useMemo(() => {
               <table className="w-full">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Analista</th>
-                    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">ID Interno</th>
-                    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">ID PowerApps</th>
-                    <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Status</th>
-                  </tr>
+  <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Nome</th>
+  <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Tipo</th>
+  <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">ID Interno</th>
+  <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">E-mail</th>
+  <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Perfil Agenda</th>
+  <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Status</th>
+  <th className="p-4 text-left text-[9px] font-black text-slate-400 uppercase">Ações</th>
+</tr>
                 </thead>
 
                 <tbody>
@@ -819,9 +822,9 @@ const operationalAnalysts = useMemo(() => {
     visibleUsers.map(analyst => (
       <tr key={analyst.id} className="border-t border-slate-100">
         
-        <td className="p-4 text-xs font-black text-slate-800 uppercase">
-          {analyst.fullName}
-        </td>
+        <td className="p-4 text-xs font-bold text-slate-600 uppercase">
+  {analyst.role === UserRole.MANAGER ? 'ADMINISTRATIVO' : 'ANALISTA'}
+</td>
 
         <td className="p-4 text-xs font-bold text-slate-600">
           {analyst.id}
