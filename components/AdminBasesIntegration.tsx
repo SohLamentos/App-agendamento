@@ -314,6 +314,19 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   alert('Analista removido do app.');
 };
   const handleDeleteAnalystComplete = async (analyst: User) => {
+    const dependencySummary = dataService.getUserDependencySummary(analyst.id);
+
+if (dependencySummary.hasDependencies) {
+  alert(
+    `Não é possível excluir ${analyst.fullName} porque existem vínculos ativos.\n\n` +
+    `Agendamentos: ${dependencySummary.schedulesCount}\n` +
+    `Eventos/Bloqueios: ${dependencySummary.eventsCount}\n` +
+    `Regras de Roteamento: ${dependencySummary.routingRulesCount}\n` +
+    `Mapeamentos: ${dependencySummary.mappingsCount}\n\n` +
+    `Inative o usuário ou transfira os vínculos antes de excluir.`
+  );
+  return;
+}
   const confirmDelete = window.confirm(
     `Deseja excluir definitivamente ${analyst.fullName}?\n\nEsta ação irá remover:\n\n- Login do Supabase\n- Perfil do usuário\n- Analista do App\n\nNão poderá ser desfeita.`
   );
@@ -355,19 +368,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   }
 };
 
-  const dependencySummary = dataService.getUserDependencySummary(analyst.id);
-
-if (dependencySummary.hasDependencies) {
-  alert(
-    `Não é possível excluir ${analyst.fullName} porque existem vínculos ativos.\n\n` +
-    `Agendamentos: ${dependencySummary.schedulesCount}\n` +
-    `Eventos/Bloqueios: ${dependencySummary.eventsCount}\n` +
-    `Regras de Roteamento: ${dependencySummary.routingRulesCount}\n` +
-    `Mapeamentos: ${dependencySummary.mappingsCount}\n\n` +
-    `Inative o usuário ou transfira os vínculos antes de excluir.`
-  );
-  return;
-}
+  
 
   const handleEditAnalyst = (analyst: User) => {
     
