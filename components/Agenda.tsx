@@ -325,6 +325,23 @@ const [otherReasonShift, setOtherReasonShift] = useState<Shift>(Shift.MORNING);
   FERIADO: '#000000',
   CQ_SUPPORT: '#4F46E5'
 };
+
+  const getAgendaAnalystName = (analyst: User) => {
+  const login = String(
+    analyst.normalizedLogin ||
+    analyst.firstNameLogin ||
+    analyst.fullName ||
+    ''
+  ).trim();
+
+  if (login === 'ADMIN' && analyst.analystProfileId) {
+    return String(analyst.fullName || 'THIAGO')
+      .split(' ')[0]
+      .toUpperCase();
+  }
+
+  return login || 'N/D';
+};
   const getCellContent = (userId: string, dateIso: string) => {
     const dayBlocks = events.filter(e => e.involvedUserIds.includes(userId) && e.startDatetime.startsWith(dateIso));
     const daySchs = schedules.filter((s: any) => {
@@ -1799,8 +1816,8 @@ return (
   </span>
 
   <p className="font-black text-[10px] uppercase truncate">
-    {analyst.normalizedLogin}
-  </p>
+  {getAgendaAnalystName(analyst)}
+</p>
 </div>
   
                   </td>
