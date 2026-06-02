@@ -782,6 +782,129 @@ private async syncUsersFromProfiles() {
   this.users = Array.from(map.values());
 }
 
+  private migrateLegacyAnalystIdsAfterCloudLoad() {
+  const groupId = this.getActiveGroupId();
+  const now = new Date().toISOString();
+
+  const legacyToProfile: Record<string, string> = {
+    u3: 'ap1',
+    u4: 'ap2',
+    u5: 'ap3',
+    u6: 'ap4',
+    u7: 'ap5',
+    u8: 'ap6',
+    u9: 'ap7',
+    u10: 'ap8',
+    u11: 'ap9',
+    u12: 'ap10',
+    u13: 'ap11',
+    u14: 'ap12',
+    u15: 'ap13',
+  };
+
+  const profileToCurrentUserId = new Map<string, string>();
+
+  this.users.forEach(user => {
+    if (
+      user.groupId === groupId &&
+      user.active === true &&
+      user.analystProfileId
+    ) {
+      profileToCurrentUserId.set(
+        String(user.analystProfileId),
+        String(user.id)
+      );
+    }
+  });
+
+  const resolveNewId = (oldId: any) => {
+    const profileId = legacyToProfile[String(oldId)];
+    if (!profileId) return null;
+    return profileToCurrentUserId.get(profileId) || null;
+  };
+
+  let changed = false;
+
+  this.schedules = this.schedules.map(schedule => {
+    if (schedule.groupId !== groupId) return schedule;
+
+    const newId = resolveNewId(schedule.analystId);
+    if (!newId || String(schedule.analystId) === newId) return schedule;
+
+    changed = true;
+    return { ...schedule, analystId: newId, updatedAt: now };
+  });
+
+  this.schedulesTeste = this.schedulesTeste.map(schedule => {
+    if (schedule.groupId !== groupId) return schedule;
+
+    const newId = resolveNewId(schedule.analystId);
+    if (!newId || String(schedule.analystId) === newId) return schedule;
+
+    changed = true;
+    return { ...schedule, analystId: newId, updatedAt: now };
+  });
+
+  this.events = this.events.map(event => {
+    if (event.groupId !== groupId || !Array.isArray(event.involvedUserIds)) {
+      return event;
+    }
+
+    let eventChanged = false;
+
+    const involvedUserIds = event.involvedUserIds.map(id => {
+      const newId = resolveNewId(id);
+      if (!newId) return id;
+
+      eventChanged = true;
+      return newId;
+    });
+
+    if (!eventChanged) return event;
+
+    changed = true;
+    return { ...event, involvedUserIds, updatedAt: now };
+  });
+
+  this.routingRules = this.routingRules.map(rule => {
+    if (rule.groupId !== groupId || !rule.analystId) return rule;
+
+    const newId = resolveNewId(rule.analystId);
+    if (!newId || String(rule.analystId) === newId) return rule;
+
+    changed = true;
+    return { ...rule, analystId: newId };
+  });
+
+  this.analystMappings = this.analystMappings.map(mapping => {
+    if (mapping.groupId !== groupId) return mapping;
+
+    const newId = resolveNewId(mapping.userId);
+    if (!newId || String(mapping.userId) === newId) return mapping;
+
+    changed = true;
+    return { ...mapping, userId: newId };
+  });
+
+  this.scoreAdjustments = this.scoreAdjustments.map(adj => {
+    if (adj.groupId !== groupId) return adj;
+
+    const newId = resolveNewId(adj.analystId);
+    if (!newId || String(adj.analystId) === newId) return adj;
+
+    changed = true;
+    return { ...adj, analystId: newId, updatedAt: now };
+  });
+
+  if (changed) {
+    this.persist({
+      immediate: true,
+      allowScheduleDeletion: true,
+      allowEventDeletion: true,
+    });
+  }
+}
+
   public async initializeFromCloud() {
   try {
     const groupId = this.getActiveGroupId();
@@ -912,6 +1035,9 @@ this.ensureFixedAdmin();
     this.integrationBases = payload.integrationBases ?? this.integrationBases;
 this.routingRules = payload.routingRules ?? this.routingRules;
 this.analystMappings = payload.analystMappings ?? this.analystMappings;
+
+this.migrateLegacyAnalystIdsAfterCloudLoad();
+
     this.trainingTypes = payload.trainingTypes ?? this.trainingTypes;
     this.operationalEventTypes = this.normalizeOperationalEventTypes(
   payload.operationalEventTypes ?? this.operationalEventTypes
@@ -1394,6 +1520,9 @@ this.analystMappings = [];
     existingAdmin.groupId = existingAdmin.groupId || 'G3';
     existingAdmin.passwordHash = adminPasswordHash;
     existingAdmin.active = true;
+    existingAdmin.showInSchedule = false;
+    existingAdmin.analystProfileId = undefined;
+    existingAdmin.managerId = undefined;
     existingAdmin.updatedAt = new Date().toISOString();
     return;
   }
@@ -1407,6 +1536,7 @@ this.analystMappings = [];
     role: UserRole.ADMIN,
     groupId: 'G3',
     managerId: undefined,
+    analystProfileId: undefined,
     passwordHash: adminPasswordHash,
     active: true,
     showInSchedule: false,
