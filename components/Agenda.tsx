@@ -64,13 +64,13 @@ const getRegion = (user: any) => {
 
   return dataService
   .getUsers()
-  .filter(
-    u =>
-     u.active === true &&
-u.groupId === user.groupId &&
-u.showInSchedule === true &&
-!!u.analystProfileId
-  )
+  .filter(u =>
+  u.active === true &&
+  u.groupId === user.groupId &&
+  u.showInSchedule !== false &&
+  !!u.analystProfileId &&
+  u.normalizedLogin !== 'ADMIN'
+)
     .sort((a, b) => {
       const regionA = getRegion(a);
       const regionB = getRegion(b);
