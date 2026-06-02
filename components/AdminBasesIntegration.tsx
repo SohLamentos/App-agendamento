@@ -412,11 +412,12 @@ const handleSaveAnalyst = () => {
   setEditingAnalystId(null);
 
   setAnalystForm({
-    fullName: '',
-    email: '',
-    analystProfileId: '',
-    active: true
-  });
+  fullName: '',
+  email: '',
+  analystProfileId: '',
+  role: UserRole.ANALYST,
+  active: true
+});
 
   refresh();
 };
@@ -742,7 +743,7 @@ const operationalAnalysts = useMemo(() => {
                   ) : (
                     rules.map(rule => {
                       const base = bases.find(b => b.id === rule.baseId);
-                      const analyst = analysts.find(a => a.id === rule.analystId);
+                      const analyst = visibleUsers.find(a => a.id === rule.analystId);
 
                       return (
                         <tr key={rule.id} className="border-t border-slate-100">
@@ -1254,8 +1255,18 @@ const operationalAnalysts = useMemo(() => {
             />
 
             <input
-              placeholder="E-mail"
-              <select
+  placeholder="E-mail"
+  value={analystForm.email}
+  onChange={(e) =>
+    setAnalystForm({
+      ...analystForm,
+      email: e.target.value
+    })
+  }
+  className="w-full p-3 border rounded-xl text-xs font-bold"
+/>
+
+<select
   value={analystForm.role}
   onChange={(e) =>
     setAnalystForm({
@@ -1273,10 +1284,6 @@ const operationalAnalysts = useMemo(() => {
     Administrativo
   </option>
 </select>
-              value={analystForm.email}
-              onChange={(e) => setAnalystForm({ ...analystForm, email: e.target.value })}
-              className="w-full p-3 border rounded-xl text-xs font-bold"
-            />
 
             <input
               placeholder="Perfil Agenda / AnalystProfileId"
@@ -1407,7 +1414,9 @@ coveredUfs: [
               className="w-full p-3 border rounded-xl"
             >
               <option value="">Qualquer Analista</option>
-              {analysts.map(a => (
+              {visibleUsers
+  .filter(a => a.role === UserRole.ANALYST)
+  .map(a => (
                 <option key={a.id} value={a.id}>{a.fullName}</option>
               ))}
             </select>
