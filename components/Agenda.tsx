@@ -66,7 +66,10 @@ const getRegion = (user: any) => {
   .getUsers()
   .filter(
     u =>
-      u.role === UserRole.ANALYST &&
+      (
+  u.role === UserRole.ANALYST ||
+  u.role === UserRole.ADMIN
+) &&
 u.active === true &&
 u.showInSchedule !== false &&
 u.groupId === user.groupId
