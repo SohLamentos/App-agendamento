@@ -5130,6 +5130,47 @@ public reassignAnalystReferences(
   window.dispatchEvent(new Event('data-updated'));
 }
 
+  public getUserDependencySummary(userId: string) {
+  const ctx = this.getContext();
+
+  const schedulesCount = this.schedules.filter(
+    s =>
+      s.groupId === ctx.groupId &&
+      String(s.analystId) === String(userId) &&
+      s.status !== ScheduleStatus.CANCELLED
+  ).length;
+
+  const eventsCount = this.events.filter(
+    e =>
+      e.groupId === ctx.groupId &&
+      e.involvedUserIds?.some(id => String(id) === String(userId))
+  ).length;
+
+  const routingRulesCount = this.routingRules.filter(
+    r =>
+      r.groupId === ctx.groupId &&
+      String(r.analystId || '') === String(userId)
+  ).length;
+
+  const mappingsCount = this.analystMappings.filter(
+    m =>
+      m.groupId === ctx.groupId &&
+      String(m.userId) === String(userId)
+  ).length;
+
+  return {
+    schedulesCount,
+    eventsCount,
+    routingRulesCount,
+    mappingsCount,
+    hasDependencies:
+      schedulesCount > 0 ||
+      eventsCount > 0 ||
+      routingRulesCount > 0 ||
+      mappingsCount > 0,
+  };
+}
+
   public deleteUser(userId: string) {
 
   
