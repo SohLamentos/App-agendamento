@@ -773,8 +773,8 @@ private async syncUsersFromProfiles() {
     };
 
     if (legacyId) {
-  map.delete(legacyId);
-}
+      map.delete(legacyId);
+    }
 
     map.set(newId, mergedUser);
   });
@@ -906,17 +906,6 @@ this.ensureFixedAdmin();
     this.schedules = payload.schedules ?? this.schedules;
     this.schedulesTeste = payload.schedulesTeste ?? this.schedulesTeste;
     this.events = payload.events ?? this.events;
-    const thiagoNovo = this.users.find(u =>
-  String(u.email || '').toLowerCase() === 'thiago.andersonsilva@claro.com.br'
-);
-
-if (thiagoNovo?.id) {
-  this.reassignAnalystReferences(
-    'u8',
-    String(thiagoNovo.id),
-    'ap6'
-  );
-}
     this.schedulingConfig = payload.schedulingConfig ?? this.schedulingConfig;
     this.testModeActive = payload.testModeActive ?? this.testModeActive;
     this.scoreAdjustments = payload.scoreAdjustments ?? this.scoreAdjustments;
@@ -1389,7 +1378,6 @@ this.analystMappings = [];
 
   return aliases[s] || s;
 }
-
   private ensureFixedAdmin() {
   const adminPasswordHash = btoa('salt_Claro@123_G3');
 
@@ -1406,12 +1394,6 @@ this.analystMappings = [];
     existingAdmin.groupId = existingAdmin.groupId || 'G3';
     existingAdmin.passwordHash = adminPasswordHash;
     existingAdmin.active = true;
-
-    // ADMIN técnico do sistema nunca deve aparecer na agenda
-    existingAdmin.showInSchedule = false;
-    existingAdmin.analystProfileId = undefined;
-    existingAdmin.managerId = undefined;
-
     existingAdmin.updatedAt = new Date().toISOString();
     return;
   }
@@ -1425,7 +1407,6 @@ this.analystMappings = [];
     role: UserRole.ADMIN,
     groupId: 'G3',
     managerId: undefined,
-    analystProfileId: undefined,
     passwordHash: adminPasswordHash,
     active: true,
     showInSchedule: false,
