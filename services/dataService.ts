@@ -690,18 +690,25 @@ this.analystMappings = savedMappings ? JSON.parse(savedMappings) : [];
 }
 
 private mapUserProfileToUser(profile: any): User {
+  const authId = profile.user_id || profile.id;
+
   return {
-    id: profile.user_id || profile.id,
-authUserId: profile.user_id || profile.id,
-legacyUserId: profile.legacy_user_id || null,
+    id: authId || profile.legacy_user_id,
+    authUserId: authId,
+    legacyUserId: profile.legacy_user_id || undefined,
+
     fullName: profile.full_name || profile.name || profile.email,
     normalizedLogin: profile.normalized_login || profile.name || profile.email,
     firstNameLogin: profile.normalized_login || profile.name || profile.email,
     email: profile.email || '',
+
+    role: this.mapProfileRoleToUserRole(String(profile.role || '')),
     showInSchedule: profile.permissions?.showInSchedule !== false,
+
     groupId: profile.group_id || 'G3',
     managerId: profile.analyst_profile_id || undefined,
     analystProfileId: profile.analyst_profile_id || undefined,
+
     passwordHash: '',
     active: profile.active !== false,
     isGlobalAdmin: profile.is_global_admin === true,
