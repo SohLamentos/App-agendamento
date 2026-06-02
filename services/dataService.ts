@@ -2811,7 +2811,11 @@ const newSch = {
   // ============================================================
 
 const analystsPool = this.users.filter(
-  u => u.role === UserRole.ANALYST && u.active && u.groupId === context.groupId
+  u =>
+    u.role === UserRole.ANALYST &&
+    u.active &&
+    u.showInSchedule !== false &&
+    u.groupId === context.groupId
 );
 
 const todayStr = new Date().toISOString().split('T')[0];
