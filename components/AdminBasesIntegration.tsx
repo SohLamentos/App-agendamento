@@ -55,7 +55,7 @@ const [newAnalystForm, setNewAnalystForm] = useState({
   fullName: '',
   email: '',
   password: 'Claro@123',
-  mode: 'link', // link | create | admin
+  mode: 'create', // create | admin
   existingAnalystId: '',
 });
 
@@ -181,23 +181,7 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   const isAdministrative = newAnalystForm.mode === 'admin';
 
   let fullName = newAnalystForm.fullName.trim();
-  let legacyUserId: string | null = null;
-  let analystProfileId: string | null = null;
-
-  if (newAnalystForm.mode === 'link') {
-    const existing = operationalAnalysts.find(
-      a => a.id === newAnalystForm.existingAnalystId
-    );
-
-    if (!existing) {
-      alert('Selecione um analista legado para vincular.');
-      return;
-    }
-
-    fullName = existing.fullName;
-    legacyUserId = existing.id;
-    analystProfileId = existing.analystProfileId || null;
-  }
+    
 
   if (!fullName.trim()) {
     alert('Informe o nome completo.');
@@ -219,8 +203,8 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   role: UserRole.ANALYST,
   groupId: user.groupId,
   temporaryPassword: newAnalystForm.password || 'Claro@123',
-  legacyUserId: isAdministrative ? null : legacyUserId,
-  analystProfileId: isAdministrative ? null : analystProfileId,
+  legacyUserId: null,
+analystProfileId: null,
   showInSchedule: !isAdministrative,
 },
     }
@@ -233,33 +217,25 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
 
   await dataService.initializeFromCloud();
 
-  if (newAnalystForm.mode === 'link' && legacyUserId && data?.userId) {
-    dataService.reassignAnalystReferences(
-      legacyUserId,
-      data.userId,
-      analystProfileId
-    );
-  }
+  
 
   setIsNewAnalystModalOpen(false);
 
   setNewAnalystForm({
-    fullName: '',
-    email: '',
-    password: 'Claro@123',
-    mode: 'link',
-    existingAnalystId: '',
-  });
+  fullName: '',
+  email: '',
+  password: 'Claro@123',
+  mode: 'create',
+  existingAnalystId: '',
+});
 
   refresh();
 
   alert(
-    isAdministrative
-      ? 'Usuário administrativo criado com sucesso.'
-      : newAnalystForm.mode === 'link'
-        ? 'Analista legado vinculado ao novo login com sucesso.'
-        : 'Analista criado com sucesso.'
-  );
+  isAdministrative
+    ? 'Usuário administrativo criado com sucesso.'
+    : 'Analista criado com sucesso.'
+);
 };
 
   const handleToggleAnalystStatus = async (analyst: User) => {
@@ -1112,24 +1088,8 @@ const visibleUsers = useMemo(() => {
     Tipo de criação
   </label>
 
-  <div className="grid grid-cols-3 gap-2">
-  <button
-    type="button"
-    onClick={() =>
-      setNewAnalystForm({
-        ...newAnalystForm,
-        mode: 'link',
-        existingAnalystId: '',
-      })
-    }
-    className={`p-3 rounded-xl text-[10px] font-black uppercase transition-all ${
-      newAnalystForm.mode === 'link'
-        ? 'bg-claro-red text-white'
-        : 'bg-slate-100 text-slate-500'
-    }`}
-  >
-    Vincular Existente
-  </button>
+  <div className="grid grid-cols-2 gap-2">
+ 
 
   <button
     type="button"
@@ -1169,31 +1129,7 @@ const visibleUsers = useMemo(() => {
 </div>
 </div>
 
-      {newAnalystForm.mode === 'link' && (
-  <select
-  value={newAnalystForm.existingAnalystId}
-  onChange={(e) => {
-    const selected = operationalAnalysts.find(
-      a => a.id === e.target.value
-    );
-
-    setNewAnalystForm({
-      ...newAnalystForm,
-      existingAnalystId: e.target.value,
-      fullName: selected?.fullName || '',
-    });
-  }}
-  className="w-full p-3 border rounded-xl text-xs font-bold"
->
-    <option value="">Selecione um analista existente</option>
-
-    {operationalAnalysts.map((analyst) => (
-      <option key={analyst.id} value={analyst.id}>
-        {analyst.fullName} ({analyst.id})
-      </option>
-    ))}
-  </select>
-)}
+      
 
       {(newAnalystForm.mode === 'create' || newAnalystForm.mode === 'admin') && (
   <input
