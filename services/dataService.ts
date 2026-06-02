@@ -1391,7 +1391,7 @@ this.analystMappings = [];
       const profile = JSON.parse(rawProfile);
 
       return {
-        id: profile.legacy_user_id || profile.user_id || profile.id || 'current-user',
+        id: profile.user_id || profile.id || profile.legacy_user_id || 'current-user',
         fullName: profile.full_name || profile.name || profile.email || 'USUÁRIO LOGADO',
         normalizedLogin: profile.normalized_login || profile.name || profile.email || 'USUARIO',
         firstNameLogin: profile.normalized_login || profile.name || 'USUARIO',
@@ -5053,27 +5053,28 @@ public reassignAnalystReferences(oldAnalystId: string, newAnalystId: string) {
   if (!oldAnalystId || !newAnalystId || oldAnalystId === newAnalystId) return;
 
   const ctx = this.getContext();
+  const now = new Date().toISOString();
 
   this.schedules = this.schedules.map(schedule =>
     schedule.groupId === ctx.groupId && String(schedule.analystId) === String(oldAnalystId)
-      ? { ...schedule, analystId: newAnalystId, updatedAt: new Date().toISOString() }
+      ? { ...schedule, analystId: newAnalystId, updatedAt: now }
       : schedule
   );
 
   this.schedulesTeste = this.schedulesTeste.map(schedule =>
     schedule.groupId === ctx.groupId && String(schedule.analystId) === String(oldAnalystId)
-      ? { ...schedule, analystId: newAnalystId, updatedAt: new Date().toISOString() }
+      ? { ...schedule, analystId: newAnalystId, updatedAt: now }
       : schedule
   );
 
   this.events = this.events.map(event =>
-    event.groupId === ctx.groupId && event.involvedUserIds?.includes(oldAnalystId)
+    event.groupId === ctx.groupId && event.involvedUserIds?.some(id => String(id) === String(oldAnalystId))
       ? {
           ...event,
           involvedUserIds: event.involvedUserIds.map(id =>
             String(id) === String(oldAnalystId) ? newAnalystId : id
           ),
-          updatedAt: new Date().toISOString(),
+          updatedAt: now,
         }
       : event
   );
@@ -5089,6 +5090,29 @@ public reassignAnalystReferences(oldAnalystId: string, newAnalystId: string) {
       ? { ...mapping, userId: newAnalystId }
       : mapping
   );
+
+  const rawFixedDates = localStorage.getItem('certitech_base_fixed_dates_v1');
+
+  if (rawFixedDates) {
+    try {
+      const fixedDates = JSON.parse(rawFixedDates);
+
+      if (Array.isArray(fixedDates)) {
+        const migratedFixedDates = fixedDates.map(rule =>
+          String(rule.analystId) === String(oldAnalystId)
+            ? { ...rule, analystId: newAnalystId }
+            : rule
+        );
+
+        localStorage.setItem(
+          'certitech_base_fixed_dates_v1',
+          JSON.stringify(migratedFixedDates)
+        );
+      }
+    } catch {
+      console.warn('Não foi possível migrar datas fixas do analista legado.');
+    }
+  }
 
   this.persist({
     immediate: true,
