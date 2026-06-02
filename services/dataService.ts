@@ -734,19 +734,49 @@ private async syncUsersFromProfiles() {
   const map = new Map<string, User>();
 
   this.users.forEach(user => {
-    if (user?.id) map.set(String(user.id), user);
-  });
-
-  profileUsers.forEach(user => {
-    const legacyId = (user as any).legacyUserId;
-
-    if (legacyId) {
-      map.delete(String(legacyId));
-    }
-
     if (user?.id) {
       map.set(String(user.id), user);
     }
+  });
+
+  profileUsers.forEach(user => {
+    const newId = String(user.id || '');
+    const legacyId = String((user as any).legacyUserId || '');
+
+    if (!newId) return;
+
+    const existingNew = map.get(newId);
+    const existingLegacy = legacyId ? map.get(legacyId) : undefined;
+
+    const mergedUser: User = {
+      ...(existingLegacy || {}),
+      ...(existingNew || {}),
+      ...user,
+
+      id: newId,
+      authUserId: (user as any).authUserId || newId,
+      legacyUserId: legacyId || undefined,
+
+      analystProfileId:
+        user.analystProfileId ||
+        existingNew?.analystProfileId ||
+        existingLegacy?.analystProfileId,
+
+      managerId:
+        user.managerId ||
+        existingNew?.managerId ||
+        existingLegacy?.managerId,
+
+      showInSchedule:
+        user.showInSchedule !== false &&
+        existingNew?.showInSchedule !== false,
+    };
+
+    if (legacyId) {
+      map.delete(legacyId);
+    }
+
+    map.set(newId, mergedUser);
   });
 
   this.users = Array.from(map.values());
