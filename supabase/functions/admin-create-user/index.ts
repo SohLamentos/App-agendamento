@@ -98,9 +98,7 @@ const analystProfileId = body.analystProfileId
     const showInSchedule =
   body.showInSchedule === false ? false : true;
 
-    const showInSchedule =
-  body.showInSchedule === false ? false : true;
-
+    
     if (!email || !fullName || !role || !requestedGroupId || !temporaryPassword) {
       return new Response(JSON.stringify({ error: 'Preencha nome, e-mail, perfil, grupo e senha.' }), {
         status: 400,
