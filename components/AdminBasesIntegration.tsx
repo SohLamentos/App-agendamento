@@ -462,14 +462,15 @@ const linkedLegacyIds = useMemo(() => {
 const visibleUsers = useMemo(() => {
   return users.filter(u => {
     if (
-      u.groupId !== user.groupId ||
-      (
-        u.role !== UserRole.ANALYST &&
-        u.role !== UserRole.MANAGER
-      )
-    ) {
-      return false;
-    }
+  u.groupId !== user.groupId ||
+  (
+    u.role !== UserRole.ANALYST &&
+    u.role !== UserRole.MANAGER &&
+    u.role !== UserRole.ADMIN
+  )
+) {
+  return false;
+}
 
     if (
       String(u.id).startsWith('u') &&
@@ -861,11 +862,13 @@ const visibleUsers = useMemo(() => {
         </td>
 
         <td className="p-4 text-xs font-bold text-slate-600 uppercase">
-          {analyst.role === UserRole.MANAGER
-            ? 'GESTOR'
-            : analyst.showInSchedule === false
-              ? 'ADMINISTRATIVO'
-              : 'ANALISTA'}
+          {analyst.role === UserRole.ADMIN
+  ? 'ADMIN GLOBAL'
+  : analyst.role === UserRole.MANAGER
+    ? 'GESTOR'
+    : analyst.showInSchedule === false
+      ? 'ADMINISTRATIVO'
+      : 'ANALISTA'}
         </td>
 
         <td className="p-4 text-xs font-bold text-slate-600">
