@@ -1409,6 +1409,7 @@ this.analystMappings = [];
     managerId: undefined,
     passwordHash: adminPasswordHash,
     active: true,
+    showInSchedule: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -2849,10 +2850,13 @@ const newSch = {
 
 const analystsPool = this.users.filter(
   u =>
-    u.role === UserRole.ANALYST &&
     u.active &&
     u.showInSchedule !== false &&
-    u.groupId === context.groupId
+    u.groupId === context.groupId &&
+    (
+      u.role === UserRole.ANALYST ||
+      !!u.analystProfileId
+    )
 );
 
 const todayStr = new Date().toISOString().split('T')[0];
