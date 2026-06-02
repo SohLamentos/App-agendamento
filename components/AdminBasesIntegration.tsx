@@ -815,7 +815,7 @@ const operationalAnalysts = useMemo(() => {
   {visibleUsers.length === 0 ? (
     <tr>
       <td colSpan={6} className="p-8 text-center text-[11px] font-bold text-slate-400 uppercase">
-        Nenhum analista cadastrado
+        Nenhum usuário cadastrado
       </td>
     </tr>
   ) : (
@@ -1061,7 +1061,7 @@ const operationalAnalysts = useMemo(() => {
       <h3 className="text-sm font-black uppercase text-slate-900">
   {newAnalystForm.mode === 'admin'
     ? 'Novo Administrativo'
-    : 'Novo Analista'}
+    : 'Novo Usuário'}
 </h3>
 
       <div className="space-y-3">
