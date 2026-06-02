@@ -45,6 +45,7 @@ const [analystForm, setAnalystForm] = useState({
   email: '',
   analystProfileId: '',
   role: UserRole.ANALYST,
+  showInSchedule: true,
   active: true
 });
 
@@ -378,7 +379,8 @@ if (dependencySummary.hasDependencies) {
   fullName: analyst.fullName || '',
   email: analyst.email || '',
   analystProfileId: analyst.analystProfileId || '',
-  role: analyst.role || UserRole.ANALYST,
+  role: UserRole.ANALYST,
+  showInSchedule: analyst.showInSchedule !== false,
   active: analyst.active
 });
 
@@ -403,7 +405,8 @@ const handleSaveAnalyst = () => {
   fullName: normalizedName,
   email: analystForm.email.trim().toLowerCase(),
   analystProfileId: analystForm.analystProfileId.trim(),
-  role: analystForm.role,
+  role: UserRole.ANALYST,
+  showInSchedule: analystForm.showInSchedule,
   normalizedLogin: normalizedName,
   firstNameLogin: normalizedName.split(' ')[0],
   active: analystForm.active
@@ -417,6 +420,7 @@ const handleSaveAnalyst = () => {
   email: '',
   analystProfileId: '',
   role: UserRole.ANALYST,
+  showInSchedule: true,
   active: true
 });
 
@@ -842,7 +846,11 @@ const operationalAnalysts = useMemo(() => {
       <tr key={analyst.id} className="border-t border-slate-100">
         
         <td className="p-4 text-xs font-bold text-slate-600 uppercase">
-  {analyst.role === UserRole.MANAGER ? 'ADMINISTRATIVO' : 'ANALISTA'}
+  {analyst.role === UserRole.MANAGER
+  ? 'GESTOR'
+  : analyst.showInSchedule === false
+    ? 'ADMINISTRATIVO'
+    : 'ANALISTA'}
 </td>
 
         <td className="p-4 text-xs font-bold text-slate-600">
@@ -1268,20 +1276,21 @@ const operationalAnalysts = useMemo(() => {
 />
 
 <select
-  value={analystForm.role}
+  value={analystForm.showInSchedule === false ? 'admin' : 'analyst'}
   onChange={(e) =>
     setAnalystForm({
       ...analystForm,
-      role: e.target.value as UserRole
+      role: UserRole.ANALYST,
+      showInSchedule: e.target.value !== 'admin'
     })
   }
   className="w-full p-3 border rounded-xl text-xs font-bold"
 >
-  <option value={UserRole.ANALYST}>
+  <option value="analyst">
     Analista
   </option>
 
-  <option value={UserRole.MANAGER}>
+  <option value="admin">
     Administrativo
   </option>
 </select>
