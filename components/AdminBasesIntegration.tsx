@@ -466,10 +466,9 @@ const visibleUsers = useMemo(() => {
         u.role === UserRole.ANALYST ||
         u.role === UserRole.MANAGER
       ) &&
-      u.groupId === user.groupId &&
-      !linkedLegacyIds.includes(String(u.id))
+      u.groupId === user.groupId
   );
-}, [users, user.groupId, linkedLegacyIds]);
+}, [users, user.groupId]);
   
 
 const operationalAnalysts = useMemo(() => {
@@ -478,7 +477,7 @@ const operationalAnalysts = useMemo(() => {
       u.role === UserRole.ANALYST &&
       u.groupId === user.groupId &&
       String(u.id).startsWith('u') &&
-      !linkedLegacyIds.includes(String(u.id))
+      
   );
 }, [users, user.groupId, linkedLegacyIds]);
 
