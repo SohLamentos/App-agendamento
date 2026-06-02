@@ -44,6 +44,7 @@ const [analystForm, setAnalystForm] = useState({
   fullName: '',
   email: '',
   analystProfileId: '',
+  role: UserRole.ANALYST,
   active: true
 });
 
@@ -359,11 +360,12 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
   setEditingAnalystId(analyst.id);
 
   setAnalystForm({
-    fullName: analyst.fullName || '',
-    email: analyst.email || '',
-    analystProfileId: analyst.analystProfileId || '',
-    active: analyst.active
-  });
+  fullName: analyst.fullName || '',
+  email: analyst.email || '',
+  analystProfileId: analyst.analystProfileId || '',
+  role: analyst.role || UserRole.ANALYST,
+  active: analyst.active
+});
 
   setIsAnalystModalOpen(true);
 };
@@ -383,13 +385,14 @@ const handleSaveAnalyst = () => {
     .trim();
 
   dataService.updateUser(editingAnalystId, {
-    fullName: normalizedName,
-    email: analystForm.email.trim().toLowerCase(),
-    analystProfileId: analystForm.analystProfileId.trim(),
-    normalizedLogin: normalizedName,
-    firstNameLogin: normalizedName.split(' ')[0],
-    active: analystForm.active
-  });
+  fullName: normalizedName,
+  email: analystForm.email.trim().toLowerCase(),
+  analystProfileId: analystForm.analystProfileId.trim(),
+  role: analystForm.role,
+  normalizedLogin: normalizedName,
+  firstNameLogin: normalizedName.split(' ')[0],
+  active: analystForm.active
+});
 
   setIsAnalystModalOpen(false);
   setEditingAnalystId(null);
@@ -1238,6 +1241,24 @@ const operationalAnalysts = useMemo(() => {
 
             <input
               placeholder="E-mail"
+              <select
+  value={analystForm.role}
+  onChange={(e) =>
+    setAnalystForm({
+      ...analystForm,
+      role: e.target.value as UserRole
+    })
+  }
+  className="w-full p-3 border rounded-xl text-xs font-bold"
+>
+  <option value={UserRole.ANALYST}>
+    Analista
+  </option>
+
+  <option value={UserRole.MANAGER}>
+    Administrativo
+  </option>
+</select>
               value={analystForm.email}
               onChange={(e) => setAnalystForm({ ...analystForm, email: e.target.value })}
               className="w-full p-3 border rounded-xl text-xs font-bold"
