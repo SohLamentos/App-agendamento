@@ -227,11 +227,11 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
     return;
   }
 
-    if (newAnalystForm.mode === 'link' && legacyUserId && data?.userId) {
+    await dataService.initializeFromCloud();
+
+if (newAnalystForm.mode === 'link' && legacyUserId && data?.userId) {
   dataService.reassignAnalystReferences(legacyUserId, data.userId);
 }
-
-  await dataService.initializeFromCloud();
 
   setIsNewAnalystModalOpen(false);
 
