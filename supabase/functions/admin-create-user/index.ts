@@ -95,6 +95,9 @@ const analystProfileId = body.analystProfileId
   ? String(body.analystProfileId).trim()
   : null;
 
+    const showInSchedule =
+  body.showInSchedule === false ? false : true;
+
     if (!email || !fullName || !role || !requestedGroupId || !temporaryPassword) {
       return new Response(JSON.stringify({ error: 'Preencha nome, e-mail, perfil, grupo e senha.' }), {
         status: 400,
@@ -190,7 +193,9 @@ const analystProfileId = body.analystProfileId
         normalized_login: normalizedLogin,
         active: true,
         is_global_admin: role === 'Admin' ? true : false,
-        permissions: {},
+        permissions: {
+  showInSchedule,
+},
       });
 
     if (profileError) {
