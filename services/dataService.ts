@@ -773,12 +773,6 @@ private async syncUsersFromProfiles() {
     };
 
     if (legacyId) {
-  this.reassignAnalystReferences(
-    legacyId,
-    newId,
-    mergedUser.analystProfileId || legacyId
-  );
-
   map.delete(legacyId);
 }
 
@@ -912,6 +906,17 @@ this.ensureFixedAdmin();
     this.schedules = payload.schedules ?? this.schedules;
     this.schedulesTeste = payload.schedulesTeste ?? this.schedulesTeste;
     this.events = payload.events ?? this.events;
+    const thiagoNovo = this.users.find(u =>
+  String(u.email || '').toLowerCase() === 'thiago.andersonsilva@claro.com.br'
+);
+
+if (thiagoNovo?.id) {
+  this.reassignAnalystReferences(
+    'u8',
+    String(thiagoNovo.id),
+    'ap6'
+  );
+}
     this.schedulingConfig = payload.schedulingConfig ?? this.schedulingConfig;
     this.testModeActive = payload.testModeActive ?? this.testModeActive;
     this.scoreAdjustments = payload.scoreAdjustments ?? this.scoreAdjustments;
