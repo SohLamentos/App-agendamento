@@ -5030,7 +5030,8 @@ public getUnconfiguredCities() {
     const newCity: CityGroup = { id: `city-${Date.now()}`, groupId: params.groupId, name: params.city.toUpperCase(), uf: params.uf.toUpperCase(), type: ExpertiseType.PRESENTIAL, active: true, responsibleAnalystIds: params.analystIds };
     this.cities.push(newCity); this.persist(); window.dispatchEvent(new Event('data-updated'));
   }
-  public updateUser(userId: string, patch: Partial<User>) {
+
+    public updateUser(userId: string, patch: Partial<User>) {
   const index = this.users.findIndex(u => u.id === userId);
 
   if (index === -1) {
@@ -5048,7 +5049,59 @@ public getUnconfiguredCities() {
   window.dispatchEvent(new Event('data-updated'));
 }
 
+public reassignAnalystReferences(oldAnalystId: string, newAnalystId: string) {
+  if (!oldAnalystId || !newAnalystId || oldAnalystId === newAnalystId) return;
+
+  const ctx = this.getContext();
+
+  this.schedules = this.schedules.map(schedule =>
+    schedule.groupId === ctx.groupId && String(schedule.analystId) === String(oldAnalystId)
+      ? { ...schedule, analystId: newAnalystId, updatedAt: new Date().toISOString() }
+      : schedule
+  );
+
+  this.schedulesTeste = this.schedulesTeste.map(schedule =>
+    schedule.groupId === ctx.groupId && String(schedule.analystId) === String(oldAnalystId)
+      ? { ...schedule, analystId: newAnalystId, updatedAt: new Date().toISOString() }
+      : schedule
+  );
+
+  this.events = this.events.map(event =>
+    event.groupId === ctx.groupId && event.involvedUserIds?.includes(oldAnalystId)
+      ? {
+          ...event,
+          involvedUserIds: event.involvedUserIds.map(id =>
+            String(id) === String(oldAnalystId) ? newAnalystId : id
+          ),
+          updatedAt: new Date().toISOString(),
+        }
+      : event
+  );
+
+  this.routingRules = this.routingRules.map(rule =>
+    rule.groupId === ctx.groupId && String(rule.analystId || '') === String(oldAnalystId)
+      ? { ...rule, analystId: newAnalystId }
+      : rule
+  );
+
+  this.analystMappings = this.analystMappings.map(mapping =>
+    mapping.groupId === ctx.groupId && String(mapping.userId) === String(oldAnalystId)
+      ? { ...mapping, userId: newAnalystId }
+      : mapping
+  );
+
+  this.persist({
+    immediate: true,
+    allowScheduleDeletion: true,
+    allowEventDeletion: true,
+  });
+
+  window.dispatchEvent(new Event('data-updated'));
+}
+
   public deleteUser(userId: string) {
+
+  
   const user = this.users.find(u => u.id === userId);
 
   if (!user) return;
