@@ -215,11 +215,11 @@ const handleToggleRuleStatus = (rule: RoutingRule) => {
       body: {
         email,
         fullName: normalizedName,
-        role: isAdministrative ? UserRole.MANAGER : UserRole.ANALYST,
+        role: UserRole.ANALYST,
         groupId: user.groupId,
         temporaryPassword: newAnalystForm.password || 'Claro@123',
         legacyUserId: isAdministrative ? null : legacyUserId,
-        analystProfileId: isAdministrative ? null : analystProfileId,
+        showInSchedule: !isAdministrative,
       },
     }
   );
