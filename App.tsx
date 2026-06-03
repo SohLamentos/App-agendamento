@@ -206,7 +206,13 @@ window.dispatchEvent(new Event('data-updated'));
       bases={dataService.getIntegrationBases()}
       analysts={dataService.getUsers().filter((u: any) =>
         u.active === true &&
-        u.groupId === currentUser.groupId
+        u.groupId === currentUser.groupId &&
+        u.showInSchedule !== false &&
+        (
+          u.role === UserRole.ANALYST ||
+          !!u.analystProfileId
+        ) &&
+        String(u.normalizedLogin || '').toUpperCase() !== 'ADMIN'
       )}
       groupId={currentUser.groupId}
     />
