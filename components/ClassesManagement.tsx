@@ -974,9 +974,15 @@ setActiveSubTab('technicians');
     }
   };
 
-  const awaitingSelectedTechs = filteredTechs.filter(t =>
+  const bulkSelectedTechs = filteredTechs.filter(t =>
   selectedTechIds.has(t.id)
 );
+
+const awaitingSelectedTechs = filteredTechs.filter(t =>
+  selectedTechIds.has(t.id)
+);
+
+const canUseBulkSelection = ['technicians', 'awaiting_result'].includes(activeSubTab);
 
 const handleToggleSelectTech = (techId: string) => {
   setSelectedTechIds(prev => {
@@ -1315,60 +1321,93 @@ const getScheduledExportTime = (tech: Technician) => {
 };
 
   const executeManualSchedule = (forced = false) => {
-  if (!manualTechId || !manualAnalystId || !manualDate) {
-    setToast({ message: 'Preencha técnico, analista e data.', type: 'error' });
+  const techIdsToSchedule =
+    selectedTechIds.size > 0
+      ? Array.from(selectedTechIds)
+      : manualTechId
+        ? [manualTechId]
+        : [];
+
+  if (techIdsToSchedule.length === 0 || !manualAnalystId || !manualDate) {
+    setToast({ message: 'Selecione técnico(s), analista e data.', type: 'error' });
     return;
   }
 
-  const result = dataService.manualScheduleReinforced({
-    techId: manualTechId,
-    analystId: manualAnalystId,
-    dateIso: manualDate,
-    shift: manualShift,
-    type: manualType,
-    forced,
-    brokenRules: validationResult?.brokenRules || []
+  let success = 0;
+  let error = 0;
+
+  techIdsToSchedule.forEach((techId) => {
+    const result = dataService.manualScheduleReinforced({
+      techId,
+      analystId: manualAnalystId,
+      dateIso: manualDate,
+      shift: manualShift,
+      type: manualType,
+      forced,
+      brokenRules: validationResult?.brokenRules || []
+    });
+
+    if (result.success) success++;
+    else error++;
   });
 
-  if (result.success) {
-    refreshData();
-    setIsManualModalOpen(false);
-    setIsForceConfirmOpen(false);
-    setValidationResult(null);
-    setManualTechId('');
-    setManualAnalystId('');
-    setManualDate('');
-    setManualType(ExpertiseType.VIRTUAL);
-    setManualShift(Shift.MORNING);
+  refreshData();
+  setIsManualModalOpen(false);
+  setIsForceConfirmOpen(false);
+  setValidationResult(null);
+  setSelectedTechIds(new Set());
+  setManualTechId('');
+  setManualAnalystId('');
+  setManualDate('');
+  setManualType(ExpertiseType.VIRTUAL);
+  setManualShift(Shift.MORNING);
 
-    setToast({
-      message: forced
-        ? 'Agendamento manual forçado realizado com sucesso.'
-        : 'Agendamento manual realizado com sucesso.',
-      type: 'success'
-    });
-  } else {
-    setToast({ message: 'Falha ao realizar agendamento manual.', type: 'error' });
-  }
+  setToast({
+    message: `${success} técnico(s) agendado(s) manualmente. ${error > 0 ? `${error} erro(s).` : ''}`,
+    type: error > 0 ? 'error' : 'success'
+  });
 };
 
 const handleManualScheduleSubmit = () => {
-  if (!manualTechId || !manualAnalystId || !manualDate) {
-    setToast({ message: 'Preencha técnico, analista e data.', type: 'error' });
+  const techIdsToSchedule =
+    selectedTechIds.size > 0
+      ? Array.from(selectedTechIds)
+      : manualTechId
+        ? [manualTechId]
+        : [];
+
+  if (techIdsToSchedule.length === 0 || !manualAnalystId || !manualDate) {
+    setToast({ message: 'Selecione técnico(s), analista e data.', type: 'error' });
     return;
   }
 
-  const result = dataService.validateManualSchedule(
-    manualTechId,
-    manualAnalystId,
-    manualDate,
-    manualShift,
-    manualType
-  );
+  const allBrokenRules: string[] = [];
 
-  setValidationResult(result);
+  techIdsToSchedule.forEach((techId) => {
+    const result = dataService.validateManualSchedule(
+      techId,
+      manualAnalystId,
+      manualDate,
+      manualShift,
+      manualType
+    );
 
-  if (result.needsForce) {
+    if (result.brokenRules.length > 0) {
+      allBrokenRules.push(...result.brokenRules);
+    }
+  });
+
+  const uniqueBrokenRules = Array.from(new Set(allBrokenRules));
+
+  const validation = {
+    canSchedule: uniqueBrokenRules.length === 0,
+    brokenRules: uniqueBrokenRules,
+    needsForce: uniqueBrokenRules.length > 0
+  };
+
+  setValidationResult(validation);
+
+  if (validation.needsForce) {
     setIsForceConfirmOpen(true);
     return;
   }
@@ -1565,12 +1604,12 @@ Aprovar Selecionados ({awaitingSelectedTechs.length})
   </button>
 </div>
 
-          <div className={`flex items-center gap-3 ${['pending', 'failed', 'analyst_cancelled', 'ineligible', 'training_no_cert'].includes(activeSubTab) ? 'flex' : 'hidden'}`}>
+          <div className={`flex items-center gap-3 ${['technicians', 'pending', 'failed', 'analyst_cancelled', 'ineligible', 'training_no_cert'].includes(activeSubTab) ? 'flex' : 'hidden'}`}>
              <button 
               onClick={() => setIsManualModalOpen(true)} 
               className="bg-claro-red text-white text-[10px] px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest hover:bg-claro-redHover shadow-xl transition-all"
              >
-               Agendamento Manual
+               Agendar Manualmente {bulkSelectedTechs.length > 0 ? `(${bulkSelectedTechs.length})` : ''}
              </button>
           </div>
         </div>
@@ -1598,7 +1637,7 @@ Aprovar Selecionados ({awaitingSelectedTechs.length})
           <thead className="bg-slate-50 border-b border-slate-200 font-black text-slate-400">
             <tr>
               <th className="px-10 py-6 tracking-widest">
-  {activeSubTab === 'awaiting_result' && (
+  {canUseBulkSelection && (
     <input
       type="checkbox"
       className="mr-4 accent-claro-red"
@@ -1618,7 +1657,7 @@ Aprovar Selecionados ({awaitingSelectedTechs.length})
               <tr key={tech.id} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-10 py-6">
                   <div className="flex items-center gap-3">
-  {activeSubTab === 'awaiting_result' && (
+  {canUseBulkSelection && (
     <input
       type="checkbox"
       className="accent-claro-red"
@@ -2204,8 +2243,33 @@ setWithdrawObservation('');
           <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden border-t-8 border-claro-red animate-in zoom-in duration-300">
             <div className="bg-claro-red p-8 text-white"><h3 className="text-xl font-black uppercase tracking-tighter">Agendamento Manual</h3><p className="text-[10px] font-bold text-white/70 uppercase mt-1 tracking-widest">Atribuição Direta de Slot</p></div>
             <div className="p-10 space-y-6">
-              <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Técnico Selecionado</label>
-                <select className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3 text-xs font-bold uppercase outline-none focus:border-claro-red" value={manualTechId} onChange={e => setManualTechId(e.target.value)}><option value="">Selecione o Técnico...</option>{filteredTechs.map(t => <option key={t.id} value={t.id}>{t.name} ({t.cpf})</option>)}</select>
+              <div className="space-y-1.5">
+
+                {selectedTechIds.size > 0 && (
+  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-[10px] font-black text-emerald-700 uppercase">
+    {selectedTechIds.size} técnico(s) selecionado(s) para agendamento manual.
+  </div>
+)}
+                
+               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+  Técnico Selecionado
+</label>
+
+<select
+  disabled={selectedTechIds.size > 0}
+  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3 text-xs font-bold uppercase outline-none focus:border-claro-red disabled:opacity-50 disabled:cursor-not-allowed"
+  value={manualTechId}
+  onChange={e => setManualTechId(e.target.value)}
+>
+  <option value="">Selecione o Técnico...</option>
+  {filteredTechs.map(t => (
+    <option key={t.id} value={t.id}>
+      {t.name} ({t.cpf})
+    </option>
+  ))}
+</select>              
+
+                  
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Analista G3</label>
@@ -2224,7 +2288,13 @@ setWithdrawObservation('');
                 </div>
               </div>
             </div>
-            <div className="flex gap-4 p-10 pt-0"><button onClick={() => setIsManualModalOpen(false)} className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cancelar</button><button onClick={handleManualScheduleSubmit} disabled={!manualTechId || !manualAnalystId || !manualDate} className="flex-1 py-4 bg-claro-red text-white text-xs font-black uppercase rounded-2xl shadow-xl disabled:opacity-20 tracking-widest">Verificar Regras</button></div>
+            <div className="flex gap-4 p-10 pt-0"><button onClick={() => setIsManualModalOpen(false)} className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cancelar</button>
+              
+              <button
+  onClick={handleManualScheduleSubmit}
+  disabled={(selectedTechIds.size === 0 && !manualTechId) || !manualAnalystId || !manualDate} 
+                
+                className="flex-1 py-4 bg-claro-red text-white text-xs font-black uppercase rounded-2xl shadow-xl disabled:opacity-20 tracking-widest">Verificar Regras</button></div>
           </div>
         </div>
       )}
