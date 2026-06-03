@@ -3000,13 +3000,10 @@ const newSch = {
 
 const analystsPool = this.users.filter(
   u =>
-    u.active &&
-    u.showInSchedule !== false &&
+    u.active === true &&
     u.groupId === context.groupId &&
-    (
-      u.role === UserRole.ANALYST ||
-      !!u.analystProfileId
-    )
+    u.showInSchedule !== false &&
+    !!u.analystProfileId
 );
 
 const todayStr = new Date().toISOString().split('T')[0];
