@@ -29,11 +29,21 @@ type Props = {
 };
 
 
-export default function BaseCollectiveSchedule({
-  bases = [],
-  analysts = [],
-  groupId = 'G3',
-}: Props) {
+  const getAnalystDisplayName = (analyst: any) => {
+    if (analyst.analystProfileId && analyst.fullName) {
+      return String(analyst.fullName).split(' ')[0].toUpperCase();
+    }
+
+    return String(
+      analyst.normalizedLogin ||
+      analyst.firstNameLogin ||
+      analyst.fullName ||
+      analyst.name ||
+      analyst.analystName ||
+      analyst.id ||
+      ''
+    ).toUpperCase();
+  };
 
   const STORAGE_KEY = `certitech_base_fixed_dates_v1_${groupId}`;
   
@@ -87,7 +97,7 @@ export default function BaseCollectiveSchedule({
       city: base?.city || base?.cidade || '',
       uf: base?.uf || base?.state || '',
       analystId: form.analystId,
-      analystName: analyst?.name || analyst?.analystName || 'Analista não identificado',
+      analystName: analyst ? getAnalystDisplayName(analyst) : 'Analista não identificado',
       defaultCapacity: Number(form.defaultCapacity || 6),
       notes: form.notes,
       active: true,
@@ -263,14 +273,9 @@ export default function BaseCollectiveSchedule({
               onChange={(e) => setForm({ ...form, analystId: e.target.value })}
             >
               <option value="">Selecione</option>
-              {analysts.map((analyst) => (
+{analysts.map((analyst) => (
   <option key={analyst.id} value={analyst.id}>
-    {analyst.normalizedLogin ||
-      analyst.fullName ||
-      analyst.name ||
-      analyst.analystName ||
-      analyst.firstNameLogin ||
-      analyst.id}
+    {getAnalystDisplayName(analyst)}
   </option>
 ))}
             </select>
