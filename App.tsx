@@ -203,19 +203,15 @@ window.dispatchEvent(new Event('data-updated'));
       case 'base-collective-schedule':
   return (
     <BaseCollectiveSchedule
-      bases={dataService.getIntegrationBases()}
-      analysts={dataService.getUsers().filter((u: any) =>
-        u.active === true &&
-        u.groupId === currentUser.groupId &&
-        u.showInSchedule !== false &&
-        (
-          u.role === UserRole.ANALYST ||
-          !!u.analystProfileId
-        ) &&
-        String(u.normalizedLogin || '').toUpperCase() !== 'ADMIN'
-      )}
-      groupId={currentUser.groupId}
-    />
+  bases={dataService.getIntegrationBases()}
+  analysts={dataService.getUsers().filter((u: any) =>
+    u.active === true &&
+    u.groupId === currentUser.groupId &&
+    u.showInSchedule !== false &&
+    !!u.analystProfileId
+  )}
+  groupId={currentUser.groupId}
+/>
   );
       case 'reports-operational': return <OperationalDashboard />;
       case 'reports-quality': return <QualityReport />;
