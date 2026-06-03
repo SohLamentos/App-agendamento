@@ -28,6 +28,11 @@ type Props = {
   groupId?: string;
 };
 
+export default function BaseCollectiveSchedule({
+  bases = [],
+  analysts = [],
+  groupId = 'G3',
+}: Props) {
 
   const getAnalystDisplayName = (analyst: any) => {
     if (analyst.analystProfileId && analyst.fullName) {
