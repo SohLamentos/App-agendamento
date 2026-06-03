@@ -50,7 +50,7 @@ export default function BaseCollectiveSchedule({
     ).toUpperCase();
   };
 
-  const STORAGE_KEY = `certitech_base_fixed_dates_v1_${groupId}`;
+  const STORAGE_KEY = 'certitech_base_fixed_dates_v1';
   
   const [rules, setRules] = useState<FixedBaseRule[]>(() => {
     try {
