@@ -2753,14 +2753,34 @@ let techniciansPool = this.technicians
   };
 
   const readBaseFixedDateRules = (): FixedBaseRule[] => {
-    try {
-      const raw = localStorage.getItem('certitech_base_fixed_dates_v1');
+  try {
+    const keys = [
+      'certitech_base_fixed_dates_v1',
+      `certitech_base_fixed_dates_v1_${context.groupId}`,
+    ];
+
+    const map = new Map<string, FixedBaseRule>();
+
+    keys.forEach(key => {
+      const raw = localStorage.getItem(key);
       const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
+
+      if (!Array.isArray(parsed)) return;
+
+      parsed.forEach((rule: FixedBaseRule & { groupId?: string }) => {
+        if (!rule?.id) return;
+
+        if (rule.groupId && rule.groupId !== context.groupId) return;
+
+        map.set(String(rule.id), rule);
+      });
+    });
+
+    return Array.from(map.values());
+  } catch {
+    return [];
+  }
+};
 
   const getCollectiveScheduleTime = (
     shift: Shift,
