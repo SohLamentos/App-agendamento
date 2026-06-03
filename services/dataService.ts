@@ -758,18 +758,16 @@ private async syncUsersFromProfiles() {
       legacyUserId: legacyId || undefined,
 
       analystProfileId:
-        user.analystProfileId ||
-        existingNew?.analystProfileId ||
-        existingLegacy?.analystProfileId,
+  user.showInSchedule === false
+    ? undefined
+    : user.analystProfileId,
 
       managerId:
         user.managerId ||
         existingNew?.managerId ||
         existingLegacy?.managerId,
 
-      showInSchedule:
-        user.showInSchedule !== false &&
-        existingNew?.showInSchedule !== false,
+      showInSchedule: user.showInSchedule === true,
     };
 
     if (legacyId) {
@@ -3002,8 +3000,10 @@ const analystsPool = this.users.filter(
   u =>
     u.active === true &&
     u.groupId === context.groupId &&
-    u.showInSchedule !== false &&
-    !!u.analystProfileId
+    u.showInSchedule === true &&
+    !!u.analystProfileId &&
+    String(u.normalizedLogin || '').toUpperCase() !== 'ADMIN' &&
+    !String(u.fullName || '').toUpperCase().includes('ANDRE')
 );
 
 const todayStr = new Date().toISOString().split('T')[0];
