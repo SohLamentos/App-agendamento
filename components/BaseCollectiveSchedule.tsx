@@ -51,11 +51,15 @@ export default function BaseCollectiveSchedule({
   };
 
   const STORAGE_KEY = 'certitech_base_fixed_dates_v1';
+const GROUP_STORAGE_KEY = `certitech_base_fixed_dates_v1_${groupId}`;
   
   const [rules, setRules] = useState<FixedBaseRule[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
+      const saved =
+  localStorage.getItem(STORAGE_KEY) ||
+  localStorage.getItem(GROUP_STORAGE_KEY);
+
+return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
@@ -73,9 +77,17 @@ export default function BaseCollectiveSchedule({
   });
 
   function persist(next: FixedBaseRule[]) {
-    setRules(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  }
+  const normalized = next.map(rule => ({
+    ...rule,
+    groupId,
+  }));
+
+  setRules(normalized);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+  localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify(normalized));
+
+  window.dispatchEvent(new Event('data-updated'));
+}
 
   function createRule() {
     if (!form.baseId || !form.analystId || !form.firstDate) {
