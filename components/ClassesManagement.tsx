@@ -89,7 +89,18 @@ const ClassesManagement: React.FC<ClassesManagementProps> = ({ user }) => {
 // Feedback
 const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-const analysts = useMemo(() => allUsers.filter(u => u.role === UserRole.ANALYST && u.active), [allUsers]);
+const analysts = useMemo(() => {
+  return allUsers
+    .filter((u: any) =>
+      u.active === true &&
+      u.groupId === user.groupId &&
+      u.showInSchedule !== false &&
+      !!u.analystProfileId
+    )
+    .sort((a: any, b: any) =>
+      String(a.fullName || '').localeCompare(String(b.fullName || ''), 'pt-BR')
+    );
+}, [allUsers, user.groupId]);
 
 const refreshData = () => {
   setTechnicians(dataService.getTechnicians());
