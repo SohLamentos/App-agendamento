@@ -191,6 +191,12 @@ const [improvisoReason, setImprovisoReason] = useState('');
   const [isOperationalEventsModalOpen, setIsOperationalEventsModalOpen] = useState(false);
   const [selectedOperationalCategory, setSelectedOperationalCategory] =
   useState<string | null>(null);
+  const [pendingOperationalEvent, setPendingOperationalEvent] = useState<{
+  name: string;
+  color: string;
+} | null>(null);
+
+const [isOperationalShiftModalOpen, setIsOperationalShiftModalOpen] = useState(false);
   
   
   // Default Silver
@@ -672,7 +678,9 @@ const closeQuickActionStack = () => {
   setIsOutrosModalOpen(false);
   setIsImprovisoModal(false);
   setIsOperationalEventsModalOpen(false);
-  setSelectedOperationalCategory(null);
+setSelectedOperationalCategory(null);
+setPendingOperationalEvent(null);
+setIsOperationalShiftModalOpen(false);
 };
 
 const saveTrainingEvent = () => {
@@ -2201,13 +2209,14 @@ setPendingMove({
               }
 
               setIsOperationalEventsModalOpen(false);
-              setSelectedOperationalCategory(null);
+setSelectedOperationalCategory(null);
 
-              setStatus(
-                eventType.name,
-                Shift.FULL_DAY,
-                eventType.color
-              );
+setPendingOperationalEvent({
+  name: eventType.name,
+  color: eventType.color
+});
+
+setIsOperationalShiftModalOpen(true);
             }}
             className="w-full text-left px-5 py-4 rounded-2xl text-[11px] font-black uppercase hover:bg-slate-50"
             style={{ color: eventType.color }}
@@ -2238,6 +2247,71 @@ setPendingMove({
         </button>
       </div>
 
+    </div>
+  </div>
+)}
+
+      {isOperationalShiftModalOpen && selection && pendingOperationalEvent && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+    <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-sm overflow-hidden border-t-8 border-slate-900 animate-in zoom-in duration-300">
+      <div
+        className="p-8 text-white text-center"
+        style={{ backgroundColor: pendingOperationalEvent.color || '#111827' }}
+      >
+        <h3 className="text-xl font-black uppercase tracking-tighter">
+          {pendingOperationalEvent.name}
+        </h3>
+        <p className="text-[10px] font-bold uppercase mt-1 opacity-70">
+          Selecione o período
+        </p>
+      </div>
+
+      <div className="p-8 space-y-3">
+        <button
+          onClick={() => {
+            setStatus(pendingOperationalEvent.name, Shift.MORNING, pendingOperationalEvent.color);
+            setPendingOperationalEvent(null);
+            setIsOperationalShiftModalOpen(false);
+          }}
+          className="w-full p-4 rounded-2xl border-2 border-slate-100 text-[11px] font-black uppercase hover:bg-slate-50"
+        >
+          Manhã
+        </button>
+
+        <button
+          onClick={() => {
+            setStatus(pendingOperationalEvent.name, Shift.AFTERNOON, pendingOperationalEvent.color);
+            setPendingOperationalEvent(null);
+            setIsOperationalShiftModalOpen(false);
+          }}
+          className="w-full p-4 rounded-2xl border-2 border-slate-100 text-[11px] font-black uppercase hover:bg-slate-50"
+        >
+          Tarde
+        </button>
+
+        <button
+          onClick={() => {
+            setStatus(pendingOperationalEvent.name, Shift.FULL_DAY, pendingOperationalEvent.color);
+            setPendingOperationalEvent(null);
+            setIsOperationalShiftModalOpen(false);
+          }}
+          className="w-full p-4 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white text-[11px] font-black uppercase"
+        >
+          Dia Inteiro
+        </button>
+      </div>
+
+      <div className="flex gap-4 p-8 pt-0">
+        <button
+          onClick={() => {
+            setPendingOperationalEvent(null);
+            setIsOperationalShiftModalOpen(false);
+          }}
+          className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest"
+        >
+          Voltar
+        </button>
+      </div>
     </div>
   </div>
 )}
